@@ -1,7 +1,7 @@
 # AMD X3D V-Cache Technology Optimizer - v2.0.0
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/pyrotiger/x3d-toggle-main/blob/main/LICENSE)
-[![Architecture: POSIX C](https://img.shields.io/badge/Architecture-POSIX%20C-orange.svg)](https://github.com/pyrotiger/x3d-toggle-main/blob/main/ARCHITECTURE.md)
+[![Architecture: POSIX C](https://img.shields.io/badge/Architecture-POSIX%20C-orange.svg)](https://github.com/pyrotiger/x3d-toggle-main/blob/main/docs/ARCHITECTURE.md)
 [![Engine: eBPF](https://img.shields.io/badge/Engine-eBPF-green.svg)](https://github.com/pyrotiger/x3d-toggle-main/blob/main/README.md)
 
 ## X3D Toggle - Community Edition
@@ -42,7 +42,7 @@ X3D Toggle follows a strict **Model-View-Controller (MVC)** philosophy:
 * **XUI (View):** A cross-platform UI logic layer (`x3d-xui`) that synchronizes iconography and formatting between Bash and C components.
 * **Frontends (View):** CLI (`x3d-toggle`), Tray Icons, and optional Web/GTK interfaces.
 
-For a deep dive into the system design, see [ARCHITECTURE.md](ARCHITECTURE.md).
+For a deep dive into the system design, see [ARCHITECTURE.md](../docs/ARCHITECTURE.md).
 
 ### 🖥️  XUI (X3D User Interface)  🖥️
 
