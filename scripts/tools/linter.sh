@@ -55,6 +55,7 @@ TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
 JOURNAL_AUDIT="$VAR_AUDITS/linter_$TIMESTAMP"
 
 cd "$ROOT_REPO" || exit 1
+mkdir -p "$JOURNAL_AUDIT"
 
 
 
@@ -68,9 +69,18 @@ clang-tidy -p build/ -checks="$CLANG_TIDY_CHECKS" $LINT_TARGETS_C > "$JOURNAL_AU
 printf_step "${SEARCH} Running cppcheck (C11/POSIX Scan) for bugs..."
 # shellcheck disable=SC2086
 cppcheck $CPPCHECK_FLAGS -Iinclude -Ibuild . > "$JOURNAL_AUDIT/cppcheck.txt" 2>&1 || journal_write -audit "cppcheck" "$JOURNAL_AUDIT/cppcheck.txt" "$?"
-
 printf_step "${WAND} Running valgrind (Status Check) for memory leaks..."
-valgrind "$VALGRIND_FLAGS" ./bin/x3d-toggle status > "$JOURNAL_AUDIT/valgrind.txt" 2>&1 || journal_write -audit "valgrind" "$JOURNAL_AUDIT/valgrind.txt" "$?"
+# shellcheck disable=SC2086
+valgrind $VALGRIND_FLAGS ./bin/x3d-toggle status > "$JOURNAL_AUDIT/valgrind.txt" 2>&1
+VAL_RES=$?
+if [ $VAL_RES -ne 0 ]; then
+    if grep -q "Fatal error at startup" "$JOURNAL_AUDIT/valgrind.txt"; then
+        printf_step "2,${WARN} Notice: Valgrind startup failed (Missing system symbols/Stripped ld.so)."
+        printf_step "2,        This is a system environment issue, not a project memory leak."
+    else
+        journal_write -audit "valgrind" "$JOURNAL_AUDIT/valgrind.txt" "$VAL_RES"
+    fi
+fi
 
 printf_step "${SHIELD} Running shellcheck for syntax errors..."
 # shellcheck disable=SC2086

@@ -25,7 +25,7 @@ else
     SESSION_DATE=$(date +"%Y-%m-%d_%H-%M-%S")
 fi
 
-export DEBUG_MODE=1
+export DEBUG_ENABLE=1
 export X3D_TRACE_FILE="$DIR_AUDITS/debug_$SESSION_DATE.audit"
 journal_trace "X3D Debug Observer session starting..."
 

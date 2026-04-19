@@ -371,6 +371,8 @@ char *strstr(const char *h, const char *n) { if (!h || !n) return (void*)0; if (
 size_t strcspn(const char *s, const char *reject) { if (!s || !reject) return 0; size_t n = 0; while (s[n]) { if (strchr(reject, s[n])) break; n++; } return n; }
 void *memcpy(void *d, const void *s, size_t n) { char *d1 = d; const char *s1 = s; while (n--) *d1++ = *s1++; return d; }
 void *memset(void *s, int c, size_t n) { char *p = s; while (n--) *p++ = (char)c; return s; }
+int memcmp(const void *s1, const void *s2, size_t n) { const unsigned char *a = s1, *b = s2; while (n--) { if (*a != *b) return *a - *b; a++; b++; } return 0; }
+void *memmove(void *dest, const void *src, size_t n) { unsigned char *d = dest; const unsigned char *s = src; if (d < s) { while (n--) *d++ = *s++; } else { d += n; s += n; while (n--) *--d = *--s; } return dest; }
 
 int atoi(const char *p) { int n = 0, neg = 0; while (*p == ' ' || *p == '\t') p++; if (*p == '-') { neg = 1; p++; } while (*p >= '0' && *p <= '9') n = n * 10 + (*p++ - '0'); return neg ? -n : n; }
 double atof(const char *p) { double res = 0.0, frac = 1.0; int neg = 0, state = 0; while (*p == ' ' || *p == '\t') p++; if (*p == '-') { neg = 1; p++; } while (*p) { if (*p >= '0' && *p <= '9') { if (state == 0) res = res * 10.0 + (*p - '0'); else { frac *= 0.1; res += (*p - '0') * frac; } } else if (*p == '.') state = 1; else break; p++; } return neg ? -res : res; }

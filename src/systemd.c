@@ -28,14 +28,19 @@ static int execute_unit_method(const char *method) {
   if (pid < 0)
     return ERR_IO;
 
-  // fix this to align with debug.sh
   if (pid == 0) {
-    /* Redirect stdout and stderr to /dev/null to prevent noise in CLI */  // you broke auto logging ability, fix
+    /* Silence stdout for CLI cleanliness */
     int null_fd = open("/dev/null", O_WRONLY);
     if (null_fd >= 0) {
       dup2(null_fd, 1);
-      dup2(null_fd, 2);
       close(null_fd);
+    }
+    /* Route stderr to session log for journal capture */
+    int log_fd = open(VAR_LOGS "/systemd-exec.log",
+                      O_WRONLY | O_CREAT | O_APPEND, 0664);
+    if (log_fd >= 0) {
+      dup2(log_fd, 2);
+      close(log_fd);
     }
     char *args[] = {(char *)"/usr/bin/systemctl", (char *)method,
                     (char *)SERVICE_UNIT, NULL};
@@ -61,12 +66,18 @@ int unit_active(void) {
     return 0;
 
   if (pid == 0) {
-    /* Redirect stdout and stderr to /dev/null to prevent noise in CLI */
+    /* Silence stdout for CLI cleanliness */
     int null_fd = open("/dev/null", O_WRONLY);
     if (null_fd >= 0) {
       dup2(null_fd, 1);
-      dup2(null_fd, 2);
       close(null_fd);
+    }
+    /* Route stderr to session log for journal capture */
+    int log_fd = open(VAR_LOGS "/systemd-exec.log",
+                      O_WRONLY | O_CREAT | O_APPEND, 0664);
+    if (log_fd >= 0) {
+      dup2(log_fd, 2);
+      close(log_fd);
     }
     char *args[] = {(char *)"/usr/bin/systemctl", (char *)"is-active",
                     (char *)SERVICE_UNIT, NULL};
