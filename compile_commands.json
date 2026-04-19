@@ -1,0 +1,326 @@
+[
+  {
+    "file": "frontend/x3d-toggle.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "frontend/x3d-toggle.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "frontend/cli/x3d-cli.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "frontend/cli/x3d-cli.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "frontend/cli/x3d-config.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "frontend/cli/x3d-config.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "frontend/cli/x3d-cppc.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "frontend/cli/x3d-cppc.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "frontend/cli/x3d-diag.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "frontend/cli/x3d-diag.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "frontend/cli/x3d-dialog.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "frontend/cli/x3d-dialog.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "frontend/cli/x3d-misc.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "frontend/cli/x3d-misc.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "frontend/cli/x3d-modes.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "frontend/cli/x3d-modes.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "frontend/cli/x3d-service.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "frontend/cli/x3d-service.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "dev/x3d-error.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "dev/x3d-error.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "common/x3d-worker.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "common/x3d-worker.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "common/x3d-core.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "common/x3d-core.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "common/x3d-conf.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "common/x3d-conf.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "common/x3d-systemd.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "common/x3d-systemd.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "common/x3d-games.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "common/x3d-games.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "common/x3d-status.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "common/x3d-status.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/X3D-Toggle-v1.5",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "common/x3d-xui.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "common/x3d-xui.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/x3d-toggle-main",
+    "output": "bin/x3d-toggle"
+  },
+  {
+    "file": "include/x3d-topology.c",
+    "arguments": [
+      "clang",
+      "-Wall",
+      "-O2",
+      "-Wextra",
+      "-D_GNU_SOURCE",
+      "-Iinclude",
+      "-Ibackend/daemon",
+      "include/x3d-topology.c",
+      "-o",
+      "bin/x3d-toggle",
+      "-pthread"
+    ],
+    "directory": "/home/pyro/Development/projects/x3d-toggle-main",
+    "output": "bin/x3d-toggle"
+  }
+]

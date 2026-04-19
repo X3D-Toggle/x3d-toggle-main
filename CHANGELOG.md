@@ -1,6 +1,6 @@
 # CHANGELOG.md
 
-## v1.5.0 - Community Edition Release
+## v2.0.0 - Community Edition Release
 
 ### Features Introduced
 

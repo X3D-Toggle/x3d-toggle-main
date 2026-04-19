@@ -1,6 +1,6 @@
 # ARCHITECTURE.md
 
-## AMD x3D V-Cache Technology Optimizer - v1.5.0
+## AMD x3D V-Cache Technology Optimizer
 
 ### Toggle Control - Community Edition
 
@@ -15,13 +15,12 @@
   * Gamelist database
 * Providing fast CLI command to switch vcache persistent modes
 * Providing user with optional graphical UX experiences
-  * XUI - CLI environment using ncurses (depreciated)
-        (SystemNotifierIcon)
+  * XUI - CLI environment
   * Logging Ability
 * UNIX Domain Socket for IPC
 
 ```text
-X3D-Toggle-v1.5
+x3d-toggle-main
 └─ assets
     ├─ amd.svg
     ├─ ryzen.jpeg
@@ -38,10 +37,10 @@ X3D-Toggle-v1.5
     ├─ ccd.h
     ├─ config.h
     ├─ daemon.conf
-    ├─ socket.c -> /home/pyro/Development/projects/X3D-Toggle-v1.5/src/socket.c
-    ├─ socket.h -> /home/pyro/Development/projects/X3D-Toggle-v1.5/include/socket.h
+    ├─ socket.c -> ~/x3d-toggle-main/src/socket.c
+    ├─ socket.h -> ~/x3d-toggle-main/include/socket.h
     ├─ vmlinux.h
-    ├─ worker.c -> /home/pyro/Development/projects/X3D-Toggle-v1.5/src/worker.c
+    ├─ worker.c -> ~/x3d-toggle-main/src/worker.c
     ├─ xui.c
     └─ xui.h
 └─ config

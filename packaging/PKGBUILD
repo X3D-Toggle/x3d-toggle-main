@@ -3,12 +3,12 @@
 # shellcheck disable=SC2034,SC2154
 # Maintainer: Pyrotiger
 
-pkgbase=x3d-toggle
+pkgbase=x3d-toggle-main
 pkgname=('x3d-toggle' 'x3d-toggle-webui')
-pkgver=1.5.0
+pkgver=2.0.0
 pkgrel=1
 arch=('x86_64')
-url="https://github.com/pyrotiger/X3DToggleV2"
+url="https://github.com/pyrotiger/x3d-toggle-main"
 license=('GPL3')
 makedepends=('clang' 'llvm' 'make' 'libbpf' 'bpftool')
 options=('!strip')

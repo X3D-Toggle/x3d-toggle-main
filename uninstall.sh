@@ -22,7 +22,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 printf_br
-printf_center "${ROCKET} Welcome to the x3D Toggle v1.5 Deep Uninstaller"
+printf_center "${ROCKET} Welcome to the x3D Toggle v2.0 Deep Uninstaller"
 printf_divider
 
 printf_step "${STOPSIGN} Stopping and disabling X3D Toggle service..."

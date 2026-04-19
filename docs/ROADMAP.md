@@ -1,6 +1,6 @@
 # ROADMAP.md
 
-## AMD x3D V-Cache Technology Optimizer - v2.0.0
+## AMD x3D V-Cache Technology Optimizer
 
 ### Toggle Control - Community Edition
 
@@ -41,7 +41,6 @@
 - Clang/llvm check, shellcheck
 
 -Graphical UX
-    * TUI (nCurses)
     * Kdialog
     * WebUI (GO)
     * KDE6 SNI(SystemNotifierIcon)
@@ -58,14 +57,8 @@
 - Add Developer Mode Environment options and documentations relating to 
     DEV_MODE=1
     * logger - stdout format
-    * Cpu Spike/Stress test
     * Timer - measure latency
     * Mock game script
     * Hardware `Dry Run` mode
-
-- Update Makefile and PKGBUILD for production release
-    * `cppcheck` or `scan-build` in Makefile
-    * Move source dir to Git
-    * update sha256
 
 **Copyright ©️ 2026 Pyrotiger - License: GPLv3**

@@ -30,7 +30,7 @@ export X3D_TRACE_FILE="$DIR_AUDITS/debug_$SESSION_DATE.audit"
 journal_trace "X3D Debug Observer session starting..."
 
 printf_divider
-printf_center "${TOOLS}  X3D Toggle v1.5.0 - Real-Time MVC Observer  ${TOOLS}"
+printf_center "${TOOLS}  X3D Toggle - Real-Time MVC Observer  ${TOOLS}"
 printf_center "Logging to: $X3D_TRACE_FILE"
 printf_divider
 

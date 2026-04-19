@@ -1,6 +1,6 @@
 [Unit]
 Description=AMD x3D V-Cache Optimizer Daemon
-Documentation=https://github.com/pyrotiger/X3DToggleV1.5
+Documentation=https://github.com/pyrotiger/x3d-toggle-main
 After=multi-user.target
 Wants=systemd-modules-load.service
 StartLimitIntervalSec=0
