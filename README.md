@@ -1,8 +1,8 @@
 # AMD X3D V-Cache Technology Optimizer - v2.0.0
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Architecture: POSIX C](https://img.shields.io/badge/Architecture-POSIX%20C-orange.svg)](https://github.com/pyrotiger/x3d-toggle)
-[![Engine: eBPF](https://img.shields.io/badge/Engine-eBPF-green.svg)](https://github.com/pyrotiger/x3d-toggle)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/pyrotiger/x3d-toggle-main/LICENSE.md)
+[![Architecture: POSIX C](https://img.shields.io/badge/Architecture-POSIX%20C-orange.svg)](https://github.com/pyrotiger/x3d-toggle-main/ARCHITECTURE.md)
+[![Engine: eBPF](https://img.shields.io/badge/Engine-eBPF-green.svg)](https://github.com/pyrotiger/x3d-toggle-main/README.md)
 
 ## X3D Toggle - Community Edition
 
@@ -71,7 +71,7 @@ sudo pacman -U x3d-toggle-*.pkg.tar.zst
 For developers or those wanting to compile directly from the absolute latest commits dynamically. The `makepkg` command automatically builds the C binary and wraps it into a `pacman` installation for you:
 
 ```bash
-git clone https://github.com/pyrotiger/x3d-toggle.git
+git clone https://github.com/pyrotiger/x3d-toggle-main.git
 cd x3d-toggle
 makepkg -si
 ```
@@ -81,7 +81,7 @@ makepkg -si
 If you are running a non-Arch distro without `pacman` or `makepkg`:
 
 ```bash
-git clone https://github.com/pyrotiger/x3d-toggle.git
+git clone https://github.com/pyrotiger/x3d-toggle-main.git
 cd x3d-toggle
 make
 sudo make install
