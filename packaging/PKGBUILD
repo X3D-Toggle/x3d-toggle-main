@@ -4,7 +4,7 @@
 # Maintainer: Pyrotiger
 
 pkgbase=x3d-toggle-main
-pkgname=('x3d-toggle' 'x3d-toggle-webui')
+pkgname=('x3d-toggle')
 pkgver=2.0.0
 pkgrel=1
 arch=('x86_64')
@@ -33,8 +33,8 @@ package_x3d-toggle() {
     pkgdesc="AMD X3D V-Cache Technology Optimizer (POSIX C / eBPF Edition)"
     depends=('glibc' 'libbpf')
 
-    backup=('etc/x3d-toggle.d/x3d-settings.conf'
-            'etc/x3d-toggle.d/x3d-mygames.list')
+    backup=('etc/x3d-toggle.d/settings.conf'
+            'etc/x3d-toggle.d/games.conf')
 
     cd "${pkgbase}-${pkgver}" || return
     make DESTDIR="${pkgdir}" PREFIX="/usr" install
