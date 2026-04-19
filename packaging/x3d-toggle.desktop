@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=X3D Toggle
+Comment=AMD 3D V-Cache Optimizer Dashboard
+Exec=x3d-toggle owl
+Icon=x3d-toggle
+Terminal=false
+StartupNotify=true
+Type=Application
+Categories=System;Settings;
+Keywords=amd;x3d;vcache;cpu;performance;x3d-toggle;owl;monitor;
+X-KDE-SubstituteUID=false

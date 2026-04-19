@@ -1,0 +1,30 @@
+polkit.addRule(function(action, subject) {
+    if (subject.isInGroup("x3d-toggle")) {
+        
+        if (action.id == "org.freedesktop.policykit.exec") {
+            var program = action.lookup("program");
+            if (program == "/usr/bin/x3d-toggle" || program == "/usr/bin/x3d") {
+                return polkit.Result.YES;
+            }
+        }
+
+        if (action.id == "org.freedesktop.systemd1.manage-units") {
+            if (action.lookup("unit") == "x3d-toggle.service") {
+                return polkit.Result.YES;
+            }
+        }
+
+        if (action.id == "org.freedesktop.systemd1.manage-unit-files") {
+            var unit = action.lookup("unit");
+            var files = action.lookup("files");
+            if (unit == "x3d-toggle.service" || (files && files.indexOf("x3d-toggle.service") > -1)) {
+                return polkit.Result.YES;
+            }
+        }
+    }
+});
+
+/* Polkit rules for the X3D Toggle Project: `50-x3d_toggle-service.rules`
+ * Granting permissions to the 'x3d-toggle' group for 
+ * topology management and service control.
+ */

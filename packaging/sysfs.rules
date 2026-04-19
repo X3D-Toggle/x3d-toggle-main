@@ -1,0 +1,8 @@
+ACTION=="add|bind", SUBSYSTEM=="platform", DRIVER=="amd_x3d_vcache", RUN+="/usr/bin/systemd-tmpfiles --create /usr/lib/tmpfiles.d/x3d_toggle-tmpfiles.conf"
+
+## Udev rule for the X3D Toggle Project
+## `sysfs.rules` installs to `/usr/lib/udev/rules.d/99-x3d_toggle-sysfs.rules`
+## Dynamically re-applies group ownership and permissions to the amd_x3d_mode 
+## sysfs attributes whenever the amd_x3d_vcache driver is re-bound or probed,
+## ensuring seamless backend execution without breaking DAC isolation limits.
+## end of file

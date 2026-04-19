@@ -1,0 +1,43 @@
+#! /bin/bash
+# Archlinux PKGBUILD for the X3D Toggle Project
+# shellcheck disable=SC2034,SC2154
+# Maintainer: Pyrotiger
+
+pkgbase=x3d-toggle
+pkgname=('x3d-toggle' 'x3d-toggle-webui')
+pkgver=1.5.0
+pkgrel=1
+arch=('x86_64')
+url="https://github.com/pyrotiger/X3DToggleV2"
+license=('GPL3')
+makedepends=('clang' 'llvm' 'make' 'libbpf' 'bpftool')
+options=('!strip')
+
+source=("${pkgbase}-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
+sha256sums=('SKIP') # Update this after tagging the release
+
+build() {
+    cd "${pkgbase}-${pkgver}" || return
+
+    make
+
+    export CGO_CPPFLAGS="${CPPFLAGS}"
+    export CGO_CFLAGS="${CFLAGS}"
+    export CGO_CXXFLAGS="${CXXFLAGS}"
+    export CGO_LDFLAGS="${LDFLAGS}"
+    export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
+    
+}
+
+package_x3d-toggle() {
+    pkgdesc="AMD X3D V-Cache Technology Optimizer (POSIX C / eBPF Edition)"
+    depends=('glibc' 'libbpf')
+
+    backup=('etc/x3d-toggle.d/x3d-settings.conf'
+            'etc/x3d-toggle.d/x3d-mygames.list')
+
+    cd "${pkgbase}-${pkgver}" || return
+    make DESTDIR="${pkgdir}" PREFIX="/usr" install
+}
+
+# end of PKGBUILD

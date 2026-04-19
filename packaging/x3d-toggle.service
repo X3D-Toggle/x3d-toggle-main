@@ -1,0 +1,52 @@
+[Unit]
+Description=AMD x3D V-Cache Optimizer Daemon
+Documentation=https://github.com/pyrotiger/X3DToggleV1.5
+After=multi-user.target
+Wants=systemd-modules-load.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/x3d-daemon
+Restart=on-failure
+RestartSec=10
+MemoryAccounting=yes
+
+RuntimeDirectory=x3d-toggle
+RuntimeDirectoryMode=2770
+Group=x3d-toggle
+User=x3d-toggle
+LimitMEMLOCK=infinity
+LimitCore=infinity
+
+AmbientCapabilities=CAP_SYS_ADMIN CAP_PERFMON CAP_BPF CAP_SYS_NICE CAP_CHOWN CAP_DAC_OVERRIDE
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_PERFMON CAP_BPF CAP_SYS_NICE CAP_CHOWN CAP_DAC_OVERRIDE
+
+ProtectSystem=off
+ProtectHome=no
+PrivateTmp=no
+NoNewPrivileges=no
+ProtectKernelModules=no
+ProtectControlGroups=no
+ProtectKernelTunables=no
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictRealtime=no
+
+SystemCallArchitectures=native
+RestrictSUIDSGID=no
+
+ReadWritePaths=/sys/devices/system/cpu
+ReadWritePaths=/sys/fs/bpf
+ReadWritePaths=/sys/fs/cgroup
+ReadWritePaths=/sys/devices/platform
+ReadWritePaths=/sys/bus/platform/drivers/amd_x3d_vcache
+ReadWritePaths=/run/x3d-toggle
+
+ExecStopPost=/usr/bin/x3d-toggle journal-dump ; /usr/bin/x3d-toggle journal-archive
+
+[Install]
+WantedBy=multi-user.target
+
+## Daemon Permissions Elevation for the X3D Toggle Project: `x3d-toggle.service`
+## Elevation of permissions for the daemon backend providing passwordless environment
+## end of file
