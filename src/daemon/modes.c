@@ -15,6 +15,7 @@
 #include "libc.h"
 #include "ipc.h"
 #include "systemd.h"
+#include "scheduler.h"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -97,6 +98,45 @@ int cli_set_core(int core_id, int online) {
   return (n > 0) ? ERR_SUCCESS : ERR_IO;
 }
 
+/**
+ * x3d_mode_apply - Orchestrates hardware and OS state transitions
+ * @mode: The target partition (PART_DUAL, PART_CACHE, or PART_FREQ)
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+int cli_mode_apply(int mode) {
+    /* If running as non-root user (CLI standalone via udev permissions),
+     * we cannot change cgroups or kernel scheduling. Skip OS-level transitions.
+     */
+    if (geteuid() != 0) {
+        return 0;
+    }
+
+    /* 1. Hardware State Transition (CCD Affinity) 
+     * Applies the partition to the current process (pid 0) 
+     */
+    int aff_res = affinity_partition(0, mode);
+    if (aff_res != 0) {
+        journal_error(ERR_AFFINITY, aff_res);
+        return -1;
+    }
+
+    /* 2. OS Scheduler Optimization 
+     * We trigger SCHED_GAMING (3ms slices + BORE Shift 14) only when 
+     * the cache-focused CCD is prioritized. Otherwise, we restore Balanced.
+     */
+    sched_t target_sched = (mode == PART_CACHE) ? SCHED_GAMING : SCHED_BALANCED;
+    
+    if (scheduler_set(target_sched) != 0) {
+        /* We log a warning but don't fail the hardware transition, 
+         * as the system is still functional without the scheduler tweak.
+         */
+        journal_warn(ERR_HW);
+    }
+
+    return 0;
+}
+
 static int ccd_change(const char *mode) {
   int hw_res = ERR_SUCCESS;
   char display_mode[BUFF_DISPLAY];
@@ -126,10 +166,17 @@ static int ccd_change(const char *mode) {
 
   if (strcmp(mode, "dual") == 0) {
     hw_res = cli_set_dual();
+    cli_mode_apply(PART_DUAL);
   } else if (strcmp(mode, "swap") == 0) {
     hw_res = cli_set_swap();
+    cli_mode_apply(PART_FREQ);
   } else {
     hw_res = cli_set_mode(mode);
+    if (strcmp(mode, "cache") == 0) {
+      cli_mode_apply(PART_CACHE);
+    } else if (strcmp(mode, "frequency") == 0) {
+     cli_mode_apply(PART_FREQ);
+    }
   }
 
   if (hw_res != ERR_SUCCESS) {

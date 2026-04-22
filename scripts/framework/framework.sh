@@ -7,13 +7,18 @@
 
 _l_curr="$(cd "$(dirname "$0")" && pwd)"
 X3D_TOGGLE=""
-while [ "$_l_curr" != "/" ] && [ -n "$_l_curr" ]; do
-    if [ -f "$_l_curr/Makefile" ]; then
-        X3D_TOGGLE="$(readlink -f "$_l_curr")"
-        break
-    fi
-    _l_curr="$(dirname "$_l_curr")"
-done
+
+if [ "${_l_curr#"/usr/lib/x3d-toggle"}" != "$_l_curr" ]; then
+    X3D_TOGGLE="/usr/lib/x3d-toggle"
+else
+    while [ "$_l_curr" != "/" ] && [ -n "$_l_curr" ]; do
+        if [ -f "$_l_curr/Makefile" ]; then
+            X3D_TOGGLE="$(readlink -f "$_l_curr")"
+            break
+        fi
+        _l_curr="$(dirname "$_l_curr")"
+    done
+fi
 
 if [ -z "$X3D_TOGGLE" ]; then
     printf "    \033[31mError:\033[0m Could not resolve X3D_TOGGLE root (Makefile not found).\n"

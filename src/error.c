@@ -187,7 +187,7 @@ void journal_error(error_code code, ...) {
 
   journal_file("ERR", msg.summary, ctx);
 
-  if ((int)code <= -30) {
+  if ((int)code == ERR_CONF) {
     daemon_failsafe(-1);
   }
 }
@@ -267,7 +267,7 @@ void journal_log(error_code code, ...) {
   const char *level = ((int)code < 0) ? "ERR" : "INF";
   journal_file(level, msg.summary, ctx);
 
-  if ((int)code <= -30) {
+  if ((int)code == ERR_CONF) {
     daemon_failsafe(-1);
   }
 }

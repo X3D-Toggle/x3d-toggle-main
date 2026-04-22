@@ -2,7 +2,7 @@
  *
  * `modes.h` - Header only
  */
- 
+
 #ifndef MODES_H
 #define MODES_H
 
@@ -15,7 +15,7 @@ int cli_set_mode(const char *target);
 int cli_set_dual(void);
 int cli_set_swap(void);
 int cli_set_core(int core_id, int online);
-
+int cli_mode_apply(int mode);
 int cli_mode_cache(int argc, char *argv[]);
 int cli_mode_frequency(int argc, char *argv[]);
 int cli_mode_dual(int argc, char *argv[]);

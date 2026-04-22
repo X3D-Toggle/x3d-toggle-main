@@ -86,6 +86,7 @@ SRCS_CORE       = $(DIR_BUILD)/xui.c \
                   $(SRC_DAEMON)/diag.c \
                   $(SRC)/affinity.c \
                   $(SRC)/stress.c \
+                  $(SRC)/scheduler.c \
                   $(SRC_DAEMON)/daemon.c
 
 SRCS_CLI        = $(SRC)/toggle.c \

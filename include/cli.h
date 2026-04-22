@@ -73,5 +73,7 @@ int cli_cppc_prefcore(int argc, char *argv[]);
 int cli_stress_cpu(int argc, char *argv[]);
 int cli_misc_insults(int argc, char *argv[]);
 int cli_misc_fallback(int argc, char *argv[]);
+int cli_scheduler_gaming(int argc, char *argv[]);
+int cli_scheduler_balanced(int argc, char *argv[]);
 
-#endif // CLI_H
+#endif // CLI.H

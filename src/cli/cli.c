@@ -132,6 +132,8 @@ const Command cmd_table[] = {
     {"insults", cli_misc_insults,
      "The Great Book of Insults: View all funny failure messages"},
     {"bible", cli_misc_insults, "Alias for insults"},
+    {"sched-gaming", cli_scheduler_gaming, "Scheduler: Tighten CFS to 3ms + BORE Shift 14"},
+    {"sched-balanced", cli_scheduler_balanced, "Scheduler: Restore 5ms CFS + BORE Shift 12"},
 
     {NULL, NULL, NULL}};
 
