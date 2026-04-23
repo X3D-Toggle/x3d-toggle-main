@@ -37,16 +37,26 @@ fi
 . "$CONF_FILE"
 
 set_config() {
-    local key="$1"
-    local val="$2"
+    _key="$1"
+    _val="$2"
     _temp_file="${CONF_FILE}.tmp"
+    _found=0
     while IFS= read -r _l_line || [ -n "$_l_line" ]; do
         case "$_l_line" in
-            "${key}="*) echo "${key}=${val}" ;;
+            "${_key}="*) 
+                echo "${_key}=${_val}"
+                _found=1
+                ;;
             *) echo "$_l_line" ;;
         esac
     done < "$CONF_FILE" > "$_temp_file"
-    mv -f "$_temp_file" "$CONF_FILE"
+    if [ "$_found" -eq 0 ]; then
+        echo "${_key}=${_val}" >> "$_temp_file"
+    fi
+    if ! mv -f "$_temp_file" "$CONF_FILE"; then
+        x3d-toggle gui-log "setup.sh failed to write configuration key: $_key" 2>/dev/null || true
+        printf_step "❌ Error: Failed to write to $CONF_FILE"
+    fi
 }
 
 printf_br
@@ -57,8 +67,8 @@ printf_step "Target Configuration: $CONF_FILE"
 printf_br
 
 printf_step "[1] Workload Detection Engine"
-printf_step "    eBPF is highly recommended for zero-overhead kernel-level scheduling."
-printf_step "    Procfs polling is a fallback for incompatible kernels."
+printf_step "2,eBPF is highly recommended for zero-overhead kernel-level scheduling."
+printf_step "2,Procfs polling is a fallback for incompatible kernels."
 printf_step_no_nl "❓ Enable eBPF Scheduler? (Highly Recommended) [Y/n] "
 read -r opt_ebpf
 case "$opt_ebpf" in
@@ -68,8 +78,8 @@ esac
 printf_br
 
 printf_step "[2] Detection Level"
-printf_step "    Strict (1): Only respects explicit gamemode/steam launches."
-printf_step "    Loose  (2): Aggressively scans high-load .desktop apps."
+printf_step "2,Strict (1): Only respects explicit gamemode/steam launches."
+printf_step "2,Loose  (2): Aggressively scans high-load .desktop apps."
 printf_step_no_nl "❓ Set detection level [1/2] (Default: 2): "
 read -r opt_detect
 case "$opt_detect" in
@@ -79,30 +89,30 @@ esac
 printf_br
 
 printf_step "[3] Performance Thresholds"
-printf_step "    Polling Interval (1-10s): How often the daemon checks activity."
+printf_step "2,Polling Interval (1-10s): How often the daemon checks activity."
 printf_step_no_nl "❓ Set Polling Interval [Default: 3]: "
 read -r opt_poll
-[ -z "$opt_poll" ] && opt_poll="${POLLING_INTERVAL}"
+[ -z "$opt_poll" ] && opt_poll="${POLLING_INTERVAL:-3}"
 set_config "POLLING_INTERVAL" "$opt_poll"
 
-printf_step "    Load Threshold (10-90%): Total CPU usage required to trigger throughput mode."
+printf_step "2,Load Threshold (10-90%): Total CPU usage required to trigger throughput mode."
 printf_step_no_nl "❓ Set Compute Load Threshold [Default: 50]: "
 read -r opt_load
-[ -z "$opt_load" ] && opt_load="${LOAD_THRESHOLD}"
+[ -z "$opt_load" ] && opt_load="${LOAD_THRESHOLD:-50}"
 set_config "LOAD_THRESHOLD" "$opt_load"
 printf_br
 
 printf_step "[4] Core Affinity Management"
-printf_step "    Auto   (0): Sysfs caching only. OS handles thread priority."
-printf_step "    By Die (1): Strictly maps detected games to the 3D V-Cache CCD."
-printf_step "    Manual (2): Uses custom defined affinity mask."
+printf_step "2,Auto   (0): Sysfs caching only. OS handles thread priority."
+printf_step "2,By Die (1): Strictly maps detected games to the 3D V-Cache CCD."
+printf_step "2,Manual (2): Uses custom defined affinity mask."
 printf_step_no_nl "❓ Set Affinity Mode [0/1/2] (Default: 0): "
 read -r opt_affinity
 case "$opt_affinity" in
     1) set_config "AFFINITY_LEVEL" "1" ;;
     2) 
        set_config "AFFINITY_LEVEL" "2" 
-       printf_step_no_nl "   ❓ Enter Manual Affinity Mask (e.g., 0-7,16-23): "
+       printf_step_no_nl "2,❓ Enter Manual Affinity Mask (e.g., 0-7,16-23): "
        read -r opt_mask
        set_config "AFFINITY_MASK" "$opt_mask"
        ;;
@@ -111,8 +121,8 @@ esac
 printf_br
 
 printf_step "[5] Fallback Hardware Profile"
-printf_step "    The hardware profile to apply when no games/load are detected."
-printf_step "    Options: cache, frequency, default"
+printf_step "2,The hardware profile to apply when no games/load are detected."
+printf_step "2,Options: cache, frequency, default"
 printf_step_no_nl "❓ Set Fallback Profile [Default: default]: "
 read -r opt_fallback
 case "$opt_fallback" in
@@ -156,7 +166,7 @@ fi
 
 if [ -n "$ACTUAL_USER" ] && [ "$ACTUAL_USER" != "root" ]; then
     printf_step "[8] Graphical Dashboard (Optional)"
-    printf_step "    A native GTK4 dashboard is available for graphical management."
+    printf_step "2,A native GTK4 dashboard is available for graphical management."
     printf_step_no_nl "❓ Install the GTK4 GUI? [y/N] "
     read -r opt_gui
     case "$opt_gui" in
@@ -172,23 +182,14 @@ if [ -n "$ACTUAL_USER" ] && [ "$ACTUAL_USER" != "root" ]; then
     esac
     printf_br
 
-    printf_step "[9] User Identity & System Synchronization"
-    
-    printf_step "    Syncing system identity and hardware permissions..."
-    # Strict execution: Must succeed to guarantee hardware access
-    systemd-sysusers
-    systemd-tmpfiles --create "/usr/lib/tmpfiles.d/x3d_toggle-tmpfiles.conf"
-    udevadm control --reload-rules
-    udevadm trigger
-    systemctl daemon-reload
-
+    printf_step "[9] User Group Configuration"
     _l_groups="$(id -nG "$ACTUAL_USER")"
     case " $_l_groups " in
         *" x3d-toggle "*) 
             printf_step "✔️ User '$ACTUAL_USER' is already a member of the 'x3d-toggle' group."
             ;;
         *)
-            printf_step "    The 'x3d-toggle' group is required for CLI interaction without sudo."
+            printf_step "2,The 'x3d-toggle' group is required for CLI interaction without sudo."
             printf_step_no_nl "❓ Add user '$ACTUAL_USER' to the group now? [Y/n] "
             read -r opt_group
             case "$opt_group" in
@@ -200,12 +201,20 @@ if [ -n "$ACTUAL_USER" ] && [ "$ACTUAL_USER" != "root" ]; then
             esac
             ;;
     esac
-    printf_step "✔️ System synchronized."
     printf_br
 fi
 
-printf_step "[9] Systemd Daemon Activation"
-printf_step "    Enabling the daemon allows autonomous workload detection in the background."
+printf_step "[10] System Synchronization & Daemon Activation"
+printf_step "2,Syncing system identity and hardware permissions..."
+# Strict execution: Must succeed to guarantee hardware access
+systemd-sysusers
+systemd-tmpfiles --create "/usr/lib/tmpfiles.d/x3d_toggle-tmpfiles.conf"
+udevadm control --reload-rules
+udevadm trigger
+systemctl daemon-reload
+printf_step "✔️ System synchronized."
+
+printf_step "2,Enabling the daemon allows autonomous workload detection in the background."
 printf_step_no_nl "❓ Enable and start x3d-toggle.service now? [Y/n] "
 read -r opt_daemon
 case "$opt_daemon" in
