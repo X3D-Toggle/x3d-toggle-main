@@ -147,7 +147,7 @@ if [ -d "$DESKTOP_DIR" ] && [ -f "/usr/share/applications/x3d-toggle.desktop" ];
         [Yy]*)
             cp "/usr/share/applications/x3d-toggle.desktop" "$DESKTOP_DIR/"
             chown "$ACTUAL_USER":"$ACTUAL_USER" "$DESKTOP_DIR/x3d-toggle.desktop"
-            chmod 700 "$DESKTOP_DIR/x3d-toggle.desktop"
+            chmod 644 "$DESKTOP_DIR/x3d-toggle.desktop"
             printf_step "✔️ Desktop icon created."
             ;;
     esac

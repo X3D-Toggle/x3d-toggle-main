@@ -17,6 +17,7 @@ config.h
 x3d-daemon
 x3d-run
 x3d-toggle
+x3d-gui
 x3d
 
 *.log

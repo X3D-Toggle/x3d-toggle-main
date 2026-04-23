@@ -46,12 +46,10 @@ int cppc_perf(int val) {
   for (int i = 0; i < 128; i++) {
     char path[256];
     printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/acpi_cppc/desired_perf", i);
-    if (access(path, W_OK) == 0) {
-      int fd = open(path, O_WRONLY);
-      if (fd >= 0) {
-        if (write(fd, val_str, strlen(val_str)) < 0) ret = ERR_IO;
-        close(fd);
-      }
+    int fd = open(path, O_WRONLY);
+    if (fd >= 0) {
+      if (write(fd, val_str, strlen(val_str)) < 0) ret = ERR_IO;
+      close(fd);
     }
   }
   return ret;
@@ -62,12 +60,10 @@ int cppc_epp(const char *val) {
   for (int i = 0; i < 128; i++) {
     char path[256];
     printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/energy_performance_preference", i);
-    if (access(path, W_OK) == 0) {
-      int fd = open(path, O_WRONLY);
-      if (fd >= 0) {
-        if (write(fd, val, strlen(val)) < 0) ret = ERR_IO;
-        close(fd);
-      }
+    int fd = open(path, O_WRONLY);
+    if (fd >= 0) {
+      if (write(fd, val, strlen(val)) < 0) ret = ERR_IO;
+      close(fd);
     }
   }
   return ret;
@@ -80,12 +76,10 @@ int cppc_ccd(int ccd, const char *val) {
   for (int i = start; i < end; i++) {
     char path[256];
     printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/energy_performance_preference", i);
-    if (access(path, W_OK) == 0) {
-      int fd = open(path, O_WRONLY);
-      if (fd >= 0) {
-        if (write(fd, val, strlen(val)) < 0) ret = ERR_IO;
-        close(fd);
-      }
+    int fd = open(path, O_WRONLY);
+    if (fd >= 0) {
+      if (write(fd, val, strlen(val)) < 0) ret = ERR_IO;
+      close(fd);
     }
   }
   return ret;
@@ -104,12 +98,10 @@ int cppc_governor(const char *val) {
   for (int i = 0; i < 128; i++) {
     char path[256];
     printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor", i);
-    if (access(path, W_OK) == 0) {
-      int fd = open(path, O_WRONLY);
-      if (fd >= 0) {
-        if (write(fd, val, strlen(val)) < 0) ret = ERR_IO;
-        close(fd);
-      }
+    int fd = open(path, O_WRONLY);
+    if (fd >= 0) {
+      if (write(fd, val, strlen(val)) < 0) ret = ERR_IO;
+      close(fd);
     }
   }
   return ret;
