@@ -9,22 +9,17 @@ if ! command -v pkg-config >/dev/null 2>&1 || ! pkg-config --exists gtk4 libadwa
 fi
 
 printf "    ⚙️ Compiling GTK4 GResource manifest...\n"
-glib-compile-resources --sourcedir=src/gtk4 \
+if ! glib-compile-resources --sourcedir=src/gtk4 \
     --generate-source --target=src/gtk4/x3d-gui-resources.c \
-    src/gtk4/x3d-toggle-gui.gresource.xml
-
-if [ $? -ne 0 ]; then
+    src/gtk4/x3d-toggle-gui.gresource.xml; then
     printf "    ❌ Failed to compile GResources.\n"
     return 1
 fi
 
 printf "    ⚙️ Compiling x3d-gui binary...\n"
-CFLAGS="$(pkg-config --cflags gtk4 libadwaita-1) -Wall -O2"
-LIBS="$(pkg-config --libs gtk4 libadwaita-1)"
-
-clang $CFLAGS src/gtk4/gui.c src/gtk4/x3d-gui-resources.c -o x3d-gui $LIBS
-
-if [ $? -ne 0 ]; then
+if ! clang $(pkg-config --cflags gtk4 libadwaita-1) -Wall -O2 \
+    src/gtk4/gui.c src/gtk4/x3d-gui-resources.c -o x3d-gui \
+    $(pkg-config --libs gtk4 libadwaita-1); then
     printf "    ❌ Compilation failed.\n"
     rm -f src/gtk4/x3d-gui-resources.c
     return 1
