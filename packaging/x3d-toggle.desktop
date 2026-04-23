@@ -2,7 +2,7 @@
 Name=X3D Toggle
 Comment=AMD 3D V-Cache Optimizer Dashboard
 Exec=x3d-toggle owl
-Icon=x3d-toggle
+Icon=x3d-toggle.svg
 Terminal=false
 StartupNotify=true
 Type=Application

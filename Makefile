@@ -126,6 +126,7 @@ DEST_POLKIT     = $(DESTDIR)$(SYS_POLKIT)
 DEST_SYSUSERS   = $(DESTDIR)$(SYS_SYSUSERS)
 DEST_TMPFILES   = $(DESTDIR)$(SYS_TMPFILES)
 DEST_APPS       = $(DESTDIR)$(USR_APPS)
+DEST_PIXMAPS    = $(DESTDIR)$(USR_PIXMAPS)
 
 SRCS_WRAPPER    = $(SRC)/run.c $(SRC)/status.c $(SRCS_CORE)
 
@@ -219,6 +220,9 @@ install: build
 	install -dm755 $(DEST_APPS)
 	install -m644 packaging/x3d-toggle.desktop $(DEST_APPS)/x3d-toggle.desktop
 
+	install -dm755 $(DEST_PIXMAPS)
+	install -m644 assets/x3d-toggle.svg $(DEST_PIXMAPS)/x3d-toggle.svg
+
 	-chown :x3d-toggle $(DEST_LOGS)
 	-chown :x3d-toggle $(DEST_AUDITS)
 	chmod 775 $(DEST_LOGS)
@@ -250,6 +254,7 @@ uninstall:
 	rm -f $(DEST_BIN)/x3d-run
 	rm -f $(DEST_BIN)/x3d
 	rm -f $(DEST_APPS)/x3d-toggle.desktop
+	rm -f $(DEST_PIXMAPS)/x3d-toggle.svg
 	rm -f $(DEST_SYSUSERS)/x3d_toggle-sysusers.conf
 	rm -f $(DEST_TMPFILES)/x3d_toggle-tmpfiles.conf
 	rm -f $(DEST_SYSTEMD)/x3d-toggle.service
