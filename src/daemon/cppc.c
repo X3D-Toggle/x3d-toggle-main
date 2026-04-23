@@ -13,6 +13,7 @@
 #include "../build/ccd.h"
 
 #define _POSIX_C_SOURCE 202405L
+#define MAX_CPU_COUNT 128
 
 extern char **environ;
 
@@ -28,6 +29,7 @@ int cppc_boost(int enable) {
 int cppc_tdp(int watts) {
   journal_debug("Core: Requesting TDP limit adjustment to %d Watts", watts);
   int pid = fork();
+  if (pid < 0) return ERR_IO;
   if (pid == 0) {
     char wbuf[16];
     printf_sn(wbuf, sizeof(wbuf), "%d", watts);
@@ -43,7 +45,7 @@ int cppc_perf(int val) {
   printf_sn(val_str, sizeof(val_str), "%d", val);
   int ret = ERR_SUCCESS;
 
-  for (int i = 0; i < 128; i++) {
+  for (int i = 0; i < MAX_CPU_COUNT; i++) {
     char path[256];
     printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/acpi_cppc/desired_perf", i);
     int fd = open(path, O_WRONLY);
@@ -57,7 +59,7 @@ int cppc_perf(int val) {
 
 int cppc_epp(const char *val) {
   int ret = ERR_SUCCESS;
-  for (int i = 0; i < 128; i++) {
+  for (int i = 0; i < MAX_CPU_COUNT; i++) {
     char path[256];
     printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/energy_performance_preference", i);
     int fd = open(path, O_WRONLY);
@@ -95,7 +97,7 @@ int cppc_pstate(const char *val) {
 
 int cppc_governor(const char *val) {
   int ret = ERR_SUCCESS;
-  for (int i = 0; i < 128; i++) {
+  for (int i = 0; i < MAX_CPU_COUNT; i++) {
     char path[256];
     printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor", i);
     int fd = open(path, O_WRONLY);
@@ -128,7 +130,6 @@ int cppc_restore(void) {
     waitpid(pid, &status, 0);
     return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS : ERR_IO;
   }
-  return ERR_SUCCESS;
 }
 
 static int cppc_cmd(const char *cmd_string, error_code success_code, const char *arg) {
@@ -184,8 +185,9 @@ int cli_cppc_raw(int argc, char *argv[]) {
 
     char payload[128];
     char arg_buf[128];
+    int raw_value = atoi(argv[2]);
     printf_sn(payload, sizeof(payload), "SET_RAW %s %s", argv[3], argv[2]);
-    printf_sn(arg_buf, sizeof(arg_buf), "0x%x applied to %s", atoi(argv[2]), argv[3]);
+    printf_sn(arg_buf, sizeof(arg_buf), "0x%x applied to %s", (unsigned int)raw_value, argv[3]);
     
     return cppc_cmd(payload, SET_EPP, arg_buf);
 }
