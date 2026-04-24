@@ -11,6 +11,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef GUI_BUILD
+#include <errno.h>
+#endif
+
 typedef long long ssize_t;
 typedef int pid_t;
 typedef unsigned int uid_t;
@@ -24,16 +28,22 @@ typedef unsigned long sigset_t;
 #define NULL ((void*)0)
 #endif
 
+#ifndef GUI_BUILD
+#ifndef errno
+extern int errno;
+#endif
+
+#define ENOENT   2
+#define EAGAIN  11
+#define EACCES  13
+#endif
+
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
 #define FILENO_STDIN  0
 #define FILENO_STDOUT 1
 #define FILENO_STDERR 2
-
-#define ENOENT   2
-#define EAGAIN  11
-#define EACCES  13
 
 #define PART_DUAL  0
 #define PART_CACHE 1
@@ -200,7 +210,5 @@ void openlog(const char *ident, int option, int facility);
 void syslog(int priority, const char *format, ...);
 void closelog(void);
 char *strerror(int err);
-
-extern int errno;
 
 #endif // LIBC_H

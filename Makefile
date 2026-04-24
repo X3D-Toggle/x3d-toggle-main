@@ -136,19 +136,8 @@ all: build
 
 $(TARGET_FRAMEWORK): framework
 framework:
-	X3D_FRAMEWORK=1 X3D_EXEC=1 sh ./scripts/framework/framework.sh --gen-all
+	X3D_FRAMEWORK=1 X3D_EXEC=1 sh ./scripts/framework/framework.sh --sync
 	touch $(TARGET_FRAMEWORK)
-
-	@echo ""
-	@echo "==========================================================="
-	@if [ -z "$(DESTDIR)" ]; then \
-		echo "Local install detected. Run 'sudo make setup' to configure."; \
-	else \
-		echo "Packager install detected. User must configure via setup"; \
-		echo "script post-install."; \
-	fi
-	@echo "==========================================================="
-	@echo ""
 
 $(TARGET_UI) $(TARGET_CCD) $(TARGET_CONFIG): $(TARGET_FRAMEWORK)
 build: $(TARGET_CLI) $(TARGET_DAEMON) $(TARGET_WRAPPER)
@@ -229,10 +218,11 @@ install: build
 	chmod 775 $(DEST_AUDITS)
 
 	-udevadm control --reload-rules && udevadm trigger
+	-systemd-sysusers
+	-systemd-tmpfiles --create
 	-systemctl daemon-reload
 
 setup:
-	@if [ "$$(id -u)" -ne 0 ]; then echo "    ❌ Error: Run with sudo make setup"; exit 1; fi
 	./setup.sh
 
 clean:
@@ -240,7 +230,7 @@ clean:
 
 uninstall:
 	-systemctl stop x3d-toggle.service
-	-killall -9 x3d-daemon
+	-killall -q -9 x3d-daemon
 
 	rm -f $(DEST_RUN)/x3d-toggle.ipc
 	rm -f $(DEST_RUN)/x3d-toggle.pid
@@ -274,7 +264,13 @@ uninstall:
 
 	-udevadm control --reload-rules && udevadm trigger
 	-systemctl daemon-reload
+	-pkill -u x3d-toggle
+	-userdel -f x3d-toggle
+	-groupdel x3d-toggle
 
 purge: clean uninstall
+
+deploy:
+	./deploy.sh
 
 ## end of MAKEFILE

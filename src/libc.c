@@ -9,6 +9,8 @@
 
 #include "libc.h"
 
+#ifndef GUI_BUILD
+
 int errno = 0;
 char **environ;
 
@@ -381,6 +383,8 @@ double atof(const char *p) { double res = 0.0, frac = 1.0; int neg = 0, state = 
 int toupper(int c) { if (c >= 'a' && c <= 'z') return c - ('a' - 'A'); return c; }
 
 unsigned long long strtoull(const char *p, char **e, int b) { unsigned long long r = 0; while (*p == ' ' || *p == '\t') p++; while (*p) { int v = 0; if (*p >= '0' && *p <= '9') v = *p - '0'; else if (*p >= 'a' && *p <= 'f') v = *p - 'a' + 10; else if (*p >= 'A' && *p <= 'F') v = *p - 'A' + 10; else break; if (v >= b) break; r = r * b + v; p++; } if (e) *e = (char *)p; return r; }
+
+#endif 
 
 size_t strlcat_local(char *dst, const char *src, size_t size) {
   size_t dlen = strlen(dst);

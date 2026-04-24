@@ -39,6 +39,7 @@ export QUERY="❓"
 export GEAR="⚙️"
 export RELOAD="🔄"
 export REFRESH="🔃"
+export INFO="🌐"
 
 export COLOR_RESET="\033[0m"
 export COLOR_RED="\033[31m"
@@ -48,6 +49,22 @@ export COLOR_BLUE="\033[34m"
 export COLOR_CYAN="\033[36m"
 export COLOR_BOLD="\033[1m"
 export COLOR_DIM="\033[2m"
+export COLOR_PURPLE="\033[35m"
+
+export ARROW_UP="⬆ UP"
+export ARROW_DOWN="⬇ DOWN"
+export ARROW_RIGHT="➡ RIGHT"
+export ARROW_LEFT="⬅ LEFT"
+
+export SEQ_UP=$(printf "\033[A")
+export SEQ_DOWN=$(printf "\033[B")
+export SEQ_RIGHT=$(printf "\033[C")
+export SEQ_LEFT=$(printf "\033[D")
+
+export UP="${COLOR_GREEN}${ARROW_UP}${COLOR_RESET}"
+export DOWN="${COLOR_YELLOW}${ARROW_DOWN}${COLOR_RESET}"
+export RIGHT="${COLOR_CYAN}${ARROW_RIGHT}${COLOR_RESET}"
+export LEFT="${COLOR_PURPLE}${ARROW_LEFT}${COLOR_RESET}"
 
 export HTML_RESET="</font>"
 export HTML_RED="<font color=\"#FF0000\">"
@@ -133,8 +150,21 @@ printf_step() {
             "?"*|"❓"*) _l_prefix="${_l_prefix}    " ;;
         esac
 
-        printf "%s\n" "$_l_content" | while IFS= read -r _l_line || [ -n "$_l_line" ]; do
-            printf "%b%b\n" "$_l_prefix" "$_l_line"
+        _l_expanded=$(printf "%b" "$_l_content")
+        _l_newline="
+"
+        while [ -n "$_l_expanded" ]; do
+            case "$_l_expanded" in
+                *"$_l_newline"*)
+                    _l_line="${_l_expanded%%$_l_newline*}"
+                    _l_expanded="${_l_expanded#*$_l_newline}"
+                    ;;
+                *)
+                    _l_line="$_l_expanded"
+                    _l_expanded=""
+                    ;;
+            esac
+            printf "%b%s\n" "$_l_prefix" "$_l_line"
         done
     done
 }
@@ -157,8 +187,24 @@ printf_step_no_nl() {
             "?"*|"❓"*) _l_prefix="${_l_prefix}    " ;;
         esac
 
-        printf "%s\n" "$_l_content" | while IFS= read -r _l_line || [ -n "$_l_line" ]; do
-            printf "%b%b" "$_l_prefix" "$_l_line"
+        # Atomic expansion of tokens and escapes
+        _l_expanded=$(printf "%b" "$_l_content")
+        _l_newline="
+"
+        # Process each line of the expanded content using native shell matching
+        while [ -n "$_l_expanded" ]; do
+            case "$_l_expanded" in
+                *"$_l_newline"*)
+                    _l_line="${_l_expanded%%$_l_newline*}"
+                    _l_expanded="${_l_expanded#*$_l_newline}"
+                    printf "%b%s\n" "$_l_prefix" "$_l_line"
+                    ;;
+                *)
+                    _l_line="$_l_expanded"
+                    _l_expanded=""
+                    printf "%b%s" "$_l_prefix" "$_l_line"
+                    ;;
+            esac
         done
     done
 }
@@ -199,7 +245,7 @@ printf_center() {
         _l_len=${#_l_str}
         
         case "$_l_str" in 
-            *"$ALRIGHT"*|*"$XOUT"*|*"$WARN"*|*"$NOTICE"*|*"$WIPE"*|*"$ROCKET"*|*"$SPARKLE"*|*"$LLAP"*|*"$CACHED"*|*"$FREQU"*|*"$CACHELIZ"*|*"$CACHEBEAR"*|*"$QUERY"*|*"$TOPSWAP"*|*"$PINNED"*|*"$HUT"*|*"$SLEEPY"*|*"$STOPSIGN"*|*"$SCHED"*|*"$BOOST"*|*"$CCD0"*|*"$CCD1"*|*"$DRIVER"*|*"$EPP"*|*"$GOV"*|*"$SMT"*|*"$PLAT"*|*"$CHICKEN"*|*"$MANUAL"*|*"$DUALIZE"*|*"$WIZARD"*|*"$WAND"*)
+            *"$ALRIGHT"*|*"$XOUT"*|*"$WARN"*|*"$NOTICE"*|*"$WIPE"*|*"$ROCKET"*|*"$SPARKLE"*|*"$LLAP"*|*"$CACHED"*|*"$FREQU"*|*"$CACHELIZ"*|*"$CACHEBEAR"*|*"$QUERY"*|*"$TOPSWAP"*|*"$PINNED"*|*"$HUT"*|*"$SLEEPY"*|*"$STOPSIGN"*|*"$SCHED"*|*"$BOOST"*|*"$CCD0"*|*"$CCD1"*|*"$DRIVER"*|*"$EPP"*|*"$GOV"*|*"$SMT"*|*"$PLAT"*|*"$CHICKEN"*|*"$MANUAL"*|*"$DUALIZE"*|*"$WIZARD"*|*"$WAND"*|*"$INFO"*|*"$UP"*|*"$DOWN"*|*"$LEFT"*|*"$RIGHT"*)
                 _l_len=$((_l_len + 1)) ;;
         esac
         
@@ -463,11 +509,24 @@ int printf_vsn(char *buf, size_t size, const char *fmt, __builtin_va_list args) 
         if (*p == 's') {
             const char *arg_s = __builtin_va_arg(args, const char *);
             if (!arg_s) arg_s = \"(null)\";
+            
             int slen = 0;
-            while (arg_s[slen]) slen++;
-            if (!left) { while (width > slen && i < size - 1) { buf[i++] = ' '; width--; } }
+            int vlen = 0;
+            int in_escape = 0;
+            
+            while (arg_s[slen]) {
+                if (arg_s[slen] == '\\x1b') in_escape = 1;
+                else if (in_escape) { if (arg_s[slen] == 'm') in_escape = 0; }
+                else {
+                    unsigned char c = (unsigned char)arg_s[slen];
+                    if ((c & 0xC0) != 0x80) vlen++; // Ignore UTF-8 continuation bytes
+                }
+                slen++;
+            }
+            
+            if (!left) { while (width > vlen && i < size - 1) { buf[i++] = ' '; width--; } }
             for (int k = 0; k < slen && i < size - 1; k++) buf[i++] = arg_s[k];
-            if (left) { while (width > slen && i < size - 1) { buf[i++] = ' '; width--; } }
+            if (left) { while (width > vlen && i < size - 1) { buf[i++] = ' '; width--; } }
         } else if (*p == 'd') {
             char t[32];
             int n = __builtin_va_arg(args, int);

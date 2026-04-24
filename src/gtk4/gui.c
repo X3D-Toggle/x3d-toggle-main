@@ -4,16 +4,16 @@
  * `action_x3dtoggle_X` button -> executes `x3d-toggle X`
  */
 
-#include <gtk/gtk.h>
 #include <adwaita.h>
+#include <gtk/gtk.h>
 
 extern int socket_send(const char *cmd, char *response, size_t resp_len);
 extern size_t scat(char *dest, const char *src, size_t dest_size);
 extern int printf_sn(char *buf, size_t size, const char *fmt, ...);
 
-#define BUFF_LINE    256
-#define BUFF_INFO    128
-#define BUFF_STATE   16
+#define BUFF_LINE 256
+#define BUFF_INFO 128
+#define BUFF_STATE 16
 
 static GtkWidget *lbl_status_dump = NULL;
 
@@ -150,6 +150,13 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
 
   g_signal_connect(sidebar, "row-selected", G_CALLBACK(on_nav_row_selected),
                    stack);
+
+  /* Select Dashboard by default */
+  GtkListBoxRow *first_row = gtk_list_box_get_row_at_index(sidebar, 0);
+  if (first_row) {
+    gtk_list_box_select_row(sidebar, first_row);
+    on_nav_row_selected(sidebar, first_row, stack);
+  }
 
   /* Bind Actions automatically by ID (action_x3dtoggle_<cmd>) */
   const char *actions[] = {"cache",  "frequency", "dual",  "default",

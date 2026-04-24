@@ -12,10 +12,10 @@
 #include "../build/xui.h"
 #include "cli.h"
 #include "error.h" // IWYU pragma: keep
-#include "libc.h"
 #include "ipc.h"
-#include "systemd.h"
+#include "libc.h"
 #include "scheduler.h"
+#include "systemd.h"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -105,36 +105,36 @@ int cli_set_core(int core_id, int online) {
  * Returns: 0 on success, -1 on failure
  */
 int cli_mode_apply(int mode) {
-    /* If running as non-root user (CLI standalone via udev permissions),
-     * we cannot change cgroups or kernel scheduling. Skip OS-level transitions.
-     */
-    if (geteuid() != 0) {
-        return 0;
-    }
-
-    /* 1. Hardware State Transition (CCD Affinity) 
-     * Applies the partition to the current process (pid 0) 
-     */
-    int aff_res = affinity_partition(0, mode);
-    if (aff_res != 0) {
-        journal_error(ERR_AFFINITY, aff_res);
-        return -1;
-    }
-
-    /* 2. OS Scheduler Optimization 
-     * We trigger SCHED_GAMING (3ms slices + BORE Shift 14) only when 
-     * the cache-focused CCD is prioritized. Otherwise, we restore Balanced.
-     */
-    sched_t target_sched = (mode == PART_CACHE) ? SCHED_GAMING : SCHED_BALANCED;
-    
-    if (scheduler_set(target_sched) != 0) {
-        /* We log a warning but don't fail the hardware transition, 
-         * as the system is still functional without the scheduler tweak.
-         */
-        journal_warn(ERR_HW);
-    }
-
+  /* If running as non-root user (CLI standalone via udev permissions),
+   * we cannot change cgroups or kernel scheduling. Skip OS-level transitions.
+   */
+  if (geteuid() != 0) {
     return 0;
+  }
+
+  /* 1. Hardware State Transition (CCD Affinity)
+   * Applies the partition to the current process (pid 0)
+   */
+  int aff_res = affinity_partition(0, mode);
+  if (aff_res != 0) {
+    journal_error(ERR_AFFINITY, aff_res);
+    return -1;
+  }
+
+  /* 2. OS Scheduler Optimization
+   * We trigger SCHED_GAMING (3ms slices + BORE Shift 14) only when
+   * the cache-focused CCD is prioritized. Otherwise, we restore Balanced.
+   */
+  sched_t target_sched = (mode == PART_CACHE) ? SCHED_GAMING : SCHED_BALANCED;
+
+  if (scheduler_set(target_sched) != 0) {
+    /* We log a warning but don't fail the hardware transition,
+     * as the system is still functional without the scheduler tweak.
+     */
+    journal_warn(ERR_HW);
+  }
+
+  return 0;
 }
 
 static int ccd_change(const char *mode) {
@@ -175,7 +175,7 @@ static int ccd_change(const char *mode) {
     if (strcmp(mode, "cache") == 0) {
       cli_mode_apply(PART_CACHE);
     } else if (strcmp(mode, "frequency") == 0) {
-     cli_mode_apply(PART_FREQ);
+      cli_mode_apply(PART_FREQ);
     }
   }
 
@@ -186,12 +186,15 @@ static int ccd_change(const char *mode) {
 
   char path[256] = "unknown";
   mode_path(path, sizeof(path));
-  
+
   if (ipc_res != ERR_SUCCESS) {
-    printf_step("${ALRIGHT} ${COLOR_CYAN}%s${COLOR_RESET} %s applied via ${COLOR_CYAN}%s${COLOR_RESET} - ${COLOR_YELLOW}IPC socket offline",
-                display_mode, status_text, path);
+    printf_step(
+        "${ALRIGHT} ${COLOR_CYAN}%s${COLOR_RESET} %s applied via "
+        "${COLOR_CYAN}%s${COLOR_RESET} - ${COLOR_YELLOW}IPC socket offline",
+        display_mode, status_text, path);
   } else {
-    printf_step("${ALRIGHT} ${COLOR_CYAN}%s${COLOR_RESET} %s applied via ${COLOR_CYAN}%s",
+    printf_step("${ALRIGHT} ${COLOR_CYAN}%s${COLOR_RESET} %s applied via "
+                "${COLOR_CYAN}%s",
                 display_mode, status_text, path);
   }
 
@@ -225,26 +228,30 @@ int cli_mode_swap(int argc, char *argv[]) {
 int cli_mode_auto(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
-  printf_step("${RELOAD} Initiating HARD RESET: Restoring CPPC defaults and purging session...");
+  printf_step("${RELOAD} Initiating HARD RESET: Restoring CPPC defaults and "
+              "purging session...");
 
   system("X3D_EXEC=1 sh /usr/lib/x3d-toggle/scripts/tools/reset.sh");
 
   unit_disable();
   unit_stop();
 
-  printf_step("${ALRIGHT} ${COLOR_CYAN}CPPC NATIVE ${COLOR_RESET}control restored. Service disabled.");
+  printf_step("${ALRIGHT} ${COLOR_CYAN}CPPC NATIVE ${COLOR_RESET}control "
+              "restored. Service disabled.");
   return 0;
 }
 
 int cli_mode_reset(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
-  printf_step("${RELOAD} Initiating Hardware Re-probe: Restoring native heuristics...");
+  printf_step(
+      "${RELOAD} Initiating Hardware Re-probe: Restoring native heuristics...");
 
   int res = ccd_change("reset");
 
   if (unit_stop() == 0) {
-    printf_step("${PAUSE} Autonomous service ${COLOR_CYAN}STOPPED${COLOR_RESET}.");
+    printf_step(
+        "${PAUSE} Autonomous service ${COLOR_CYAN}STOPPED${COLOR_RESET}.");
   }
 
   return res;
@@ -253,7 +260,13 @@ int cli_mode_reset(int argc, char *argv[]) {
 int cli_mode_default(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
-  printf_step("${RELOAD} SOFT RESET: Restoring default daemon rules and throughput baseline...");
+  if (getenv("X3D_SETUP")) {
+    printf_step("2,${SPARKLE} Initializing with default config daemon rules and"
+               "2,baselines...");
+  } else {
+    printf_step("2,${RELOAD} SOFT RESET: Restoring default daemon rules and"
+                "2,throughput baseline...");
+  }
   config_update("DAEMON_STATE", "default");
   config_update("POLLING_INTERVAL", TOSTRING(CONFIG_POLLING_INTERVAL));
   config_update("LOAD_THRESHOLD", TOSTRING(CONFIG_LOAD_THRESHOLD));
@@ -265,9 +278,13 @@ int cli_mode_default(int argc, char *argv[]) {
   int r3 = socket_send("SET_MODE frequency", NULL, 0);
 
   if (r1 == 0 && r2 == 0 && r3 == 0) {
-    printf_step("${ALRIGHT} ${COLOR_CYAN}DEFAULT CONFIG${COLOR_RESET} restored. Orchestration active.");
+    if (getenv("X3D_SETUP")) {
+      printf_step("2,${ALRIGHT} DEFAULT CONFIG initialized. Daemon active.");
+    } else {
+      printf_step("${ALRIGHT} DEFAULT CONFIG restored. Daemon active.");
+    }
   } else {
-    printf_step("${WARN} ${COLOR_YELLOW}CONFIG UPDATED${COLOR_RESET} but Daemon is offline. Restart to apply.");
+    printf_step("${WARN} CONFIG UPDATED but daemon is offline. Restart to apply.");
   }
   return 0;
 }

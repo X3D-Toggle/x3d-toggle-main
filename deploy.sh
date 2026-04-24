@@ -1,10 +1,8 @@
 #!/bin/sh
-##
 ## `deploy.sh`
-##
 ## Local Developer Pipeline Wrapper.
 ## Executes a clean teardown, rebuild, install, and triggers setup.
-## Usage: sudo ./dev/tools/deploy.sh
+## Usage: sudo make deploy
 
 set -e
 
@@ -14,7 +12,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 export X3D_EXEC=1
-_l_dir_root="$(cd "$(dirname "$0")/../.." && pwd)"
+_l_dir_root="$(cd "$(dirname "$0")" && pwd)"
 
 if [ -f "$_l_dir_root/scripts/framework/framework.sh" ]; then
     . "$_l_dir_root/scripts/framework/framework.sh"
@@ -45,8 +43,8 @@ if [ -f "./setup.sh" ]; then
     ./setup.sh
 else
     printf_step "⚠️ Notice: setup.sh not found in root, skipping interactive config."
+    printf_divider
 fi
 
-printf_divider
 printf_center "✨ Developer Deployment Complete ✨"
 printf_br

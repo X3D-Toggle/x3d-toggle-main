@@ -3,6 +3,7 @@
 ## Atomically removes the X3D Toggle suite, gracefully stops daemons, and explicitly
 ## releases the AMD PMF hardware locks to restore native CPPC heuristics.
 ## Intended for developer teardown and deep-cleaning.
+## Usage: sudo ./uninstall.sh
 
 set -e
 
@@ -33,6 +34,7 @@ if systemctl is-active --quiet x3d-toggle.service; then
 fi
 
 killall -9 x3d-daemon x3d-run 2>/dev/null || true
+pkill -u x3d-toggle 2>/dev/null || true
 
 printf_step "${UNLOCK} Releasing hardware lock (Restoring CPPC defaults)..."
 RESET_TOOL="/usr/lib/x3d-toggle/scripts/tools/reset.sh"
@@ -72,6 +74,9 @@ else
     rm -rf "$USR_LIBS"
     rm -rf "$USR_ASSETS"
     rm -f "$SYS_POLKIT/50-x3d_toggle-service.rules"
+    rm -f "$SYS_POLKIT/x3d-toggle.rules"
+    rm -f "$SYS_UDEV/99-x3d_toggle-sysfs.rules"
+    rm -f "$SYS_UDEV/99-x3d-toggle.rules"
     rm -f "$SYS_SYSTEMD/x3d-toggle.service"
 
     if [ -f "$_l_dir_root/Makefile" ]; then
@@ -85,6 +90,11 @@ fi
 printf_step "${WIPE} Performing Atomic Cleanup (wiping build artifacts)..."
 rm -rf "$_l_dir_root/bin"/* 2>/dev/null
 rm -rf "$_l_dir_root/build"/* 2>/dev/null
+
+if getent passwd x3d-toggle >/dev/null; then
+    printf_step "${WIPE} Removing x3d-toggle service user..."
+    userdel -f x3d-toggle
+fi
 
 if getent group x3d-toggle >/dev/null; then
     printf_step "${WIPE} Removing x3d-toggle system group..."
@@ -110,9 +120,9 @@ fi
 printf_br
 case "$WIPE_CONFIG" in
     [Yy]*)
-        if [ -d "/etc/x3d-toggle.d" ]; then
-            rm -rf /etc/x3d-toggle.d
-            printf_step "2,${TRASHCAN} User configuration removed: /etc/x3d-toggle.d"
+        if [ -d "$DIR_ETC" ]; then
+            rm -rf "$DIR_ETC"
+            printf_step "2,${TRASHCAN} User configuration removed: $DIR_ETC"
         else
             printf_step "2,${WARN} Configuration file not found, wrapping up."
         fi ;;

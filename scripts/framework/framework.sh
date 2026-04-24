@@ -21,10 +21,11 @@ else
 fi
 
 if [ -z "$X3D_TOGGLE" ]; then
-    printf "    \033[31mError:\033[0m Could not resolve X3D_TOGGLE root (Makefile not found).\n"
+    printf_step "2,${XOUT} Error: Could not resolve X3D_TOGGLE root (Makefile not found)."
     exit 1
 fi
 
+[ "$X3D_EXEC" = "1" ] && export X3D_EXEC
 export X3D_TOGGLE
 export DIR_SRC="$X3D_TOGGLE/src"
 
@@ -97,7 +98,7 @@ for _l_loc in $_XUI_LOCATIONS; do
 done
 
 if [ "$XUI_FOUND" -eq 0 ]; then
-    printf "    \033[31mError:\033[0m xui.sh not found. Rerun installer.\n"
+    printf_step "2,${XOUT} Error: xui.sh not found. Rerun installer."
     exit 1
 fi
 
@@ -133,9 +134,9 @@ hw_check() {
     case "$_l_CPU_MODEL" in
         *7900X3D*|*7950X3D*|*9900X3D*|*9950X3D*) : ;; # Valid
         *)
-            printf_center "2,${XOUT} HARDWARE COMPATIBILITY ERROR ${XOUT}" \
-                          "2,Error: Heterogeneous dual-CCD AMD X3D processor not detected." \
-                          "2,Detected: $_l_CPU_MODEL" \
+            printf_center "${XOUT} Hardware Incompatibility Detected ${XOUT}" \
+                          "2,${XOUT} Error: Heterogeneous dual-CCD AMD X3D processor not detected." \
+                          "2,This utility is specifically designed for the 7950X3D/7900X3D." \
                           "2,Exiting for hardware safety."
             exit 1
             ;;
@@ -378,14 +379,32 @@ conf_framework() {
     _l_name="$1"
     _l_script="$2"
     _l_target="$3"
-    shift; shift; shift
+    _l_deps="$4"
+    shift; shift; shift; shift
 
-    if [ -f "$_l_target" ]; then
-        printf_step "2,${GEAR} Updating $_l_name..."
+    _l_upd=0
+    if [ ! -f "$_l_target" ]; then
+        _l_upd=1
+    elif [ -n "$UPDATE" ]; then
+        _l_upd=1
+    elif [ "$_l_script" -nt "$_l_target" ]; then
+        _l_upd=1
     else
-        printf_step "2,${HAMMER} Generating $_l_name..."
+        for _l_d in $_l_deps; do
+            if [ -f "$_l_d" ] && [ "$_l_d" -nt "$_l_target" ]; then
+                _l_upd=1; break
+            fi
+        done
     fi
-    sh "$_l_script" "$@" "$UPDATE" "$VERIFY"
+
+    if [ "$_l_upd" -eq 1 ]; then
+        if [ -f "$_l_target" ]; then
+            printf_step "2,${GEAR} Updating $_l_name..."
+        else
+            printf_step "2,${HAMMER} Generating $_l_name..."
+        fi
+        X3D_EXEC=1 sh "$_l_script" "$@" "$UPDATE" "$VERIFY"
+    fi
 }
 
 if [ "$X3D_FRAMEWORK" = "1" ] && [ "$(basename -- "$0")" = "framework.sh" ]; then
@@ -399,8 +418,18 @@ if [ "$X3D_FRAMEWORK" = "1" ] && [ "$(basename -- "$0")" = "framework.sh" ]; the
     case "$1" in
         --sync)
             X3D_EXEC=1 X3D_FRAMEWORK=1 sh "$X3D_TOGGLE/scripts/framework/framework.sh" --gen-all
+            
+            printf_br
+            printf_divider
+            if [ -z "$DESTDIR" ]; then
+                printf_step "Local install detected. Run 'sudo make setup' to configure."
+            else
+                printf_step "Packager install detected. User must configure via setup script post-install."
+            fi
+            printf_divider
+            printf_br
+
             if [ -f "$X3D_TOGGLE/Makefile" ]; then
-                printf_br
                 if confirm "Development Root Detected: Rebuild X3D Toggle binary? [y/N]"; then
                     make build
                     journal_write 17
@@ -413,17 +442,17 @@ if [ "$X3D_FRAMEWORK" = "1" ] && [ "$(basename -- "$0")" = "framework.sh" ]; the
                 while [ "$#" -gt 0 ]; do
                     case "$1" in
                         --gen-xui)
-                            conf_framework "XUI Template" "$X3D_TOGGLE/scripts/framework/xui.sh" "$X3D_BUILD/xui.c" --gen-xui; shift ;;
+                            conf_framework "XUI Template" "$X3D_TOGGLE/scripts/framework/xui.sh" "$X3D_BUILD/xui.c" "" --gen-xui; shift ;;
                         --gen-ccd)
-                            conf_framework "CCD Bridge" "$X3D_TOGGLE/scripts/framework/ccd.sh" "$X3D_BUILD/ccd.c" --gen-ccd; shift ;;
+                            conf_framework "CCD Bridge" "$X3D_TOGGLE/scripts/framework/ccd.sh" "$X3D_BUILD/ccd.c" "/proc/cpuinfo" --gen-ccd; shift ;;
                         --gen-ebpf|--gen-scheduler)
-                            conf_framework "eBPF Object Constructor" "$X3D_TOGGLE/scripts/framework/ebpftool.sh" "$X3D_BUILD/bpf.o" --gen-ebpf; shift ;;
+                            conf_framework "eBPF Object Constructor" "$X3D_TOGGLE/scripts/framework/ebpftool.sh" "$X3D_BUILD/bpf.o" "$X3D_TOGGLE/src/daemon/bpf/bpf.c" --gen-ebpf; shift ;;
                         --gen-config)
-                            conf_framework "Core Configurator" "$X3D_TOGGLE/scripts/framework/config.sh" "$X3D_BUILD/config.h"; shift ;;
+                            conf_framework "Core Configurator" "$X3D_TOGGLE/scripts/framework/config.sh" "$X3D_BUILD/config.h" "$X3D_TOGGLE/config/settings.conf $X3D_TOGGLE/config/games.conf"; shift ;;
                         --gen-config-file)
                             shift; config_generate "$1" "$2"; exit 0 ;;
                         --gen-all)
-                            X3D_EXEC=1 X3D_FRAMEWORK=1 sh "$X3D_TOGGLE/scripts/framework/framework.sh" --gen-xui --gen-ccd --gen-ebpf --gen-config || exit 1; shift ;;
+                            X3D_EXEC=1 X3D_FRAMEWORK=1 sh "$X3D_TOGGLE/scripts/framework/framework.sh" $UPDATE $VERIFY --gen-xui --gen-ccd --gen-ebpf --gen-config || exit 1; shift ;;
                         *)
                             journal_write -6 "$1"; exit 1 ;; # Syntax error
                     esac

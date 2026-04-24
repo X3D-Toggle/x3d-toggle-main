@@ -1,7 +1,5 @@
 #!/bin/sh
-##
 ## `install.sh`
-##
 ## Standardized local installation wrapper.
 ## Handles safe compilation, FHS deployment, and triggers the setup wizard.
 ## Usage: sudo ./install.sh
