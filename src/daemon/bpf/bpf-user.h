@@ -1,5 +1,4 @@
 /* bpf-user header file for X3D Toggle
- *
  * `bpf-user.h`
  */
 

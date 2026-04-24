@@ -202,15 +202,9 @@ install: build
 
 	install -dm755 $(DEST_TOOLS)
 	install -dm755 $(DEST_FRAMEWORK)
-	install -dm755 $(DEST_TOOLS)
 	install -m755 scripts/tools/*.sh $(DEST_TOOLS)/
 	install -m755 scripts/framework/*.sh $(DEST_FRAMEWORK)/
-
-	install -dm755 $(DEST_APPS)
-	install -m644 packaging/x3d-toggle.desktop $(DEST_APPS)/x3d-toggle.desktop
-
 	install -dm755 $(DEST_PIXMAPS)
-	install -m644 assets/x3d-toggle.svg $(DEST_PIXMAPS)/x3d-toggle.svg
 
 	-chown :x3d-toggle $(DEST_LOGS)
 	-chown :x3d-toggle $(DEST_AUDITS)
@@ -243,8 +237,6 @@ uninstall:
 	rm -f $(DEST_BIN)/x3d-daemon
 	rm -f $(DEST_BIN)/x3d-run
 	rm -f $(DEST_BIN)/x3d
-	rm -f $(DEST_APPS)/x3d-toggle.desktop
-	rm -f $(DEST_PIXMAPS)/x3d-toggle.svg
 	rm -f $(DEST_SYSUSERS)/x3d_toggle-sysusers.conf
 	rm -f $(DEST_TMPFILES)/x3d_toggle-tmpfiles.conf
 	rm -f $(DEST_SYSTEMD)/x3d-toggle.service
@@ -252,6 +244,13 @@ uninstall:
 	rm -f $(DEST_POLKIT)/50-x3d_toggle-service.rules	
 	rm -f $(DEST_UDEV)/99-x3d-toggle.rules
 	rm -f $(DEST_POLKIT)/x3d-toggle.rules
+
+	# Local User Cleanup
+	ACTUAL_USER="${SUDO_USER:-$(USER)}"; \
+	USER_HOME=$$(getent passwd "$$ACTUAL_USER" | cut -d: -f6); \
+	rm -f "$$USER_HOME/.local/bin/x3d-gui"; \
+	rm -f "$$USER_HOME/.local/share/applications/x3d-toggle.desktop"; \
+	rm -f "$$USER_HOME/.local/share/pixmaps/x3d-toggle.svg"
 
 	rm -rf $(DEST_LOGS)
 	rm -rf $(DEST_AUDITS)

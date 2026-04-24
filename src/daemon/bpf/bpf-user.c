@@ -1,7 +1,5 @@
 /* bpf-user file for X3D Toggle Project
- *
  * `bpf-user.c`
- *
  * Logic for tracking active game count based on eBPF ringbuffer events.
  */
 

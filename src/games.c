@@ -1,7 +1,5 @@
 /* Shared Game List Loader for the X3D Toggle Project
- *
  * `games.c`
- *
  * Implements the list parsing and matching logic for application-aware
  * CCD selection. Shared by both the daemon and CLI.
  */

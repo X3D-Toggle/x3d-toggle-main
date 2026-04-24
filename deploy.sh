@@ -30,7 +30,7 @@ cd "$_l_dir_root"
 printf_step "🧹 Phase 1: Cleansing environment..."
 make purge </dev/null >/dev/null 2>&1
 
-printf_step "🏗️ Phase 2: Compiling architecture (make all)..."
+printf_step "🏗️  Phase 2: Compiling architecture (make all)..."
 trap 'if [ $? -ne 0 ]; then printf_br; printf_step "❌ Compilation failed. Check syntax."; fi' EXIT
 make -s all </dev/null >/dev/null 2>&1
 trap - EXIT
@@ -38,7 +38,7 @@ trap - EXIT
 printf_step "📦 Phase 3: FHS Deployment (make install)..."
 make -s install </dev/null >/dev/null 2>&1
 
-printf_step "⚙️ Phase 4: Launching System Configurator..."
+printf_step "⚙️  Phase 4: Launching System Configurator..."
 if [ -f "./setup.sh" ]; then
     ./setup.sh
 else

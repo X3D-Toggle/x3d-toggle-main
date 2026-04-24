@@ -1,8 +1,6 @@
 #!/bin/sh
 ## Generates the necessary eBPF files for the X3D Toggle Project.
-##
 ## `ebpftool.sh`
-##
 ## Modular eBPF artifact generator for the X3D Toggle Project.
 ## Synchronized with the framework and error registry.
 

@@ -1,7 +1,5 @@
 /* Error Handling Logic for the X3D Toggle Project
- *
  * `error.c`
- *
  * Handles all stdout, stderr and logging routing logic.
  * Also implements an error handling dispatch table for diagnostics. 
  */

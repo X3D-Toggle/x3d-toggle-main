@@ -1,7 +1,5 @@
 /* CLI Transport Layer for the X3D Toggle Project
- *
  * `cli.c`
- *
  * Master dispatch table routing user inputs to modular backend controllers.
  */
 

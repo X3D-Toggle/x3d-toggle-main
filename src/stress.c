@@ -1,7 +1,5 @@
 /* CPU Stress Test Engine for the X3D Toggle Project
- *
  * `stress.c`
- *
  * Generates mock throughput load for CCD validation.
  * Utilizes project-native protocols and fork() for zero dependencies.
  */
@@ -29,7 +27,6 @@ static void load_payload(void) {
 int cli_stress_cpu(int argc, char *argv[]) {
     int interval = 0;
     
-    /* Simple manual argument parser */
     for (int i = 2; i < argc; i++) {
         if (strcmp(argv[i], "-i") == 0 && (i + 1) < argc) {
             interval = atoi(argv[++i]);

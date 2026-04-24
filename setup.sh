@@ -234,16 +234,24 @@ printf_br
 
 ACTUAL_USER="${SUDO_USER:-$USER}"
 DESKTOP_DIR="/home/$ACTUAL_USER/Desktop"
+
+# Reliably capture the human user, falling back to UID 1000 if in a pure root shell
+ACTUAL_USER="${SUDO_USER:-$(logname 2>/dev/null || id -un 1000)}"
+# Dynamically fetch the primary group for the user (prevents group mismatch errors)
+ACTUAL_GROUP=$(id -gn "$ACTUAL_USER")
+DESKTOP_DIR="/home/$ACTUAL_USER/Desktop"
+
 if [ -d "$DESKTOP_DIR" ] && [ -f "/usr/share/applications/x3d-toggle.desktop" ]; then
     printf_step "[7] Desktop Integration"
     printf_step_no_nl "${QUERY} Add X3D Toggle to your Desktop? [y/N] "
     read -r opt_desktop
     case "$opt_desktop" in
         [Yy]*)
-            cp "/usr/share/applications/x3d-toggle.desktop" "$DESKTOP_DIR/"
-            chown "$ACTUAL_USER":"$ACTUAL_USER" "$DESKTOP_DIR/x3d-toggle.desktop"
-            chmod 644 "$DESKTOP_DIR/x3d-toggle.desktop"
-            printf_step "2,${ALRIGHT} Desktop icon created."
+            TARGET="$DESKTOP_DIR/x3d-toggle.desktop"
+            cp "/usr/share/applications/x3d-toggle.desktop" "$TARGET"
+            chown "$ACTUAL_USER:$ACTUAL_GROUP" "$TARGET"
+            chmod a+x "$TARGET"
+            printf_step "2,${ALRIGHT} Desktop icon created, owned by $ACTUAL_USER, and marked executable."
             ;;
     esac
     printf_br

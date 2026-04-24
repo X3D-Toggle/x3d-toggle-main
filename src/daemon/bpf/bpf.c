@@ -1,7 +1,5 @@
 /* eBPF Game Detection Logic for the x3D Toggle Project
- *
  * `bpf.c`
- *
  * This is the Restricted C code that runs in the kernel context.
  * It monitors process execution and cross-references against a 
  * BPF hash map populated by the userspace daemon.

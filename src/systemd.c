@@ -1,7 +1,5 @@
 /* Astraction Layer Systemd Integration for the X3D Toggle Project
- *
  * `systemd.c`
- *
  * System wrapper that handles the volatile flag management of the backend.
  * Utilizes direct systemctl execution via fork/execve.
  */
@@ -21,24 +19,17 @@
 
 extern char **environ;
 
-/*
- * Zero-Dependency Unit Management:
- * Executes systemctl commands via direct fork/execve primitives to maintain
- * a pure libc-free architecture without libsystemd linkage.
- */
 static int execute_unit_method(const char *method) {
   pid_t pid = fork();
   if (pid < 0)
     return ERR_IO;
 
   if (pid == 0) {
-    /* Silence stdout for CLI cleanliness */
     int null_fd = open("/dev/null", O_WRONLY);
     if (null_fd >= 0) {
       dup2(null_fd, 1);
       close(null_fd);
     }
-    /* Route stderr to session log for journal capture */
     int log_fd = open(VAR_LOGS "/systemd-exec.log",
                       O_WRONLY | O_CREAT | O_APPEND, 0664);
     if (log_fd >= 0) {
@@ -69,13 +60,11 @@ int unit_active(void) {
     return 0;
 
   if (pid == 0) {
-    /* Silence stdout for CLI cleanliness */
     int null_fd = open("/dev/null", O_WRONLY);
     if (null_fd >= 0) {
       dup2(null_fd, 1);
       close(null_fd);
     }
-    /* Route stderr to session log for journal capture */
     int log_fd = open(VAR_LOGS "/systemd-exec.log",
                       O_WRONLY | O_CREAT | O_APPEND, 0664);
     if (log_fd >= 0) {
@@ -94,7 +83,6 @@ int unit_active(void) {
   return 0;
 }
 
-/* Global state flags for single-threaded orchestration loop */
 volatile int active_override = 0;
 volatile sig_atomic_t active_keep = 1;
 volatile sig_atomic_t last_sig = 0;
@@ -107,7 +95,6 @@ static void sig_handler(int signum) {
   } else if (signum == SIGHUP) {
     reload_flag = 1;
   } else {
-    /* Fatal signal: Perform emergency hardware restoration */
     daemon_failsafe(signum);
     _exit(signum);
   }
@@ -124,7 +111,6 @@ void init_signals(void) {
   sigaction(SIGINT, &sa, NULL);
   sigaction(SIGHUP, &sa, NULL);
 
-  /* Fatal signals for emergency restoration */
   sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGABRT, &sa, NULL);
   sigaction(SIGILL, &sa, NULL);

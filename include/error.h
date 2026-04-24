@@ -1,5 +1,4 @@
 /* Error Handling Logic Header for the X3D Toggle Project
- *
  * `error.h` - Header only
  */
 

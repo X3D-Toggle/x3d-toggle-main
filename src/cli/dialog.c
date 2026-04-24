@@ -1,7 +1,5 @@
 /* Master CLI Dialog Controller for the X3D Toggle Project
- *
  * `dialog.c`
- *
  * Implements the MVC-compliant View (Monitor Loop) and Controller (Dispatcher)
  * for the standalone status window.
  */

@@ -33,7 +33,7 @@ fi
 if ! clang $(pkg-config --cflags gtk4 libadwaita-1) -Wall -O2 \
     -Iinclude -Ibuild -DGUI_BUILD -DLIBC_NO_BOOTSTRAP \
     src/gtk4/gui.c src/gtk4/x3d-gui-resources.c src/gtk4/stubs.c \
-    src/libc.c src/worker.c src/status.c build/xui.c src/error.c \
+    src/libc.c src/worker.c build/xui.c src/error.c \
     -o x3d-gui \
     $(pkg-config --libs gtk4 libadwaita-1); then
     printf_step "2,${XOUT} Error: Compilation Failed"

@@ -13,7 +13,3 @@ int unit_active(void) {
 void daemon_failsafe(int sig) {
     (void)sig;
 }
-
-void mode(char *buf, size_t len) {
-    if (len > 3) scat(buf, "N/A", len);
-}

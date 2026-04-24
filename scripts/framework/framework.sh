@@ -1,8 +1,6 @@
 #!/bin/sh
 ## Central Plexus of the X3D Toggle Project
-## 
 ## `framework.sh` - Scripting Librarian
-##
 ## Project-wide framework for path discovery, UI templates, and logging context.
 
 _l_curr="$(cd "$(dirname "$0")" && pwd)"

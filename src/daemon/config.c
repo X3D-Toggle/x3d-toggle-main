@@ -1,7 +1,5 @@
 /* Configuration/Ruleset Management for the X3D Toggle Project
- *
  * `config.c` - Backend Consolidation
- *
  * Handles both the CLI handlers and the backend implementation for 
  * configuration loading, updating, and logic-generation. 
  */
@@ -261,8 +259,6 @@ int cli_config_generate(int argc, char *argv[]) {
   return res;
 }
 
-/* --- PART 2: Backend Implementation --- */
-
 void config_load(DaemonConfig *cfg) {
   cfg->polling_interval = CONFIG_POLLING_INTERVAL;
   cfg->refresh_interval = CONFIG_REFRESH_INTERVAL;
@@ -278,7 +274,6 @@ void config_load(DaemonConfig *cfg) {
   scat(cfg->fallback_profile, CONFIG_FALLBACK_PROFILE, 63);
   scat(cfg->server_address, CONFIG_SERVER_ADDRESS, 127);
 
-  /* 2. Injected Payload Override: Load synchronized daemon.conf from framework */
   int fd = open(DAEMON_CONF_PATH, O_RDONLY);
   if (fd < 0) {
   }

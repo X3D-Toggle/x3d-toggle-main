@@ -1,7 +1,5 @@
 /* Polling Logic for the X3D Toggle Project
- *
  * `x3d-polling.c`
- *
  * Polling Detection Heuristics Logic for detecting games on system.
  * Acts as a fallback if the eBPF module fails to load or is unsupported.
  */

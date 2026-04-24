@@ -1,7 +1,5 @@
 /* CLI Entry Point for the X3D Toggle Project
- *
  * `x3d-toggle.c`
- *
  * Frontend layer for passing CLI to the daemon.
  * Model-agnostic implementation for heterogeneous architectures.
  */

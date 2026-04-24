@@ -1,7 +1,5 @@
 /* Miscellaneous & Easter Egg Orchestrator for the X3D Toggle Project
- *
  * `misc.c`
- *
  * Controller for non-core features, easter eggs, and miscellaneous
  * utility commands
  */

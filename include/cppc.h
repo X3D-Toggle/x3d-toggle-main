@@ -1,5 +1,4 @@
 /* CPPC Subsystem Header for the X3D Toggle Project 
- *
  * `cppc.h` - Header only
  */
 #ifndef CPPC_H

@@ -1,7 +1,5 @@
 /* Wrapper for enabling dev mode enviroment for x3D Toggle
- *
  * `dev-install.sh`
- *
  * The wrapper is designed to to pass through developer mode enviroment options
  * to the standard user via CLI and populates the active frontend with
  * Developer Mode automatically ONLY IF `DEV_MODE=0` is set to `DEV_MODE=1` in

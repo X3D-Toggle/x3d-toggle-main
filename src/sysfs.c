@@ -1,9 +1,7 @@
 /*
  * x3d-sysfs.c
- *
  * Standalone debug tool for sysfs node detection logic.
  * Prints globbing results for both vcache and AMDI* patterns.
- *
  * Usage: build and run as x3d-toggle user to verify sysfs node visibility.
  */
 

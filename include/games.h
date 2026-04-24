@@ -1,5 +1,4 @@
 /* Shared Game List Loader for the X3D Toggle Project
- *
  * `games.h` - Header only
  */
 

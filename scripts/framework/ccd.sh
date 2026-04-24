@@ -1,8 +1,6 @@
 #!/bin/sh
 ## CCD Discovery Component for X3D Toggle Project
-##
 ## `ccd.sh`
-##
 ## Identifies the V-Cache CCD by mapping the L3 cache boundary of Core 0.
 
 _l_dir_lib="$(cd "$(dirname "$0")" && pwd)"

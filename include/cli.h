@@ -1,5 +1,4 @@
 /* Shared dispatch table for the CLI backend for the X3D Toggle project
- *
  * `cli.h` - Header only
  */
 

@@ -1,8 +1,6 @@
 #!/bin/sh
 ## Deployment of system policies for the X3D Toggle Project
-##
 ## `policies.sh`
-##
 ## Installation bridge for system policies (udev, polkit, tmpfiles, sysusers).
 
 _l_dir_lib="$(cd "$(dirname "$0")" && pwd)"

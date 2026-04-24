@@ -1,5 +1,4 @@
 /* Daemon Lifecycle and Failsafe Header for the X3D Toggle Project
- *
  * `daemon.h` - Header only
  */
 

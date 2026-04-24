@@ -1,8 +1,6 @@
 #!/bin/sh
 ## Universal Template Component for the X3D Toggle Project
-##
 ## `xui.sh`
-##
 ## Serves as universal template for UI alignment.
 ## When executed with --gen-xui, it injects the equivalent C logic
 ## into bin/xui.c and bin/xui.h for runtime.

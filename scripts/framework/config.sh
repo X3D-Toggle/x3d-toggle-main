@@ -1,6 +1,5 @@
 #!/bin/sh
 ## Configuration Interface Generator for the X3D Toggle Project
-##
 ## `config.sh`
 ## Generates `daemon.conf` in /etc/x3d-toggle.d/ for use/editing
 ## to build the x3d-toggle binary and modify runtime behavior

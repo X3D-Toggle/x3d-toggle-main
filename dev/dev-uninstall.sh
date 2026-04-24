@@ -1,8 +1,6 @@
 #!/bin/sh
 ## Uninstaller script for x3D Toggle Developer Mode Environment
-##
 ## `uninstall-dev.sh`
-##
 ## Uninstall script which will remove all instances of the Developer Mode
 ## Environment and restore x3D Toggle to Standard User Environment.
 

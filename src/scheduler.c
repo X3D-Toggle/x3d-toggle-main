@@ -5,7 +5,6 @@
 
 #define PROC_KERNEL "/proc/sys/kernel/"
 
-/* Internal helper for procfs writes */
 static int sysctl_write(const char *node, const char *value) {
     char path[128];
     strcpy(path, PROC_KERNEL);
@@ -24,11 +23,9 @@ bool scheduler_check(void) {
 }
 
 int scheduler_set(sched_t mode) {
-    /* Root check: Mandatory for /proc/sys/kernel/ writes */
     if (geteuid() != 0) return -1;
 
     if (mode == SCHED_GAMING) {
-        /* Gaming Mode: Tighten granularity to 3ms to minimize micro-stutter */
         sysctl_write("sched_cfs_bandwidth_slice_us", "3000");
         
         if (scheduler_check()) {
@@ -36,7 +33,6 @@ int scheduler_set(sched_t mode) {
             sysctl_write("sched_bit_shift", "14"); // Aggressive burst identification
         }
     } else {
-        /* Balanced Mode: Restore standard 5ms granularity */
         sysctl_write("sched_cfs_bandwidth_slice_us", "5000");
         
         if (scheduler_check()) {
