@@ -1,5 +1,5 @@
 /*
- * x3d-sysfs.c
+ * sysfs.c
  * Standalone debug tool for sysfs node detection logic.
  * Prints globbing results for both vcache and AMDI* patterns.
  * Usage: build and run as x3d-toggle user to verify sysfs node visibility.
@@ -7,6 +7,7 @@
 
 #include "libc.h"
 #include <glob.h>
+#include <limits.h>
 #include "xui.h"
 
 #define SYSFS_PATTERN1 "/sys/bus/platform/drivers/amd_x3d_vcache/*/amd_x3d_mode"
@@ -15,7 +16,7 @@
 void debug_sysfs(const char *pattern) {
     glob_t glob_result;
     int ret;
-    char buf[256];
+    char buf[PATH_MAX];
     printf_sn(buf, sizeof(buf), "Globbing pattern: %s\n", pattern);
     write(1, buf, strlen(buf));
     

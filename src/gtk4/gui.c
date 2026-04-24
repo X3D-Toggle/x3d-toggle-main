@@ -6,6 +6,7 @@
 
 #include <adwaita.h>
 #include <gtk/gtk.h>
+#include <string.h>
 
 extern int socket_send(const char *cmd, char *response, size_t resp_len);
 extern size_t scat(char *dest, const char *src, size_t dest_size);
@@ -14,6 +15,7 @@ extern int printf_sn(char *buf, size_t size, const char *fmt, ...);
 #define BUFF_LINE 256
 #define BUFF_INFO 128
 #define BUFF_STATE 16
+#define REFRESH_INTERVAL_KEY "REFRESH_INTERVAL="
 
 static GtkWidget *lbl_status_dump = NULL;
 
@@ -36,21 +38,21 @@ static gboolean update_dashboard_cb(gpointer user_data) {
 
   char *st = strstr(info, "STATE=");
   char *ba = strstr(info, "BPF_ACTIVE=");
-  char *ri = strstr(info, "REFRESH_INTERVAL=");
+  char *ri = strstr(info, REFRESH_INTERVAL_KEY);
 
   if (st) {
-    scat(state_str, st + 6, sizeof(state_str));
+    scat(state_str, st + strlen("STATE="), sizeof(state_str));
     char *sem = strchr(state_str, ';');
     if (sem)
       *sem = '\0';
   }
-  if (ba && atoi(ba + 11))
+  if (ba && atoi(ba + strlen("BPF_ACTIVE=")))
     scat(active_str, "eBPF (Active)", sizeof(active_str));
   else
     scat(active_str, "Polling", sizeof(active_str));
 
   if (ri) {
-    scat(interval_str, ri + 17, sizeof(interval_str));
+    scat(interval_str, ri + strlen(REFRESH_INTERVAL_KEY), sizeof(interval_str));
     char *sem = strchr(interval_str, ';');
     if (sem)
       *sem = '\0';

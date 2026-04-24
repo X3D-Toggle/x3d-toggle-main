@@ -102,7 +102,19 @@ quick_setup() {
 
         # GTK4 GUI
         if [ -f "./scripts/framework/gui.sh" ]; then
-            X3D_EXEC=1 sh ./scripts/framework/gui.sh && GUI_INSTALLED=1
+            if X3D_EXEC=1 sh ./scripts/framework/gui.sh; then
+                GUI_INSTALLED=1
+            else
+                printf_step "${WARN} GUI installer failed at ./scripts/framework/gui.sh"
+            fi
+        elif [ -f "/usr/lib/x3d-toggle/scripts/framework/gui.sh" ]; then
+            if X3D_EXEC=1 sh /usr/lib/x3d-toggle/scripts/framework/gui.sh; then
+                GUI_INSTALLED=1
+            else
+                printf_step "${WARN} GUI installer failed at /usr/lib/x3d-toggle/scripts/framework/gui.sh"
+            fi
+        else
+            printf_step "${WARN} GUI installer script not found in expected locations."
         fi
 
         # Group Configuration
@@ -264,8 +276,8 @@ if [ -d "$DESKTOP_DIR" ] && [ -f "/usr/share/applications/x3d-toggle.desktop" ];
             TARGET="$DESKTOP_DIR/x3d-toggle.desktop"
             cp "/usr/share/applications/x3d-toggle.desktop" "$TARGET"
             chown "$ACTUAL_USER:$ACTUAL_GROUP" "$TARGET"
-            chmod a+x "$TARGET"
-            printf_step "2,${ALRIGHT} Desktop icon created, owned by $ACTUAL_USER, and marked executable."
+            chmod 0644 "$TARGET"
+            printf_step "2,${ALRIGHT} Desktop icon created with safe permissions and owned by $ACTUAL_USER."
             ;;
     esac
     printf_br

@@ -19,23 +19,28 @@
 
 extern char **environ;
 
+static void redirect_systemctl_stdio(void) {
+  int null_fd = open("/dev/null", O_WRONLY);
+  if (null_fd >= 0) {
+    dup2(null_fd, 1);
+    close(null_fd);
+  }
+
+  int log_fd = open(VAR_LOGS "/systemd-exec.log", O_WRONLY | O_CREAT | O_APPEND,
+                    0664);
+  if (log_fd >= 0) {
+    dup2(log_fd, 2);
+    close(log_fd);
+  }
+}
+
 static int execute_unit_method(const char *method) {
   pid_t pid = fork();
   if (pid < 0)
     return ERR_IO;
 
   if (pid == 0) {
-    int null_fd = open("/dev/null", O_WRONLY);
-    if (null_fd >= 0) {
-      dup2(null_fd, 1);
-      close(null_fd);
-    }
-    int log_fd = open(VAR_LOGS "/systemd-exec.log",
-                      O_WRONLY | O_CREAT | O_APPEND, 0664);
-    if (log_fd >= 0) {
-      dup2(log_fd, 2);
-      close(log_fd);
-    }
+    redirect_systemctl_stdio();
     char *args[] = {(char *)"/usr/bin/systemctl", (char *)method,
                     (char *)SERVICE_UNIT, NULL};
     execve(args[0], args, environ);
@@ -60,17 +65,7 @@ int unit_active(void) {
     return 0;
 
   if (pid == 0) {
-    int null_fd = open("/dev/null", O_WRONLY);
-    if (null_fd >= 0) {
-      dup2(null_fd, 1);
-      close(null_fd);
-    }
-    int log_fd = open(VAR_LOGS "/systemd-exec.log",
-                      O_WRONLY | O_CREAT | O_APPEND, 0664);
-    if (log_fd >= 0) {
-      dup2(log_fd, 2);
-      close(log_fd);
-    }
+    redirect_systemctl_stdio();
     char *args[] = {(char *)"/usr/bin/systemctl", (char *)"is-active",
                     (char *)SERVICE_UNIT, NULL};
     execve(args[0], args, environ);
@@ -159,7 +154,19 @@ void log_shutdown(void) {
 void daemon_restore(int signum) {
   (void)signum;
   cppc_restore();
-  system("X3D_EXEC=1 sh /usr/lib/x3d-toggle/scripts/tools/reset.sh");
+
+  pid_t pid = fork();
+  if (pid == 0) {
+    char *args[] = {(char *)"/bin/sh",
+                    (char *)"/usr/lib/x3d-toggle/scripts/tools/reset.sh",
+                    NULL};
+    char *envp[] = {(char *)"X3D_EXEC=1", NULL};
+    execve(args[0], args, envp);
+    _exit(EXIT_FAILURE);
+  } else if (pid > 0) {
+    int status;
+    (void)waitpid(pid, &status, 0);
+  }
 }
 
 void daemon_failsafe(int sig) {
