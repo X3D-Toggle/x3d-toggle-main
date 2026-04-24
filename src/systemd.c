@@ -1,4 +1,4 @@
-/* Astraction Layer Systemd Integration for the X3D Toggle Project
+/* Abstraction Layer Systemd Integration for the X3D Toggle Project
  * `systemd.c`
  * System wrapper that handles the volatile flag management of the backend.
  * Utilizes direct systemctl execution via fork/execve.
@@ -142,7 +142,6 @@ void notify_ready(void) {
     memcpy(addr.sun_path, sock_path, path_len);
   }
 
-  typedef unsigned int socklen_t;
   socklen_t addr_len = offsetof(struct sockaddr_un, sun_path) + path_len;
 
   const char *msg = "READY=1\n";

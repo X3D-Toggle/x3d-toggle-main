@@ -7,7 +7,7 @@
 
 #include "libc.h"
 #include <glob.h>
-#include "../build/xui.h"
+#include "xui.h"
 
 #define SYSFS_PATTERN1 "/sys/bus/platform/drivers/amd_x3d_vcache/*/amd_x3d_mode"
 #define SYSFS_PATTERN2 "/sys/devices/platform/AMDI*/amd_x3d_mode"

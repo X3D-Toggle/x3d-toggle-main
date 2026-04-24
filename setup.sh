@@ -232,9 +232,6 @@ case "$opt_debug" in
 esac
 printf_br
 
-ACTUAL_USER="${SUDO_USER:-$USER}"
-DESKTOP_DIR="/home/$ACTUAL_USER/Desktop"
-
 # Reliably capture the human user, falling back to UID 1000 if in a pure root shell
 ACTUAL_USER="${SUDO_USER:-$(logname 2>/dev/null || id -un 1000)}"
 # Dynamically fetch the primary group for the user (prevents group mismatch errors)
