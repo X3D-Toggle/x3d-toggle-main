@@ -69,10 +69,19 @@ static gboolean update_dashboard_cb(gpointer user_data) {
 static void on_action_clicked(GtkButton *btn, gpointer user_data) {
   (void)btn;
   const char *cmd = (const char *)user_data;
-  char sys_cmd[BUFF_LINE];
 
-  printf_sn(sys_cmd, sizeof(sys_cmd), "x3d-toggle %s", cmd);
-  system(sys_cmd);
+  if (!cmd || !(g_strcmp0(cmd, "0") == 0 || g_strcmp0(cmd, "1") == 0)) {
+    g_warning("Rejected invalid x3d-toggle command argument");
+    return;
+  }
+
+  gchar *args[] = {"x3d-toggle", (gchar *)cmd, NULL};
+  GError *error = NULL;
+  if (!g_spawn_async(NULL, args, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL,
+                     &error)) {
+    g_warning("Failed to launch x3d-toggle: %s", error->message);
+    g_clear_error(&error);
+  }
 }
 
 static GtkWidget *add_nav_row(GtkListBox *list, const char *id,
