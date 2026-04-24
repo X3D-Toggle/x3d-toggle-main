@@ -32,6 +32,7 @@ typedef unsigned long sigset_t;
 #define FILENO_STDERR 2
 
 #define ENOENT   2
+#define EINTR    4
 #define EAGAIN  11
 #define EACCES  13
 

@@ -8,14 +8,25 @@
 /* Internal helper for procfs writes */
 static int sysctl_write(const char *node, const char *value) {
     char path[128];
-    strcpy(path, PROC_KERNEL);
-    strcat(path, node);
-    
+    int n = printf_sn(path, sizeof(path), "%s%s", PROC_KERNEL, node);
+    if (n < 0 || (size_t)n >= sizeof(path)) return -1;
+
     int fd = open(path, O_WRONLY);
     if (fd < 0) return -1;
-    
-    write(fd, value, strlen(value));
-    close(fd);
+
+    size_t len = strlen(value);
+    size_t off = 0;
+    while (off < len) {
+        ssize_t bytes_written = write(fd, value + off, len - off);
+        if (bytes_written < 0) {
+            if (errno == EINTR) continue;
+            close(fd);
+            return -1;
+        }
+        off += (size_t)bytes_written;
+    }
+
+    if (close(fd) < 0) return -1;
     return 0;
 }
 
