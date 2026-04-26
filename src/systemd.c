@@ -10,6 +10,7 @@
 #include "error.h"
 
 #define SERVICE_UNIT "x3d-toggle.service"
+#define LOG_BUFFER_SIZE 128
 #ifndef VAR_LOGS
 #define VAR_LOGS "/var/log/x3d-toggle/logs"
 #endif
@@ -51,7 +52,6 @@ static int execute_unit_method(const char *method) {
     return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS
                                                            : ERR_IPC;
   }
-  return ERR_IPC;
 }
 
 int unit_start(void) { return execute_unit_method("start"); }
@@ -75,7 +75,6 @@ int unit_active(void) {
     waitpid(pid, &status, 0);
     return (WIFEXITED(status) && WEXITSTATUS(status) == 0);
   }
-  return 0;
 }
 
 volatile int active_override = 0;
@@ -146,8 +145,9 @@ void notify_ready(void) {
 }
 
 void log_shutdown(void) {
-  char buf[128];
-  printf_sn(buf, 128, "Shutting down daemon... (Signal: %d)\n", (int)last_sig);
+  char buf[LOG_BUFFER_SIZE];
+  printf_sn(buf, LOG_BUFFER_SIZE, "Shutting down daemon... (Signal: %d)\n",
+            (int)last_sig);
   write(2, buf, strlen(buf));
 }
 

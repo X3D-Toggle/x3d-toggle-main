@@ -13,6 +13,16 @@
 #define SYSFS_PATTERN1 "/sys/bus/platform/drivers/amd_x3d_vcache/*/amd_x3d_mode"
 #define SYSFS_PATTERN2 "/sys/devices/platform/AMDI*/amd_x3d_mode"
 
+/*
+ * debug_sysfs - Print globbing diagnostics for a sysfs path pattern.
+ * @pattern: Glob expression used to discover amd_x3d_mode sysfs nodes.
+ *
+ * This helper writes to stdout:
+ * - the pattern being evaluated,
+ * - the glob() return code and match count,
+ * - each matched path (if any).
+ * On glob() failure, it reports the return code and returns.
+ */
 void debug_sysfs(const char *pattern) {
     glob_t glob_result;
     int ret;

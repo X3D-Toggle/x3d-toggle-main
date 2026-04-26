@@ -46,9 +46,13 @@ static gboolean update_dashboard_cb(gpointer user_data) {
     if (sem)
       *sem = '\0';
   }
-  if (ba && atoi(ba + strlen("BPF_ACTIVE=")))
-    scat(active_str, "eBPF (Active)", sizeof(active_str));
-  else
+  if (ba) {
+    const char *bpf_value = ba + strlen("BPF_ACTIVE=");
+    if (atoi(bpf_value))
+      scat(active_str, "eBPF (Active)", sizeof(active_str));
+    else
+      scat(active_str, "Polling", sizeof(active_str));
+  } else
     scat(active_str, "Polling", sizeof(active_str));
 
   if (ri) {
