@@ -6,6 +6,7 @@
 
 #include <adwaita.h>
 #include <gtk/gtk.h>
+#include <string.h>
 
 extern int socket_send(const char *cmd, char *response, size_t resp_len);
 extern size_t scat(char *dest, const char *src, size_t dest_size);
@@ -14,6 +15,7 @@ extern int printf_sn(char *buf, size_t size, const char *fmt, ...);
 #define BUFF_LINE 256
 #define BUFF_INFO 128
 #define BUFF_STATE 16
+#define REFRESH_INTERVAL_KEY "REFRESH_INTERVAL="
 
 static GtkWidget *lbl_status_dump = NULL;
 
@@ -36,21 +38,25 @@ static gboolean update_dashboard_cb(gpointer user_data) {
 
   char *st = strstr(info, "STATE=");
   char *ba = strstr(info, "BPF_ACTIVE=");
-  char *ri = strstr(info, "REFRESH_INTERVAL=");
+  char *ri = strstr(info, REFRESH_INTERVAL_KEY);
 
   if (st) {
-    scat(state_str, st + 6, sizeof(state_str));
+    scat(state_str, st + strlen("STATE="), sizeof(state_str));
     char *sem = strchr(state_str, ';');
     if (sem)
       *sem = '\0';
   }
-  if (ba && atoi(ba + 11))
-    scat(active_str, "eBPF (Active)", sizeof(active_str));
-  else
+  if (ba) {
+    const char *bpf_value = ba + strlen("BPF_ACTIVE=");
+    if (atoi(bpf_value))
+      scat(active_str, "eBPF (Active)", sizeof(active_str));
+    else
+      scat(active_str, "Polling", sizeof(active_str));
+  } else
     scat(active_str, "Polling", sizeof(active_str));
 
   if (ri) {
-    scat(interval_str, ri + 17, sizeof(interval_str));
+    scat(interval_str, ri + strlen(REFRESH_INTERVAL_KEY), sizeof(interval_str));
     char *sem = strchr(interval_str, ';');
     if (sem)
       *sem = '\0';
@@ -69,10 +75,19 @@ static gboolean update_dashboard_cb(gpointer user_data) {
 static void on_action_clicked(GtkButton *btn, gpointer user_data) {
   (void)btn;
   const char *cmd = (const char *)user_data;
-  char sys_cmd[BUFF_LINE];
 
-  printf_sn(sys_cmd, sizeof(sys_cmd), "x3d-toggle %s", cmd);
-  system(sys_cmd);
+  if (!cmd || !(g_strcmp0(cmd, "0") == 0 || g_strcmp0(cmd, "1") == 0)) {
+    g_warning("Rejected invalid x3d-toggle command argument");
+    return;
+  }
+
+  gchar *args[] = {"x3d-toggle", (gchar *)cmd, NULL};
+  GError *error = NULL;
+  if (!g_spawn_async(NULL, args, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL,
+                     &error)) {
+    g_warning("Failed to launch x3d-toggle: %s", error->message);
+    g_clear_error(&error);
+  }
 }
 
 static GtkWidget *add_nav_row(GtkListBox *list, const char *id,

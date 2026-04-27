@@ -105,7 +105,19 @@ quick_setup() {
 
         # GTK4 GUI
         if [ -f "./scripts/framework/gui.sh" ]; then
-            X3D_EXEC=1 sh ./scripts/framework/gui.sh && GUI_INSTALLED=1
+            if X3D_EXEC=1 sh ./scripts/framework/gui.sh; then
+                GUI_INSTALLED=1
+            else
+                printf_step "${WARN} GUI installer failed at ./scripts/framework/gui.sh"
+            fi
+        elif [ -f "/usr/lib/x3d-toggle/scripts/framework/gui.sh" ]; then
+            if X3D_EXEC=1 sh /usr/lib/x3d-toggle/scripts/framework/gui.sh; then
+                GUI_INSTALLED=1
+            else
+                printf_step "${WARN} GUI installer failed at /usr/lib/x3d-toggle/scripts/framework/gui.sh"
+            fi
+        else
+            printf_step "${WARN} GUI installer script not found in expected locations."
         fi
 
         # Group Configuration
@@ -246,11 +258,25 @@ case "$opt_debug" in
 esac
 printf_br
 
-ACTUAL_USER="${SUDO_USER:-$USER}"
-DESKTOP_DIR="/home/$ACTUAL_USER/Desktop"
+# Reliably capture the human user without assuming UID 1000 exists
+ACTUAL_USER="${SUDO_USER:-}"
 
-# Reliably capture the human user, falling back to UID 1000 if in a pure root shell
-ACTUAL_USER="${SUDO_USER:-$(logname 2>/dev/null || id -un 1000)}"
+if [ -z "$ACTUAL_USER" ]; then
+    LOGNAME_USER="$(logname 2>/dev/null || true)"
+    if [ -n "$LOGNAME_USER" ] && [ "$LOGNAME_USER" != "root" ] && id "$LOGNAME_USER" >/dev/null 2>&1; then
+        ACTUAL_USER="$LOGNAME_USER"
+    fi
+fi
+
+if [ -z "$ACTUAL_USER" ]; then
+    ACTUAL_USER="$(awk -F: '($3 >= 1000) && ($1 != "nobody") && ($7 !~ /(nologin|false)$/) { print $1; exit }' /etc/passwd)"
+fi
+
+if [ -z "$ACTUAL_USER" ] || ! id "$ACTUAL_USER" >/dev/null 2>&1; then
+    echo "❌ Error: Could not determine a valid non-root user for desktop integration."
+    exit 1
+fi
+
 # Dynamically fetch the primary group for the user (prevents group mismatch errors)
 ACTUAL_GROUP=$(id -gn "$ACTUAL_USER")
 DESKTOP_DIR="/home/$ACTUAL_USER/Desktop"
@@ -264,8 +290,8 @@ if [ -d "$DESKTOP_DIR" ] && [ -f "/usr/share/applications/x3d-toggle.desktop" ];
             TARGET="$DESKTOP_DIR/x3d-toggle.desktop"
             cp "/usr/share/applications/x3d-toggle.desktop" "$TARGET"
             chown "$ACTUAL_USER:$ACTUAL_GROUP" "$TARGET"
-            chmod a+x "$TARGET"
-            printf_step "2,${ALRIGHT} Desktop icon created, owned by $ACTUAL_USER, and marked executable."
+            chmod 0644 "$TARGET"
+            printf_step "2,${ALRIGHT} Desktop icon created with safe permissions and owned by $ACTUAL_USER."
             ;;
     esac
     printf_br
