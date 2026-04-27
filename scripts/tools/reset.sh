@@ -11,7 +11,7 @@
 ## Since there is no `auto` software state for the x3d_mode, this method
 ## is used to restore the hardware to its default state.
 
-if [ "$X3D_EXEC" != "1" ]; then exit 1; fi
+#if [ "$X3D_EXEC" != "1" ]; then exit 1; fi
 
 ROOT_REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT_REPO/scripts/framework/framework.sh"

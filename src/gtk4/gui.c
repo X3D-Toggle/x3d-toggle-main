@@ -112,7 +112,8 @@ static void gui_spawn(char **args, char **env) {
     }
   }
   g_spawn_async(NULL, args, new_env,
-                G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL | G_SPAWN_SEARCH_PATH,
+                G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL |
+                    G_SPAWN_SEARCH_PATH,
                 NULL, NULL, NULL, NULL);
   g_strfreev(new_env);
 }
@@ -120,140 +121,158 @@ static void gui_spawn(char **args, char **env) {
 /* ── Journal Callbacks ────────────────────────────────────────── */
 
 static gboolean reset_btn_lbl(gpointer data) {
-    GtkWidget **w = (GtkWidget **)data;
-    gtk_button_set_label(GTK_BUTTON(w[0]), (const char *)w[1]);
-    gtk_widget_set_sensitive(w[0], TRUE);
-    g_free(w[1]);
-    g_free(w);
-    return G_SOURCE_REMOVE;
+  GtkWidget **w = (GtkWidget **)data;
+  gtk_button_set_label(GTK_BUTTON(w[0]), (const char *)w[1]);
+  gtk_widget_set_sensitive(w[0], TRUE);
+  g_free(w[1]);
+  g_free(w);
+  return G_SOURCE_REMOVE;
 }
 
 static void btn_feedback(GtkButton *btn) {
-    const char *orig = gtk_button_get_label(btn);
-    gtk_button_set_label(btn, "Done!");
-    gtk_widget_set_sensitive(GTK_WIDGET(btn), FALSE);
-    GtkWidget **w = g_new(GtkWidget *, 2);
-    w[0] = GTK_WIDGET(btn);
-    w[1] = (GtkWidget *)g_strdup(orig);
-    g_timeout_add(1500, reset_btn_lbl, w);
+  const char *orig = gtk_button_get_label(btn);
+  gtk_button_set_label(btn, "Done!");
+  gtk_widget_set_sensitive(GTK_WIDGET(btn), FALSE);
+  GtkWidget **w = g_new(GtkWidget *, 2);
+  w[0] = GTK_WIDGET(btn);
+  w[1] = (GtkWidget *)g_strdup(orig);
+  g_timeout_add(1500, reset_btn_lbl, w);
 }
 
 static void on_btn_launch_debug_clicked(GtkButton *btn, gpointer data) {
-    (void)btn; (void)data;
-    char *args[] = {(char *)"/bin/sh", (char *)"-c",
-                    (char *)"kgx -e '/usr/lib/x3d-toggle/scripts/tools/debug.sh' || gnome-terminal -- /usr/lib/x3d-toggle/scripts/tools/debug.sh || konsole -e /usr/lib/x3d-toggle/scripts/tools/debug.sh || xterm -e /usr/lib/x3d-toggle/scripts/tools/debug.sh", NULL};
-    char *env[] = {(char *)"X3D_EXEC=1", NULL};
-    gui_spawn(args, env);
+  (void)btn;
+  (void)data;
+  char *args[] = {
+      (char *)"/bin/sh", (char *)"-c",
+      (char *)"kgx -e '/usr/lib/x3d-toggle/scripts/tools/debug.sh' || "
+              "gnome-terminal -- /usr/lib/x3d-toggle/scripts/tools/debug.sh || "
+              "konsole -e /usr/lib/x3d-toggle/scripts/tools/debug.sh || xterm "
+              "-e /usr/lib/x3d-toggle/scripts/tools/debug.sh",
+      NULL};
+  char *env[] = {(char *)"X3D_EXEC=1", NULL};
+  gui_spawn(args, env);
 }
 
 static void on_btn_analyze_coredump_clicked(GtkButton *btn, gpointer data) {
-    (void)btn; (void)data;
-    char *args[] = {(char *)"/bin/sh", (char *)"-c",
-                    (char *)"kgx -e '/usr/lib/x3d-toggle/scripts/tools/coredump.sh' || gnome-terminal -- /usr/lib/x3d-toggle/scripts/tools/coredump.sh || konsole -e /usr/lib/x3d-toggle/scripts/tools/coredump.sh || xterm -e /usr/lib/x3d-toggle/scripts/tools/coredump.sh", NULL};
-    char *env[] = {(char *)"X3D_EXEC=1", NULL};
-    gui_spawn(args, env);
+  (void)btn;
+  (void)data;
+  char *args[] = {
+      (char *)"/bin/sh", (char *)"-c",
+      (char *)"kgx -e '/usr/lib/x3d-toggle/scripts/tools/coredump.sh' || "
+              "gnome-terminal -- /usr/lib/x3d-toggle/scripts/tools/coredump.sh "
+              "|| konsole -e /usr/lib/x3d-toggle/scripts/tools/coredump.sh || "
+              "xterm -e /usr/lib/x3d-toggle/scripts/tools/coredump.sh",
+      NULL};
+  char *env[] = {(char *)"X3D_EXEC=1", NULL};
+  gui_spawn(args, env);
 }
 
 static void on_btn_archive_journal_clicked(GtkButton *btn, gpointer data) {
-    (void)btn; (void)data;
-    char *args[] = {(char *)"/bin/sh",
-                    (char *)"/usr/lib/x3d-toggle/scripts/tools/archive.sh", NULL};
-    char *env[] = {(char *)"X3D_EXEC=1", NULL};
-    gui_spawn(args, env);
-    btn_feedback(btn);
+  (void)btn;
+  (void)data;
+  char *args[] = {(char *)"/bin/sh",
+                  (char *)"/usr/lib/x3d-toggle/scripts/tools/archive.sh", NULL};
+  char *env[] = {(char *)"X3D_EXEC=1", NULL};
+  gui_spawn(args, env);
+  btn_feedback(btn);
 }
 
 static void on_btn_rotate_journal_clicked(GtkButton *btn, gpointer data) {
-    (void)btn; (void)data;
-    char *args[] = {(char *)"/bin/sh",
-                    (char *)"/usr/lib/x3d-toggle/scripts/tools/rotate.sh",
-                    (char *)"--all", NULL};
-    char *env[] = {(char *)"X3D_EXEC=1", NULL};
-    gui_spawn(args, env);
-    btn_feedback(btn);
+  (void)btn;
+  (void)data;
+  char *args[] = {(char *)"/bin/sh",
+                  (char *)"/usr/lib/x3d-toggle/scripts/tools/rotate.sh",
+                  (char *)"--all", NULL};
+  char *env[] = {(char *)"X3D_EXEC=1", NULL};
+  gui_spawn(args, env);
+  btn_feedback(btn);
 }
-
 
 /* ── Mode Selection Callbacks ─────────────────────────────────── */
 
 static void on_mode_card_clicked(GtkButton *btn, gpointer data) {
-    const char *mode = (const char *)data;
-    g_selected_mode = mode;
+  const char *mode = (const char *)data;
+  g_selected_mode = mode;
 
-    /* Update visual state */
-    for (int i = 0; i < 5; i++) {
-        GtkWidget *card = mode_btns[i];
-        if (card) {
-            const char *name = gtk_widget_get_name(card);
-            if (name && strstr(name, mode)) {
-                gtk_widget_add_css_class(card, "selected");
-            } else {
-                gtk_widget_remove_css_class(card, "selected");
-            }
-        }
+  /* Update visual state */
+  for (int i = 0; i < 5; i++) {
+    GtkWidget *card = mode_btns[i];
+    if (card) {
+      const char *name = gtk_widget_get_name(card);
+      if (name && strstr(name, mode)) {
+        gtk_widget_add_css_class(card, "selected");
+      } else {
+        gtk_widget_remove_css_class(card, "selected");
+      }
     }
+  }
 }
 
 static void on_mode_apply_clicked(GtkButton *btn, gpointer data) {
-    (void)btn; (void)data;
+  (void)btn;
+  (void)data;
 
-    /* 1. Execute Hardware Mode via IPC */
-    if (g_selected_mode) {
-        char cmd[64];
-        if (strcmp(g_selected_mode, "reset") == 0) {
-            /* Reset: clear override and let daemon re-probe */
-            socket_send("SET_MODE reset", NULL, 0);
-        } else if (strcmp(g_selected_mode, "default") == 0) {
-            /* Default: restore daemon defaults */
-            socket_send("SET_DAEMON default", NULL, 0);
-            socket_send("CONFIG_SYNC", NULL, 0);
-        } else {
-            /* cache / frequency / dual: set mode + suspend daemon */
-            printf_sn(cmd, sizeof(cmd), "SET_MODE %s", g_selected_mode);
-            socket_send("SET_DAEMON manual", NULL, 0);
-            socket_send(cmd, NULL, 0);
-        }
+  /* 1. Execute Hardware Mode via IPC */
+  if (g_selected_mode) {
+    char cmd[64];
+    if (strcmp(g_selected_mode, "reset") == 0) {
+      /* Reset: clear override and let daemon re-probe */
+      socket_send("SET_MODE reset", NULL, 0);
+    } else if (strcmp(g_selected_mode, "default") == 0) {
+      /* Default: restore daemon defaults */
+      socket_send("SET_DAEMON default", NULL, 0);
+      socket_send("CONFIG_SYNC", NULL, 0);
+    } else {
+      /* cache / frequency / dual: set mode + suspend daemon */
+      printf_sn(cmd, sizeof(cmd), "SET_MODE %s", g_selected_mode);
+      socket_send("SET_DAEMON manual", NULL, 0);
+      socket_send(cmd, NULL, 0);
     }
+  }
 
-    /* 2. Execute Lifecycle Action via IPC */
-    if (g_lifecycle_dropdown) {
-        guint idx = gtk_drop_down_get_selected(g_lifecycle_dropdown);
-        /* 0=None, 1=Wake, 2=Sleep, 3=Stop, 4=Enable, 5=Autostart */
-        switch (idx) {
-        case 1: /* Wake */
-            socket_send("CONFIG_SYNC", NULL, 0);
-            socket_send("SET_DAEMON default", NULL, 0);
-            socket_send("SET_MODE frequency", NULL, 0);
-            break;
-        case 2: /* Sleep */
-            socket_send("SET_DAEMON manual", NULL, 0);
-            break;
-        case 3: /* Stop */
-            socket_send("DAEMON_DISABLE", NULL, 0);
-            break;
-        default:
-            break;
-        }
+  /* 2. Execute Lifecycle Action via IPC */
+  if (g_lifecycle_dropdown) {
+    guint idx = gtk_drop_down_get_selected(g_lifecycle_dropdown);
+    /* 0=None, 1=Wake, 2=Sleep, 3=Stop, 4=Enable, 5=Autostart */
+    switch (idx) {
+    case 1: /* Wake */
+      socket_send("CONFIG_SYNC", NULL, 0);
+      socket_send("SET_DAEMON default", NULL, 0);
+      socket_send("SET_MODE frequency", NULL, 0);
+      break;
+    case 2: /* Sleep */
+      socket_send("SET_DAEMON manual", NULL, 0);
+      break;
+    case 3: /* Stop */
+      socket_send("DAEMON_DISABLE", NULL, 0);
+      break;
+    default:
+      break;
     }
+  }
 
-    /* Go back to Dashboard */
-    if (g_stack) gtk_stack_set_visible_child_name(g_stack, "dashboard");
-    if (g_sidebar) {
-        GtkListBoxRow *r = gtk_list_box_get_row_at_index(g_sidebar, 0);
-        if (r) gtk_list_box_select_row(g_sidebar, r);
-    }
+  /* Go back to Dashboard */
+  if (g_stack)
+    gtk_stack_set_visible_child_name(g_stack, "dashboard");
+  if (g_sidebar) {
+    GtkListBoxRow *r = gtk_list_box_get_row_at_index(g_sidebar, 0);
+    if (r)
+      gtk_list_box_select_row(g_sidebar, r);
+  }
 }
 
 static void on_mode_cancel_clicked(GtkButton *btn, gpointer data) {
-    (void)btn; (void)data;
-    /* Go back to Dashboard */
-    if (g_stack) gtk_stack_set_visible_child_name(g_stack, "dashboard");
-    if (g_sidebar) {
-        GtkListBoxRow *r = gtk_list_box_get_row_at_index(g_sidebar, 0);
-        if (r) gtk_list_box_select_row(g_sidebar, r);
-    }
+  (void)btn;
+  (void)data;
+  /* Go back to Dashboard */
+  if (g_stack)
+    gtk_stack_set_visible_child_name(g_stack, "dashboard");
+  if (g_sidebar) {
+    GtkListBoxRow *r = gtk_list_box_get_row_at_index(g_sidebar, 0);
+    if (r)
+      gtk_list_box_select_row(g_sidebar, r);
+  }
 }
-
 
 /* ── Sidebar Navigation ──────────────────────────────────────── */
 
@@ -358,14 +377,15 @@ static void on_cfg_scale_changed(GtkRange *range, gpointer data) {
   config_send(key, buf);
 }
 
-
 static void on_server_address_changed(GtkEditable *editable, gpointer data) {
   (void)editable;
   (void)data;
-  if (!g_cfg_server_ip || !g_cfg_server_port) return;
+  if (!g_cfg_server_ip || !g_cfg_server_port)
+    return;
   const char *ip = gtk_editable_get_text(g_cfg_server_ip);
   const char *port = gtk_editable_get_text(g_cfg_server_port);
-  if (!ip || !ip[0] || !port || !port[0]) return;
+  if (!ip || !ip[0] || !port || !port[0])
+    return;
   char combined[128];
   snprintf(combined, sizeof(combined), "%s:%s", ip, port);
   config_send("SERVER_ADDRESS", combined);
@@ -441,7 +461,6 @@ static CfgDropData dd_valgrind_m = {"LINT_VALGRIND_MODE", valgrind_mode_vals,
 static CfgDropData dd_valgrind_k = {"LINT_VALGRIND_KINDS", valgrind_kinds_vals,
                                     0};
 
-
 static guint find_dropdown_idx(const char **values, int count,
                                const char *target) {
   for (int i = 0; i < count; i++)
@@ -451,33 +470,37 @@ static guint find_dropdown_idx(const char **values, int count,
 }
 
 static void on_rotation_apply_clicked(GtkButton *btn, gpointer data) {
-    (void)btn; (void)data;
-    if (g_cfg_journal_keep) {
-        int val = (int)gtk_spin_button_get_value(g_cfg_journal_keep);
-        char val_str[16];
-        printf_sn(val_str, sizeof(val_str), "%d", val);
-        config_send("JOURNAL_KEEP", val_str);
+  (void)btn;
+  (void)data;
+  if (g_cfg_journal_keep) {
+    int val = (int)gtk_spin_button_get_value(g_cfg_journal_keep);
+    char val_str[16];
+    printf_sn(val_str, sizeof(val_str), "%d", val);
+    config_send("JOURNAL_KEEP", val_str);
+  }
+  if (g_cfg_journal_max_mb) {
+    guint idx = gtk_drop_down_get_selected(g_cfg_journal_max_mb);
+    if (idx < 5) {
+      char val_str[16];
+      printf_sn(val_str, sizeof(val_str), "%s", journal_max_mb_vals[idx]);
+      config_send("JOURNAL_MAX_MB", val_str);
     }
-    if (g_cfg_journal_max_mb) {
-        guint idx = gtk_drop_down_get_selected(g_cfg_journal_max_mb);
-        if (idx < 5) {
-            char val_str[16];
-            printf_sn(val_str, sizeof(val_str), "%s", journal_max_mb_vals[idx]);
-            config_send("JOURNAL_MAX_MB", val_str);
-        }
-    }
+  }
 }
 
 static void on_rotation_cancel_clicked(GtkButton *btn, gpointer data) {
-    (void)btn; (void)data;
-    if (g_cfg_journal_keep) {
-        const char *val = config_get("JOURNAL_KEEP");
-        if (val && val[0]) gtk_spin_button_set_value(g_cfg_journal_keep, atoi(val));
-    }
-    if (g_cfg_journal_max_mb) {
-        const char *val = config_get("JOURNAL_MAX_MB");
-        gtk_drop_down_set_selected(g_cfg_journal_max_mb, find_dropdown_idx(journal_max_mb_vals, 5, val));
-    }
+  (void)btn;
+  (void)data;
+  if (g_cfg_journal_keep) {
+    const char *val = config_get("JOURNAL_KEEP");
+    if (val && val[0])
+      gtk_spin_button_set_value(g_cfg_journal_keep, atoi(val));
+  }
+  if (g_cfg_journal_max_mb) {
+    const char *val = config_get("JOURNAL_MAX_MB");
+    gtk_drop_down_set_selected(g_cfg_journal_max_mb,
+                               find_dropdown_idx(journal_max_mb_vals, 5, val));
+  }
 }
 
 static void bind_config(GtkBuilder *builder) {
@@ -555,8 +578,8 @@ static void bind_config(GtkBuilder *builder) {
     val = config_get("ADVANCED_CONFIG_ENABLE");
     gboolean adv = atoi(val) != 0;
     gtk_switch_set_active(GTK_SWITCH(w), adv);
-    g_signal_connect(w, "notify::active", G_CALLBACK(on_advanced_enable_toggled),
-                     NULL);
+    g_signal_connect(w, "notify::active",
+                     G_CALLBACK(on_advanced_enable_toggled), NULL);
     gtk_widget_set_visible(row_advanced, adv);
   }
 
@@ -636,38 +659,51 @@ static void bind_config(GtkBuilder *builder) {
 
   /* ── System Journal tab: Buttons & Settings ── */
   w = gtk_builder_get_object(builder, "btn_launch_debug");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_btn_launch_debug_clicked), NULL);
-  
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_btn_launch_debug_clicked),
+                     NULL);
+
   w = gtk_builder_get_object(builder, "btn_analyze_coredump");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_btn_analyze_coredump_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_btn_analyze_coredump_clicked),
+                     NULL);
 
   w = gtk_builder_get_object(builder, "btn_archive_journal");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_btn_archive_journal_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_btn_archive_journal_clicked),
+                     NULL);
 
   w = gtk_builder_get_object(builder, "btn_rotate_journal");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_btn_rotate_journal_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_btn_rotate_journal_clicked),
+                     NULL);
 
   /* SpinButton: JOURNAL_KEEP */
   w = gtk_builder_get_object(builder, "cfg_journal_keep");
   if (w) {
-      g_cfg_journal_keep = GTK_SPIN_BUTTON(w);
-      val = config_get("JOURNAL_KEEP");
-      if (val && val[0]) gtk_spin_button_set_value(g_cfg_journal_keep, atoi(val));
+    g_cfg_journal_keep = GTK_SPIN_BUTTON(w);
+    val = config_get("JOURNAL_KEEP");
+    if (val && val[0])
+      gtk_spin_button_set_value(g_cfg_journal_keep, atoi(val));
   }
 
   /* Dropdown: JOURNAL_MAX_MB */
   w = gtk_builder_get_object(builder, "cfg_journal_max_mb");
   if (w) {
-      g_cfg_journal_max_mb = GTK_DROP_DOWN(w);
-      val = config_get("JOURNAL_MAX_MB");
-      gtk_drop_down_set_selected(g_cfg_journal_max_mb, find_dropdown_idx(journal_max_mb_vals, 5, val));
+    g_cfg_journal_max_mb = GTK_DROP_DOWN(w);
+    val = config_get("JOURNAL_MAX_MB");
+    gtk_drop_down_set_selected(g_cfg_journal_max_mb,
+                               find_dropdown_idx(journal_max_mb_vals, 5, val));
   }
 
   /* Rotation Settings Apply/Cancel */
   w = gtk_builder_get_object(builder, "btn_rotation_apply");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_rotation_apply_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_rotation_apply_clicked), NULL);
   w = gtk_builder_get_object(builder, "btn_rotation_cancel");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_rotation_cancel_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_rotation_cancel_clicked),
+                     NULL);
 
   /* Entry: SERVER_ADDRESS */
   w = gtk_builder_get_object(builder, "cfg_server_ip");
@@ -689,60 +725,62 @@ static void bind_config(GtkBuilder *builder) {
       }
     }
     g_signal_connect(w, "changed", G_CALLBACK(on_server_address_changed), NULL);
-    g_signal_connect(w2, "changed", G_CALLBACK(on_server_address_changed), NULL);
+    g_signal_connect(w2, "changed", G_CALLBACK(on_server_address_changed),
+                     NULL);
   }
 }
 
 /* ── Application Activate ─────────────────────────────────────── */
 
 static void update_extras_view(GtkTextView *text_view, guint index) {
-    const char *files[] = {
-        "/org/x3d-toggle/gui/README.md",
-        "/org/x3d-toggle/gui/ARCHITECTURE.md",
-        "/org/x3d-toggle/gui/x3d-toggle.1.md"
-    };
+  const char *files[] = {"/org/x3d-toggle/gui/README.md",
+                         "/org/x3d-toggle/gui/ARCHITECTURE.md",
+                         "/org/x3d-toggle/gui/x3d-toggle.1.md"};
 
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(text_view);
+  GtkTextBuffer *buffer = gtk_text_view_get_buffer(text_view);
 
-    if (index == 3) {
-        extern const char *const insults[];
-        extern const int insults_count;
-        
-        GString *str = g_string_new("📜 X3D Toggle - The Great Book of Insults 📜\n\n");
-        for (int i = 0; i < insults_count; i++) {
-            g_string_append_printf(str, "• %s\n", insults[i]);
-        }
-        
-        gtk_text_buffer_set_text(buffer, str->str, -1);
-        g_string_free(str, TRUE);
-        return;
+  if (index == 3) {
+    extern const char *const insults[];
+    extern const int insults_count;
+
+    GString *str =
+        g_string_new("📜 X3D Toggle - The Great Book of Insults 📜\n\n");
+    for (int i = 0; i < insults_count; i++) {
+      g_string_append_printf(str, "• %s\n", insults[i]);
     }
 
-    if (index >= (sizeof(files) / sizeof(files[0]))) return;
+    gtk_text_buffer_set_text(buffer, str->str, -1);
+    g_string_free(str, TRUE);
+    return;
+  }
 
-    GError *err = NULL;
-    GBytes *bytes = g_resources_lookup_data(files[index], 0, &err);
+  if (index >= (sizeof(files) / sizeof(files[0])))
+    return;
 
-    if (bytes) {
-        const gchar *data = g_bytes_get_data(bytes, NULL);
-        gsize size = g_bytes_get_size(bytes);
-        gtk_text_buffer_set_text(buffer, data, size);
-        g_bytes_unref(bytes);
+  GError *err = NULL;
+  GBytes *bytes = g_resources_lookup_data(files[index], 0, &err);
+
+  if (bytes) {
+    const gchar *data = g_bytes_get_data(bytes, NULL);
+    gsize size = g_bytes_get_size(bytes);
+    gtk_text_buffer_set_text(buffer, data, size);
+    g_bytes_unref(bytes);
+  } else {
+    if (err) {
+      gtk_text_buffer_set_text(buffer, err->message, -1);
+      g_error_free(err);
     } else {
-        if (err) {
-            gtk_text_buffer_set_text(buffer, err->message, -1);
-            g_error_free(err);
-        } else {
-            gtk_text_buffer_set_text(buffer, "Error loading document.", -1);
-        }
+      gtk_text_buffer_set_text(buffer, "Error loading document.", -1);
     }
+  }
 }
 
-static void on_extras_dropdown_selected(GObject *dropdown, GParamSpec *pspec, gpointer user_data) {
-    (void)pspec;
-    GtkTextView *text_view = GTK_TEXT_VIEW(user_data);
-    guint selected = gtk_drop_down_get_selected(GTK_DROP_DOWN(dropdown));
-    update_extras_view(text_view, selected);
+static void on_extras_dropdown_selected(GObject *dropdown, GParamSpec *pspec,
+                                        gpointer user_data) {
+  (void)pspec;
+  GtkTextView *text_view = GTK_TEXT_VIEW(user_data);
+  guint selected = gtk_drop_down_get_selected(GTK_DROP_DOWN(dropdown));
+  update_extras_view(text_view, selected);
 }
 
 static void on_app_activate(GtkApplication *app, gpointer user_data) {
@@ -778,7 +816,8 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
 
   GObject *dropdown_extras = gtk_builder_get_object(builder, "dropdown_extras");
   GObject *txt_extras_view = gtk_builder_get_object(builder, "txt_extras_view");
-  g_signal_connect(dropdown_extras, "notify::selected", G_CALLBACK(on_extras_dropdown_selected), txt_extras_view);
+  g_signal_connect(dropdown_extras, "notify::selected",
+                   G_CALLBACK(on_extras_dropdown_selected), txt_extras_view);
   update_extras_view(GTK_TEXT_VIEW(txt_extras_view), 0);
 
   add_nav_row(sidebar, "dashboard", "Dashboard");
@@ -808,23 +847,27 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
   /* Bind Mode Selection */
   const char *mode_ids[] = {"cache", "frequency", "dual", "default", "reset"};
   for (int i = 0; i < 5; i++) {
-      char btn_id[64];
-      printf_sn(btn_id, sizeof(btn_id), "mode_card_%s", mode_ids[i]);
-      mode_btns[i] = GTK_WIDGET(gtk_builder_get_object(builder, btn_id));
-      if (mode_btns[i]) {
-          gtk_widget_set_name(mode_btns[i], btn_id);
-          g_signal_connect(mode_btns[i], "clicked", G_CALLBACK(on_mode_card_clicked), (gpointer)mode_ids[i]);
-      }
+    char btn_id[64];
+    printf_sn(btn_id, sizeof(btn_id), "mode_card_%s", mode_ids[i]);
+    mode_btns[i] = GTK_WIDGET(gtk_builder_get_object(builder, btn_id));
+    if (mode_btns[i]) {
+      gtk_widget_set_name(mode_btns[i], btn_id);
+      g_signal_connect(mode_btns[i], "clicked",
+                       G_CALLBACK(on_mode_card_clicked), (gpointer)mode_ids[i]);
+    }
   }
 
   w = (GObject *)gtk_builder_get_object(builder, "btn_mode_apply");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_mode_apply_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_mode_apply_clicked), NULL);
 
   w = (GObject *)gtk_builder_get_object(builder, "btn_mode_cancel");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_mode_cancel_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_mode_cancel_clicked), NULL);
 
   /* Bind Lifecycle Dropdown */
-  g_lifecycle_dropdown = GTK_DROP_DOWN(gtk_builder_get_object(builder, "lifecycle_dropdown"));
+  g_lifecycle_dropdown =
+      GTK_DROP_DOWN(gtk_builder_get_object(builder, "lifecycle_dropdown"));
 
   /* Bind config widgets */
   bind_config(builder);
@@ -838,10 +881,6 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
 }
 
 int main(int argc, char **argv) {
-  adw_init();
-  AdwStyleManager *style_manager = adw_style_manager_get_default();
-  adw_style_manager_set_color_scheme(style_manager, ADW_COLOR_SCHEME_FORCE_DARK);
-
   g_set_prgname("x3d-toggle");
   AdwApplication *app =
       adw_application_new("org.x3d.toggle", G_APPLICATION_DEFAULT_FLAGS);

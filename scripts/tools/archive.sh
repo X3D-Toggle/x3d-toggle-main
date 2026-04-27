@@ -8,7 +8,7 @@
 ## - Intended to be called by ExecStopPost in systemd for final preservation.
 ## - Does NOT perform trimming or retention cleanup.
 
-if [ "$X3D_EXEC" != "1" ]; then exit 1; fi
+
 
 _l_dir_lib="$(cd "$(dirname "$0")/../framework" && pwd)"
 . "$_l_dir_lib/framework.sh"

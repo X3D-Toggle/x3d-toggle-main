@@ -7,7 +7,7 @@
 ## Targets the daemon's logic state and the kernel's eBPF events.
 ## Maintains journal in `/var/log/x3d-toggle/audits/`
 
-if [ "$X3D_EXEC" != "1" ]; then exit 1; fi
+
 
 ROOT_REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT_REPO/scripts/framework/framework.sh"
@@ -33,6 +33,9 @@ printf_divider
 
 if [ "$(id -u)" -ne 0 ]; then
     printf_step "${XOUT} Error: Root privileges required for kernel trace access."
+    printf_br
+    printf "    Press [ENTER] to close window..."
+    read -r _unused
     exit 1
 fi
 
@@ -41,6 +44,8 @@ _l_cleanup() {
     printf_br
     printf_step "${ALRIGHT} Observer stopped. Log preserved at: $X3D_TRACE_FILE"
     printf_divider
+    printf "    Press [ENTER] to close window..."
+    read -r _unused
     return 0
 }
 trap _l_cleanup SIGINT SIGTERM
