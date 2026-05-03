@@ -80,6 +80,7 @@ static const msg_t registry_msg[] = {
     [35] = {"Affinity Migration Disruption", "Universal Protocol failed to migrate process affinity (Code: %d)"},
     [36] = {"GUI Execution Failure", "Dashboard error: %s"},
     [37] = {"Direct execution restricted", "Please use the 'x3d-toggle' CLI or run via the installer."},
+    [39] = {"Path component too long", "Assembled path exceeds 4096 bytes: %s"},
 };
 
 static const msg_t registry_status[] = {
@@ -177,6 +178,53 @@ static msg_t journal_get(error_code code) {
 
 const char *journal_string(int code) {
   return journal_get((error_code)code).summary;
+}
+
+const char *journal_strerror(int err) {
+  static const char *msgs[] = {
+    [0] = "Success",
+    [1] = "Operation not permitted",
+    [2] = "No such file or directory",
+    [3] = "No such process",
+    [4] = "Interrupted system call",
+    [5] = "I/O error",
+    [6] = "No such device or address",
+    [7] = "Argument list too long",
+    [8] = "Exec format error",
+    [9] = "Bad file number",
+    [10] = "No child processes",
+    [11] = "Try again",
+    [12] = "Out of memory",
+    [13] = "Permission denied",
+    [14] = "Bad address",
+    [15] = "Block device required",
+    [16] = "Device or resource busy",
+    [17] = "File exists",
+    [18] = "Cross-device link",
+    [19] = "No such device",
+    [20] = "Not a directory",
+    [21] = "Is a directory",
+    [22] = "Invalid argument",
+    [23] = "File table overflow",
+    [24] = "Too many open files",
+    [25] = "Inappropriate ioctl for device",
+    [26] = "Text file busy",
+    [27] = "File too large",
+    [28] = "No space left on device",
+    [29] = "Illegal seek",
+    [30] = "Read-only file system",
+    [31] = "Too many links",
+    [32] = "Broken pipe",
+    [33] = "Math argument out of domain",
+    [34] = "Math result not representable",
+    [35] = "Resource deadlock would occur",
+    [36] = "File name too long"
+  };
+  if (err < 0)
+    err = -err;
+  if (err >= 0 && err < (int)(sizeof(msgs) / sizeof(msgs[0])))
+    return msgs[err];
+  return "Unknown error";
 }
 
 void journal_error(error_code code, ...) {

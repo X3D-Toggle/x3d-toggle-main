@@ -4,7 +4,6 @@
  * linking autonomous CLI modules into the GTK frontend.
  */
 
-#include "../../include/libc.h"
 
 int unit_active(void) {
     return 0; 

@@ -67,6 +67,7 @@ typedef int error_code;
 #define ERR_GUI          -36
 #define ERR_EXEC         -37
 #define ERR_INVALID_ARGS -38
+#define ERR_LONG         -39
 
 void journal_error(error_code code, ...);
 void journal_warn(error_code code, ...);
@@ -83,6 +84,7 @@ void journal_diag(int level, const char *format, ...);
 void journal_file(const char *level, const char *summary, const char *ctx);
 
 const char *journal_string(int code);
+const char *journal_strerror(int err);
 void journal_syslog(int priority, const char *summary, const char *ctx);
 
 #endif // ERROR_H

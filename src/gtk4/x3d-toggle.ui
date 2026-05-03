@@ -315,6 +315,25 @@
                                   </object>
                                 </child>
 
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="orientation">horizontal</property>
+                                    <property name="spacing">12</property>
+                                    <property name="halign">end</property>
+                                    <property name="margin-top">24</property>
+                                    <child>
+                                      <object class="GtkButton" id="btn_cfg_cancel">
+                                        <property name="label">Cancel</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton" id="btn_cfg_apply">
+                                        <property name="label">Apply</property>
+                                        <style><class name="x3d-primary"/></style>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </property>
                           </object>

@@ -1,13 +1,12 @@
 /* Internal Standard Library Implementation for the X3D Toggle Project
- *
  * `libc.c`
- *
  * This implementation provides the minimal types, constants, and
- * low-level bootstrap logic (_start) and
- * essential syscall wrappers.
+ * low-level bootstrap logic (_start) and essential syscall wrappers,
+ * eliminating the need for external system libraries.
  */
 
 #include "libc.h"
+#include "error.h"
 
 #ifndef F_GETFD
 #define F_GETFD 3
@@ -78,26 +77,7 @@ int rand(void) {
 #define SYS_affinity 203
 
 char *strerror(int err) {
-  static const char *msgs[] = {"Success",
-                               "Operation not permitted",
-                               "No such file or directory",
-                               "No such process",
-                               "Interrupted system call",
-                               "I/O error",
-                               "No such device or address",
-                               "Argument list too long",
-                               "Exec format error",
-                               "Bad file number",
-                               "No child processes",
-                               "Try again",
-                               "Out of memory",
-                               "Permission denied",
-                               "Bad address"};
-  if (err < 0)
-    err = -err;
-  if (err >= 0 && err < 15)
-    return (char *)msgs[err];
-  return (char *)"Unknown error";
+  return (char *)journal_strerror(err);
 }
 
 int open(const char *path, int flags, ...) {
@@ -225,6 +205,13 @@ int nanosleep(const struct timespec *req, struct timespec *rem) {
     return -1;
   }
   return (int)ret;
+}
+
+void udelay(unsigned int usec) {
+  struct timespec ts;
+  ts.tv_sec = usec / 1000000;
+  ts.tv_nsec = (usec % 1000000) * 1000;
+  nanosleep(&ts, NULL);
 }
 
 int system(const char *cmd) {
@@ -831,6 +818,63 @@ unsigned long long strtoull(const char *p, char **e, int b) {
   if (e)
     *e = (char *)p;
   return r;
+}
+
+void priority(int enable) {
+  const char *targets[] = {
+      "/sys/class/amd_x3d/vcache_mode",
+      "/sys/bus/platform/devices/AMDI0101:00/amd_x3d_mode",
+      "/sys/devices/platform/AMDI0101:00/amd_x3d_mode",
+      "/sys/bus/pci/drivers/amd_x3d_vcache/vcache_mode",
+      "/sys/bus/platform/drivers/amd_x3d_vcache/AMDI0101:00/amd_x3d_mode"};
+
+  const char *mode = enable ? "cache" : "frequency";
+  size_t len = strlen(mode);
+
+  for (size_t i = 0; i < sizeof(targets) / sizeof(targets[0]); i++) {
+    int fd = open(targets[i], 1); /* O_WRONLY = 1 */
+    if (fd >= 0) {
+      write(fd, mode, len);
+      close(fd);
+      return;
+    }
+  }
+}
+
+int execvp(const char *file, char *const argv[]) {
+  if (strchr(file, '/')) {
+    return execve(file, argv, environ);
+  }
+
+  char *path = getenv("PATH");
+  if (!path)
+    path = (char *)"/bin:/usr/bin";
+
+  static char buf[4096];
+  const char *p = path;
+  while (*p) {
+    const char *start = p;
+    while (*p && *p != ':')
+      p++;
+
+    size_t dlen = p - start;
+    if (dlen + strlen(file) + 2 > sizeof(buf)) {
+      journal_error(ERR_LONG, file);
+      if (*p == ':')
+        p++;
+      continue;
+    }
+
+    memcpy(buf, start, dlen);
+    buf[dlen] = '/';
+    strcpy(buf + dlen + 1, file);
+
+    execve(buf, argv, environ);
+
+    if (*p == ':')
+      p++;
+  }
+  return -1;
 }
 
 #endif

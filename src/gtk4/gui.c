@@ -4,11 +4,12 @@
  * `action_x3dtoggle_X` button -> executes `x3d-toggle X`
  */
 
+#include "../../build/ccd.h"
+#include "../../build/config.h"
+#include "../../include/libc.h"
+#include "error.h"
 #include <adwaita.h>
 #include <gtk/gtk.h>
-#include "error.h"
-#include "config.h"
-#include "ccd.h"
 
 extern int socket_send(const char *cmd, char *response, size_t resp_len);
 extern int printf_sn(char *buf, size_t size, const char *fmt, ...);
@@ -39,6 +40,28 @@ static GtkStack *g_stack = NULL;
 static GtkDropDown *g_lifecycle_dropdown = NULL;
 static GtkDropDown *g_cfg_affinity_level = NULL;
 static GtkGrid *g_grid_topology = NULL;
+static GtkWidget *btn_cfg_apply = NULL;
+static GtkWidget *btn_cfg_cancel = NULL;
+static GtkDropDown *g_cfg_daemon_state = NULL;
+static GtkDropDown *g_cfg_fallback_profile = NULL;
+static GtkRange *g_cfg_polling_interval = NULL;
+static GtkRange *g_cfg_load_threshold = NULL;
+static GtkDropDown *g_cfg_detection_level = NULL;
+static GtkSwitch *g_cfg_ebpf_enable = NULL;
+static GtkSwitch *g_cfg_debug_enable = NULL;
+static GtkSwitch *g_cfg_dev_enable = NULL;
+static GtkSwitch *g_cfg_advanced_enable = NULL;
+
+static gboolean config_dirty = FALSE;
+static gboolean config_ignoring_changes = FALSE;
+
+static void set_config_dirty(gboolean dirty) {
+  config_dirty = dirty;
+  if (btn_cfg_apply)
+    gtk_widget_set_sensitive(btn_cfg_apply, dirty);
+  if (btn_cfg_cancel)
+    gtk_widget_set_sensitive(btn_cfg_cancel, dirty);
+}
 
 static const char *g_selected_mode = NULL;
 static GtkWidget *mode_btns[5]; /* Cache, Frequency, Dual, Default, Reset */
@@ -82,9 +105,11 @@ static gboolean update_dashboard_cb(gpointer user_data) {
   if (st) {
     strncpy(state_str, st + 6, sizeof(state_str) - 1);
     state_str[sizeof(state_str) - 1] = '\0';
-    char *sem = strchr(state_str, ';');
-    if (sem)
-      *sem = '\0';
+    char *sep = strchr(state_str, ';');
+    if (!sep)
+      sep = strchr(state_str, '|');
+    if (sep)
+      *sep = '\0';
   }
   if (ba && atoi(ba + 11))
     strncpy(active_str, "eBPF (Active)", sizeof(active_str) - 1);
@@ -305,16 +330,20 @@ static int is_core_in_mask(int core, const char *mask) {
   char *p = buf;
   while (p && *p) {
     char *comma = strchr(p, ',');
-    if (comma) *comma = '\0';
+    if (comma)
+      *comma = '\0';
     char *hyphen = strchr(p, '-');
     if (hyphen) {
       int start = atoi(p);
       int end = atoi(hyphen + 1);
-      if (core >= start && core <= end) return 1;
+      if (core >= start && core <= end)
+        return 1;
     } else {
-      if (atoi(p) == core) return 1;
+      if (atoi(p) == core)
+        return 1;
     }
-    if (!comma) break;
+    if (!comma)
+      break;
     p = comma + 1;
   }
   return 0;
@@ -336,16 +365,18 @@ static void on_core_toggled(GtkToggleButton *btn, gpointer user_data) {
 }
 
 void refresh_topology(void) {
-  if (!g_grid_topology) return;
+  if (!g_grid_topology)
+    return;
   char mask[128] = {0};
   int ccd1_start = 0;
   int total_cores = 0;
-  if (ccd(mask, &ccd1_start, &total_cores) != 0) return;
-  
+  if (ccd(mask, &ccd1_start, &total_cores) != 0)
+    return;
+
   /* Priority: Use user-defined persistence from daemon.conf if available */
   const char *saved_mask = config_get("AFFINITY_MASK");
   if (saved_mask && saved_mask[0] && strcmp(saved_mask, "none") != 0) {
-      strncpy(mask, saved_mask, sizeof(mask)-1);
+    strncpy(mask, saved_mask, sizeof(mask) - 1);
   }
 
   GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(g_grid_topology));
@@ -386,13 +417,13 @@ static void on_affinity_apply_clicked(GtkButton *btn, gpointer user_data) {
       GtkToggleButton *tb = GTK_TOGGLE_BUTTON(child);
       const char *label = gtk_button_get_label(GTK_BUTTON(tb));
       if (gtk_toggle_button_get_active(tb)) {
-        cache_pos += printf_sn(cache_mask + cache_pos,
-                               sizeof(cache_mask) - cache_pos, "%s%s",
-                               (cache_pos > 0) ? "," : "", label);
+        cache_pos +=
+            printf_sn(cache_mask + cache_pos, sizeof(cache_mask) - cache_pos,
+                      "%s%s", (cache_pos > 0) ? "," : "", label);
       } else {
-        freq_pos += printf_sn(freq_mask + freq_pos,
-                              sizeof(freq_mask) - freq_pos, "%s%s",
-                              (freq_pos > 0) ? "," : "", label);
+        freq_pos +=
+            printf_sn(freq_mask + freq_pos, sizeof(freq_mask) - freq_pos,
+                      "%s%s", (freq_pos > 0) ? "," : "", label);
       }
     }
     child = gtk_widget_get_next_sibling(child);
@@ -409,7 +440,8 @@ static void on_affinity_apply_clicked(GtkButton *btn, gpointer user_data) {
 
   /* Brief visual confirmation (Update status label if available) */
   if (lbl_status_dump) {
-      gtk_label_set_label(GTK_LABEL(lbl_status_dump), "Affinity Settings Applied");
+    gtk_label_set_label(GTK_LABEL(lbl_status_dump),
+                        "Affinity Settings Applied");
   }
 
   /* Persistence */
@@ -496,24 +528,22 @@ typedef struct {
 
 static void on_cfg_dropdown_changed(GObject *obj, GParamSpec *pspec,
                                     gpointer data) {
+  (void)obj;
   (void)pspec;
-  CfgDropData *d = (CfgDropData *)data;
-  guint idx = gtk_drop_down_get_selected(GTK_DROP_DOWN(obj));
-  if (d->values) {
-    config_send(d->key, d->values[idx]);
-  } else {
-    char buf[16];
-    printf_sn(buf, sizeof(buf), "%d", (int)idx + d->offset);
-    config_send(d->key, buf);
-  }
+  (void)data;
+  if (config_ignoring_changes)
+    return;
+  set_config_dirty(TRUE);
 }
 
 static void on_cfg_switch_changed(GObject *obj, GParamSpec *pspec,
                                   gpointer data) {
+  (void)obj;
   (void)pspec;
-  const char *key = (const char *)data;
-  gboolean active = gtk_switch_get_active(GTK_SWITCH(obj));
-  config_send(key, active ? "1" : "0");
+  (void)data;
+  if (config_ignoring_changes)
+    return;
+  set_config_dirty(TRUE);
 }
 
 /* enabled/disabled style switches for linter settings */
@@ -526,25 +556,28 @@ static void on_cfg_switch_enabled(GObject *obj, GParamSpec *pspec,
 }
 
 static void on_cfg_scale_changed(GtkRange *range, gpointer data) {
-  const char *key = (const char *)data;
-  int val = (int)gtk_range_get_value(range);
-  char buf[16];
-  printf_sn(buf, sizeof(buf), "%d", val);
-  config_send(key, buf);
+  (void)range;
+  (void)data;
+  if (config_ignoring_changes)
+    return;
+  set_config_dirty(TRUE);
 }
 
 static void on_server_address_changed(GtkEditable *editable, gpointer data) {
   (void)editable;
   (void)data;
+  if (config_ignoring_changes)
+    return;
   if (!g_cfg_server_ip || !g_cfg_server_port)
     return;
   const char *ip = gtk_editable_get_text(g_cfg_server_ip);
   const char *port = gtk_editable_get_text(g_cfg_server_port);
   if (!ip || !ip[0] || !port || !port[0])
     return;
-  char combined[128];
+  /* char combined[128];
   printf_sn(combined, sizeof(combined), "%s:%s", ip, port);
-  config_send("SERVER_ADDRESS", combined);
+  config_send("SERVER_ADDRESS", combined); */
+  set_config_dirty(TRUE);
 }
 
 /* ── Dev mode visibility toggle ──────────────────────────────── */
@@ -661,13 +694,133 @@ static void on_rotation_cancel_clicked(GtkButton *btn, gpointer data) {
   }
 }
 
+static void on_cfg_apply_clicked(GtkButton *btn, gpointer user_data) {
+  (void)btn;
+  (void)user_data;
+  
+  if (btn_cfg_apply)
+    gtk_button_set_label(GTK_BUTTON(btn_cfg_apply), "Applying...");
+
+  if (g_cfg_daemon_state)
+    config_send("DAEMON_STATE",
+                daemon_state_vals[gtk_drop_down_get_selected(g_cfg_daemon_state)]);
+  if (g_cfg_fallback_profile)
+    config_send(
+        "FALLBACK_PROFILE",
+        fallback_vals[gtk_drop_down_get_selected(g_cfg_fallback_profile)]);
+  if (g_cfg_polling_interval) {
+    char buf[16];
+    printf_sn(buf, sizeof(buf), "%d",
+              (int)gtk_range_get_value(g_cfg_polling_interval));
+    config_send("POLLING_INTERVAL", buf);
+  }
+  if (g_cfg_load_threshold) {
+    char buf[16];
+    printf_sn(buf, sizeof(buf), "%d",
+              (int)gtk_range_get_value(g_cfg_load_threshold));
+    config_send("LOAD_THRESHOLD", buf);
+  }
+  if (g_cfg_detection_level) {
+    char buf[16];
+    printf_sn(buf, sizeof(buf), "%d",
+              (int)gtk_drop_down_get_selected(g_cfg_detection_level) + 1);
+    config_send("DETECTION_LEVEL", buf);
+  }
+  if (g_cfg_ebpf_enable)
+    config_send("EBPF_ENABLE",
+                gtk_switch_get_active(g_cfg_ebpf_enable) ? "1" : "0");
+  if (g_cfg_debug_enable)
+    config_send("DEBUG_ENABLE",
+                gtk_switch_get_active(g_cfg_debug_enable) ? "1" : "0");
+  if (g_cfg_dev_enable)
+    config_send("DEV_ENABLE",
+                gtk_switch_get_active(g_cfg_dev_enable) ? "1" : "0");
+  if (g_cfg_advanced_enable)
+    config_send("ADVANCED_CONFIG_ENABLE",
+                gtk_switch_get_active(g_cfg_advanced_enable) ? "1" : "0");
+
+  if (g_cfg_server_ip && g_cfg_server_port) {
+    const char *ip = gtk_editable_get_text(g_cfg_server_ip);
+    const char *port = gtk_editable_get_text(g_cfg_server_port);
+    if (ip && ip[0] && port && port[0]) {
+      char combined[128];
+      printf_sn(combined, sizeof(combined), "%s:%s", ip, port);
+      config_send("SERVER_ADDRESS", combined);
+    }
+  }
+
+  set_config_dirty(FALSE);
+  if (btn_cfg_apply)
+    gtk_button_set_label(GTK_BUTTON(btn_cfg_apply), "Apply");
+}
+
+static void on_cfg_cancel_clicked(GtkButton *btn, gpointer user_data) {
+  (void)btn;
+  (void)user_data;
+  config_ignoring_changes = TRUE;
+
+  if (g_cfg_daemon_state)
+    gtk_drop_down_set_selected(
+        g_cfg_daemon_state,
+        find_dropdown_idx(daemon_state_vals, ARRAY_SIZE(daemon_state_vals),
+                          config_get("DAEMON_STATE")));
+  if (g_cfg_fallback_profile)
+    gtk_drop_down_set_selected(
+        g_cfg_fallback_profile,
+        find_dropdown_idx(fallback_vals, ARRAY_SIZE(fallback_vals),
+                          config_get("FALLBACK_PROFILE")));
+  if (g_cfg_polling_interval)
+    gtk_range_set_value(g_cfg_polling_interval,
+                        atof(config_get("POLLING_INTERVAL")));
+  if (g_cfg_load_threshold)
+    gtk_range_set_value(g_cfg_load_threshold,
+                        atof(config_get("LOAD_THRESHOLD")));
+  if (g_cfg_detection_level)
+    gtk_drop_down_set_selected(
+        g_cfg_detection_level, (guint)(atoi(config_get("DETECTION_LEVEL")) - 1));
+  if (g_cfg_ebpf_enable)
+    gtk_switch_set_active(g_cfg_ebpf_enable,
+                          atoi(config_get("EBPF_ENABLE")) != 0);
+  if (g_cfg_debug_enable)
+    gtk_switch_set_active(g_cfg_debug_enable,
+                          atoi(config_get("DEBUG_ENABLE")) != 0);
+  if (g_cfg_dev_enable)
+    gtk_switch_set_active(g_cfg_dev_enable, atoi(config_get("DEV_ENABLE")) != 0);
+  if (g_cfg_advanced_enable)
+    gtk_switch_set_active(g_cfg_advanced_enable,
+                          atoi(config_get("ADVANCED_CONFIG_ENABLE")) != 0);
+
+  if (g_cfg_server_ip && g_cfg_server_port) {
+    char *val = config_get("SERVER_ADDRESS");
+    if (val && val[0]) {
+      char buf[128];
+      strncpy(buf, val, sizeof(buf) - 1);
+      buf[sizeof(buf) - 1] = '\0';
+      char *colon = strchr(buf, ':');
+      if (colon) {
+        *colon = '\0';
+        gtk_editable_set_text(g_cfg_server_ip, buf);
+        gtk_editable_set_text(g_cfg_server_port, colon + 1);
+      } else {
+        gtk_editable_set_text(g_cfg_server_ip, buf);
+      }
+    }
+  }
+
+  config_ignoring_changes = FALSE;
+  set_config_dirty(FALSE);
+}
+
 static void bind_config(GtkBuilder *builder) {
   char *val;
   GObject *w;
 
+  config_ignoring_changes = TRUE;
+
   /* Dropdown: DAEMON_STATE */
   w = gtk_builder_get_object(builder, "cfg_daemon_state");
   if (w) {
+    g_cfg_daemon_state = GTK_DROP_DOWN(w);
     val = config_get("DAEMON_STATE");
     gtk_drop_down_set_selected(GTK_DROP_DOWN(w),
                                find_dropdown_idx(daemon_state_vals,
@@ -680,6 +833,7 @@ static void bind_config(GtkBuilder *builder) {
   /* Dropdown: FALLBACK_PROFILE */
   w = gtk_builder_get_object(builder, "cfg_fallback_profile");
   if (w) {
+    g_cfg_fallback_profile = GTK_DROP_DOWN(w);
     val = config_get("FALLBACK_PROFILE");
     gtk_drop_down_set_selected(
         GTK_DROP_DOWN(w),
@@ -691,6 +845,7 @@ static void bind_config(GtkBuilder *builder) {
   /* Scale: POLLING_INTERVAL */
   w = gtk_builder_get_object(builder, "cfg_polling_interval");
   if (w) {
+    g_cfg_polling_interval = GTK_RANGE(w);
     val = config_get("POLLING_INTERVAL");
     gtk_range_set_value(GTK_RANGE(w), atof(val));
     g_signal_connect(w, "value-changed", G_CALLBACK(on_cfg_scale_changed),
@@ -700,6 +855,7 @@ static void bind_config(GtkBuilder *builder) {
   /* Scale: LOAD_THRESHOLD */
   w = gtk_builder_get_object(builder, "cfg_load_threshold");
   if (w) {
+    g_cfg_load_threshold = GTK_RANGE(w);
     val = config_get("LOAD_THRESHOLD");
     gtk_range_set_value(GTK_RANGE(w), atof(val));
     g_signal_connect(w, "value-changed", G_CALLBACK(on_cfg_scale_changed),
@@ -709,6 +865,7 @@ static void bind_config(GtkBuilder *builder) {
   /* Dropdown: DETECTION_LEVEL (1=Strict idx0, 2=Loose idx1) */
   w = gtk_builder_get_object(builder, "cfg_detection_level");
   if (w) {
+    g_cfg_detection_level = GTK_DROP_DOWN(w);
     val = config_get("DETECTION_LEVEL");
     gtk_drop_down_set_selected(GTK_DROP_DOWN(w), (guint)(atoi(val) - 1));
     g_signal_connect(w, "notify::selected", G_CALLBACK(on_cfg_dropdown_changed),
@@ -718,6 +875,7 @@ static void bind_config(GtkBuilder *builder) {
   /* Switch: EBPF_ENABLE */
   w = gtk_builder_get_object(builder, "cfg_ebpf_enable");
   if (w) {
+    g_cfg_ebpf_enable = GTK_SWITCH(w);
     val = config_get("EBPF_ENABLE");
     gtk_switch_set_active(GTK_SWITCH(w), atoi(val) != 0);
     g_signal_connect(w, "notify::active", G_CALLBACK(on_cfg_switch_changed),
@@ -736,6 +894,7 @@ static void bind_config(GtkBuilder *builder) {
   /* Switch: ADVANCED_CONFIG_ENABLE (controls advanced tab visibility) */
   w = gtk_builder_get_object(builder, "cfg_advanced_enable");
   if (w) {
+    g_cfg_advanced_enable = GTK_SWITCH(w);
     val = config_get("ADVANCED_CONFIG_ENABLE");
     gboolean adv = atoi(val) != 0;
     gtk_switch_set_active(GTK_SWITCH(w), adv);
@@ -747,6 +906,7 @@ static void bind_config(GtkBuilder *builder) {
   /* Switch: DEV_ENABLE (also controls dev tab visibility) */
   w = gtk_builder_get_object(builder, "cfg_dev_enable");
   if (w) {
+    g_cfg_dev_enable = GTK_SWITCH(w);
     val = config_get("DEV_ENABLE");
     gboolean dev = atoi(val) != 0;
     gtk_switch_set_active(GTK_SWITCH(w), dev);
@@ -760,6 +920,7 @@ static void bind_config(GtkBuilder *builder) {
   /* Switch: DEBUG_ENABLE */
   w = gtk_builder_get_object(builder, "cfg_debug_enable");
   if (w) {
+    g_cfg_debug_enable = GTK_SWITCH(w);
     val = config_get("DEBUG_ENABLE");
     gtk_switch_set_active(GTK_SWITCH(w), atoi(val) != 0);
     g_signal_connect(w, "notify::active", G_CALLBACK(on_cfg_switch_changed),
@@ -896,6 +1057,23 @@ static void bind_config(GtkBuilder *builder) {
     g_signal_connect(w2, "changed", G_CALLBACK(on_server_address_changed),
                      NULL);
   }
+
+  /* Config Apply/Cancel */
+  w = gtk_builder_get_object(builder, "btn_cfg_apply");
+  if (w) {
+    btn_cfg_apply = GTK_WIDGET(w);
+    gtk_widget_set_sensitive(btn_cfg_apply, FALSE);
+    g_signal_connect(w, "clicked", G_CALLBACK(on_cfg_apply_clicked), builder);
+  }
+  w = gtk_builder_get_object(builder, "btn_cfg_cancel");
+  if (w) {
+    btn_cfg_cancel = GTK_WIDGET(w);
+    gtk_widget_set_sensitive(btn_cfg_cancel, FALSE);
+    g_signal_connect(w, "clicked", G_CALLBACK(on_cfg_cancel_clicked), builder);
+  }
+
+  config_ignoring_changes = FALSE;
+  set_config_dirty(FALSE);
 }
 
 /* ── Application Activate ─────────────────────────────────────── */
@@ -1037,19 +1215,24 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
 
   /* Affinity Tab Bindings */
   w = gtk_builder_get_object(builder, "grid_topology");
-  if (w) g_grid_topology = GTK_GRID(w);
+  if (w)
+    g_grid_topology = GTK_GRID(w);
 
   w = gtk_builder_get_object(builder, "btn_affinity_apply");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_affinity_apply_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_affinity_apply_clicked), NULL);
 
   w = gtk_builder_get_object(builder, "btn_affinity_cancel");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_affinity_cancel_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_affinity_cancel_clicked),
+                     NULL);
 
   w = gtk_builder_get_object(builder, "cfg_affinity_level");
   if (w) {
     g_cfg_affinity_level = GTK_DROP_DOWN(w);
     const char *val = config_get("AFFINITY_LEVEL");
-    gtk_drop_down_set_selected(g_cfg_affinity_level, (guint)atoi(val ? val : "0"));
+    gtk_drop_down_set_selected(g_cfg_affinity_level,
+                               (guint)atoi(val ? val : "0"));
   }
 
   /* Bind Lifecycle Dropdown */

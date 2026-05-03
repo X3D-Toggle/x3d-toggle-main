@@ -4,9 +4,10 @@
  * immediately before launch and restores it upon exit.
  * Usage: `x3d-run <executable> [args...]`
  * Steam Launch Options: `x3d-run %command%`
-
  */
 
+#include "libc.h"
+#include "ipc.h"
 #include "error.h"
 #include "../build/xui.h"
 
@@ -18,8 +19,8 @@ int run_game(int argc, char *argv[]) {
     return ERR_SYNTAX;
   }
 
-  char *cmd = (strcmp(argv[1], "run") == 0) ? argv[2] : argv[1];
   int start_idx = (strcmp(argv[1], "run") == 0) ? 2 : 1;
+  char *cmd = argv[start_idx];
 
   if (!cmd) {
     journal_error(ERR_SYNTAX, "Usage: x3d-run [CMD] [ARGS...]");
@@ -27,40 +28,30 @@ int run_game(int argc, char *argv[]) {
   }
 
   printf_step("${HAMMER} Initiating Game Launcher: %s", cmd);
+  
+  socket_send("SET_WRAPPER 1", NULL, 0);
+  udelay(1000);
+
+  priority(1);
 
   pid_t pid = fork();
   if (pid < 0) {
     journal_error(ERR_IO, "Failed to fork for game execution");
+    priority(0);
     return ERR_IO;
   }
 
   if (pid == 0) {
-    char *args[64];
-    int arg_idx = 0;
-    for (int i = start_idx; i < argc && arg_idx < 63; i++) {
-      args[arg_idx++] = argv[i];
-    }
-    args[arg_idx] = NULL;
-
-    execve(cmd, args, environ);
-
-    char *sh_args[66];
-    sh_args[0] = (char *)"/usr/bin/sh";
-    sh_args[1] = (char *)"-c";
-    sh_args[2] = cmd;
-    int k = 3;
-    for (int i = start_idx + 1; i < argc && k < 65; i++) {
-      sh_args[k++] = argv[i];
-    }
-    sh_args[k] = NULL;
-
-    execve(sh_args[0], sh_args, environ);
+    execvp(cmd, &argv[start_idx]);
 
     write(2, "X3D Error: Execution failed\n", 28);
     _exit(1);
   } else {
     int status;
     waitpid(pid, &status, 0);
+
+    priority(0);
+    socket_send("SET_WRAPPER 0", NULL, 0);
 
     if (WIFEXITED(status)) {
       int exit_code = WEXITSTATUS(status);

@@ -25,6 +25,7 @@ extern volatile int socket_ready;
 DaemonConfig cfg;
 gamelist gl;
 bool bpf_active = false;
+volatile int wrapper_lock = 0;
 
 #ifndef CLI_BUILD
 int daemon(int argc, char *argv[]) {

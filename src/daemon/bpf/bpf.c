@@ -45,6 +45,7 @@ struct {
 
 SEC("tp/sched/sched_process_exec")
 int handle_exec(struct trace_event_raw_sched_process_exec *ctx) {
+    (void)ctx;
     struct process_event *e;
     e = bpf_ringbuf_reserve(&events, sizeof(*e), 0);
     if (e) {
@@ -59,6 +60,7 @@ int handle_exec(struct trace_event_raw_sched_process_exec *ctx) {
 
 SEC("tp/sched/sched_process_exit")
 int handle_exit(struct trace_event_raw_sched_process_template *ctx) {
+    (void)ctx;
     struct process_event *e;
     e = bpf_ringbuf_reserve(&events, sizeof(*e), 0);
     if (e) {

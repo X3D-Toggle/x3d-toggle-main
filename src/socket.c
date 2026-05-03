@@ -4,6 +4,7 @@
  * Employs a non-blocking select() loop for graceful termination.
  */
 
+#include "../build/ccd.h"
 #include "../build/config.h"
 #include "../build/xui.h"
 #include "cppc.h"
@@ -22,6 +23,7 @@ extern volatile sig_atomic_t active_keep;
 extern volatile int active_override;
 extern DaemonConfig cfg;
 extern bool bpf_active;
+extern volatile int wrapper_pid;
 
 int socket_setup(void) {
   int fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -87,12 +89,16 @@ void socket_handle(int server_fd) {
       send(client_fd, current, strlen(current), MSG_NOSIGNAL);
     } else if (strncmp(buf, "DAEMON_INFO", 11) == 0) {
       char info[256];
-      printf_sn(
-          info, sizeof(info),
-          "STATE=%.31s;OVERRIDE=%d;BPF_ACTIVE=%d;REFRESH_INTERVAL=%.1f;MASK=%.127s",
-          cfg.daemon_state, active_override, bpf_active ? 1 : 0,
-          cfg.refresh_interval, cfg.affinity_mask);
+      printf_sn(info, sizeof(info),
+                "STATE=%s|OVERRIDE=%d|BPF_ACTIVE=%d|REFRESH_INTERVAL=%.1f|"
+                "MASK=%s",
+                cfg.daemon_state, active_override, bpf_active ? 1 : 0,
+                cfg.refresh_interval, cfg.affinity_mask);
       send(client_fd, info, strlen(info), MSG_NOSIGNAL);
+    } else if (strncmp(buf, "GET_CONFIG ", 11) == 0) {
+      extern const char *config_get(const char *key);
+      const char *val = config_get(buf + 11);
+      send(client_fd, val, strlen(val), MSG_NOSIGNAL);
     } else if (strncmp(buf, "TOGGLE", 6) == 0) {
       char current[32], *target;
       mode(current, sizeof(current));
@@ -133,7 +139,8 @@ void socket_handle(int server_fd) {
         freq++;
         ret = affinity_set_masks(cache, freq);
         if (cfg.debug_enable) {
-          journal_debug("Affinity masks updated: cache=%s, freq=%s (result=%d)", cache, freq, ret);
+          journal_debug("Affinity masks updated: cache=%s, freq=%s (result=%d)",
+                        cache, freq, ret);
         }
       }
       send(client_fd, (ret == ERR_SUCCESS) ? "OK" : "ERR",
@@ -278,7 +285,8 @@ void socket_handle(int server_fd) {
             (void)waitpid(rpid, &rst, 0);
           } else {
             int fork_errno = errno;
-            syslog(LOG_ERR, "fork() failed for reset.sh: %s", strerror(fork_errno));
+            syslog(LOG_ERR, "fork() failed for reset.sh: %s",
+                   strerror(fork_errno));
             send(client_fd, "ERR", 3, MSG_NOSIGNAL);
             close(client_fd);
             return;
@@ -308,17 +316,22 @@ void socket_handle(int server_fd) {
         else if (strcmp(kv, "EBPF_ENABLE") == 0) {
           cfg.ebpf_enable = atoi(v);
           if (cfg.ebpf_enable && !bpf_active)
-            bpf_init();
+            bpf_active = bpf_init();
           else if (!cfg.ebpf_enable && bpf_active) {
-            bpf_active = false;
             bpf_cleanup();
+            bpf_active = false;
           }
         } else if (strcmp(kv, "AFFINITY_MASK") == 0) {
           printf_sn(cfg.affinity_mask, sizeof(cfg.affinity_mask), "%s", v);
         }
+        journal_info(DAEMON_TRANSIT, "Configuration Update: %s -> %s", kv, v);
         send(client_fd, "OK", 2, MSG_NOSIGNAL);
       } else
         send(client_fd, "ERR", 3, MSG_NOSIGNAL);
+    } else if (strncmp(buf, "SET_WRAPPER ", 12) == 0) {
+      extern volatile int wrapper_lock;
+      wrapper_lock = atoi(buf + 12);
+      send(client_fd, "OK", 2, MSG_NOSIGNAL);
     } else if (strncmp(buf, "DAEMON_DISABLE", 14) == 0) {
       active_keep = 0;
       send(client_fd, "OK", 2, MSG_NOSIGNAL);

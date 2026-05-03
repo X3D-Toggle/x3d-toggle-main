@@ -13,6 +13,7 @@
 #define _POSIX_C_SOURCE 202405L
 
 extern volatile int active_override;
+extern volatile int wrapper_lock;
 extern DaemonConfig cfg;
 extern bool bpf_active;
 extern bool bpf_game(void);
@@ -88,6 +89,12 @@ void polling_run(CPUStats *p_stat, CPUStats *c_stat, char *current, char *target
     *p_stat = *c_stat;
 
     int sysfs_ok = (mode(current, 32) == ERR_SUCCESS);
+    
+    if (wrapper_lock != 0) {
+        printf_sn(target, 32, "cache");
+        goto force_apply;
+    }
+
     if (active_override < 3 && strcmp(cfg.daemon_state, "default") == 0) {
       int eg = 0, pg = 0;
 
@@ -110,6 +117,10 @@ void polling_run(CPUStats *p_stat, CPUStats *c_stat, char *current, char *target
         cli_set_mode(target);
       }
     } else {
+force_apply:
+      if (sysfs_ok && strcmp(current, target) != 0 && strlen(target) > 0) {
+        cli_set_mode(target);
+      }
       printf_sn(target, 32, "%s", current);
       target[31] = '\0';
     }

@@ -29,6 +29,9 @@ export DIR_SRC="$X3D_TOGGLE/src"
 
 export X3D_BIN="$X3D_TOGGLE/bin"
 export X3D_BUILD="$X3D_TOGGLE/build"
+if [ ! -d "$X3D_BUILD" ]; then
+    export X3D_BUILD="$X3D_TOGGLE"
+fi
 
 export PREFIX="${PREFIX:-/usr}"
 export USR_BIN="${USR_BIN:-$PREFIX/bin}"
@@ -103,7 +106,7 @@ fi
 . "$XUI_PATH"
 
 # Self-healing provisioning (Skipped during formal generation cycles to ensure accurate UI reporting)
-if [ "$X3D_FRAMEWORK" != "1" ] && { [ ! -f "$X3D_BUILD/xui.c" ] || [ ! -f "$X3D_BUILD/xui.h" ]; }; then
+if [ "$X3D_FRAMEWORK" != "1" ] && [ "$X3D_TOGGLE" != "/usr/lib/x3d-toggle" ] && { [ ! -f "$X3D_BUILD/xui.c" ] || [ ! -f "$X3D_BUILD/xui.h" ]; }; then
     sh "$XUI_PATH" --gen-xui
     if [ ! -f "$X3D_BUILD/xui.c" ] || [ ! -f "$X3D_BUILD/xui.h" ]; then
         printf_step "2,${XOUT} Error: XUI Components Missing" \

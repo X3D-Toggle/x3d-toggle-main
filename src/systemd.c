@@ -83,6 +83,7 @@ volatile int active_override = 0;
 volatile sig_atomic_t active_keep = 1;
 volatile sig_atomic_t last_sig = 0;
 volatile sig_atomic_t reload_flag = 0;
+static volatile sig_atomic_t failsafe_active = 0;
 
 static void sig_handler(int signum) {
   last_sig = signum;
@@ -172,11 +173,12 @@ void daemon_restore(int signum) {
 }
 
 void daemon_failsafe(int sig) {
-  syslog(LOG_CRIT,
-         "FATAL: Emergency Failsafe Triggered by signal %d. Restoring hardware "
-         "state...",
-         sig);
-  journal_file("FATAL", "FAILSAFE", "Signal Triggered Emergency Restore");
+  if (failsafe_active)
+    return;
+  failsafe_active = 1;
+
+  const char *msg = "FATAL: Emergency Failsafe Triggered. Restoring hardware...\n";
+  write(2, msg, strlen(msg));
 
   cppc_restore();
   daemon_restore(sig);

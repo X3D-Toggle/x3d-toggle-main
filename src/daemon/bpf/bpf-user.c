@@ -116,6 +116,9 @@ static void *gamemode_listener_thread(void *arg) {
 }
 
 bool bpf_init(void) {
+  if (obj)
+    return true;
+
   pthread_t tid;
   if (pthread_create(&tid, NULL, gamemode_listener_thread, NULL) == 0) {
     pthread_detach(tid);

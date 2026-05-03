@@ -238,7 +238,6 @@ setup:
 	./setup.sh
 
 clean:
-	echo "  🧹 Cleaning build artifacts..."
 	rm -rf $(BIN) $(DIR_BUILD)
 	mkdir -p $(BIN) $(DIR_BUILD)
 

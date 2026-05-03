@@ -6,14 +6,54 @@
 #ifndef LIBC_H
 #define LIBC_H
 
+#ifdef GUI_BUILD
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#ifdef GUI_BUILD
-#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <syslog.h>
+#include <time.h>
 #endif
+
+#ifndef GUI_BUILD
+typedef unsigned long size_t;
+typedef unsigned long uintptr_t;
+typedef long intptr_t;
+
+typedef signed char int8_t;
+typedef unsigned char uint8_t;
+typedef short int16_t;
+typedef unsigned short uint16_t;
+typedef int int32_t;
+typedef unsigned int uint32_t;
+typedef long long int64_t;
+typedef unsigned long long uint64_t;
+
+#ifndef bool
+#define bool _Bool
+#define true 1
+#define false 0
+#endif
+
+typedef __builtin_va_list va_list;
+#define va_start(ap, last) __builtin_va_start(ap, last)
+#define va_end(ap) __builtin_va_end(ap)
+#define va_arg(ap, type) __builtin_va_arg(ap, type)
+#define va_copy(dest, src) __builtin_va_copy(dest, src)
+
+typedef unsigned int socklen_t;
+typedef unsigned int __socklen_t;
+
+#define offsetof(type, member) __builtin_offsetof(type, member)
 
 typedef long long ssize_t;
 typedef int pid_t;
@@ -28,40 +68,30 @@ typedef unsigned long sigset_t;
 #define NULL ((void *)0)
 #endif
 
-#ifndef GUI_BUILD
 #ifndef errno
 extern int errno;
 #endif
 
-#define ENOENT  2
+#define ENOENT 2
 #define EAGAIN 11
 #define EACCES 13
 #define ERANGE 34
-#endif
 
 #ifndef INT_MAX
-#define INT_MAX  2147483647
+#define INT_MAX 2147483647
 #endif
 #ifndef INT_MIN
-#define INT_MIN  (-INT_MAX - 1)
+#define INT_MIN (-INT_MAX - 1)
 #endif
 #ifndef LONG_MAX
-#define LONG_MAX  9223372036854775807L
+#define LONG_MAX 9223372036854775807L
 #endif
 #ifndef LONG_MIN
-#define LONG_MIN  (-LONG_MAX - 1L)
+#define LONG_MIN (-LONG_MAX - 1L)
 #endif
 
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
-
-#define FILENO_STDIN 0
-#define FILENO_STDOUT 1
-#define FILENO_STDERR 2
-
-#define PART_DUAL 0
-#define PART_CACHE 1
-#define PART_FREQ 2
 
 #define O_RDONLY 0
 #define O_WRONLY 1
@@ -135,13 +165,13 @@ typedef struct {
 
 #define FD_SET(n, p)                                                           \
   ((p)->fds_bits[(n) / (8 * sizeof(fd_mask))] |=                               \
-   (1UL << ((n) % (8 * sizeof(fd_mask)))))
+    (1UL << ((n) % (8 * sizeof(fd_mask)))))
 #define FD_CLR(n, p)                                                           \
   ((p)->fds_bits[(n) / (8 * sizeof(fd_mask))] &=                               \
-   ~(1UL << ((n) % (8 * sizeof(fd_mask)))))
+    ~(1UL << ((n) % (8 * sizeof(fd_mask)))))
 #define FD_ISSET(n, p)                                                         \
   ((p)->fds_bits[(n) / (8 * sizeof(fd_mask))] &                                \
-   (1UL << ((n) % (8 * sizeof(fd_mask)))))
+    (1UL << ((n) % (8 * sizeof(fd_mask)))))
 #define FD_ZERO(p) memset((p), 0, sizeof(*(p)))
 
 struct sigaction {
@@ -151,6 +181,8 @@ struct sigaction {
   unsigned long sa_mask;
 };
 
+#endif
+
 struct linux_dirent64 {
   uint64_t d_ino;
   int64_t d_off;
@@ -158,6 +190,14 @@ struct linux_dirent64 {
   unsigned char d_type;
   char d_name[];
 };
+
+#define FILENO_STDIN 0
+#define FILENO_STDOUT 1
+#define FILENO_STDERR 2
+
+#define PART_DUAL 0
+#define PART_CACHE 1
+#define PART_FREQ 2
 
 int open(const char *path, int flags, ...);
 int close(int fd);
@@ -189,7 +229,10 @@ int affinity_dual(pid_t pid);
 int affinity_partition(pid_t pid, int partition);
 pid_t fork(void);
 int execve(const char *path, char *const argv[], char *const envp[]);
+int execvp(const char *file, char *const argv[]);
+void priority(int enable);
 pid_t waitpid(pid_t pid, int *status, int options);
+void udelay(unsigned int usec);
 void _exit(int status);
 int nanosleep(const struct timespec *req, struct timespec *rem);
 int system(const char *command);
@@ -236,6 +279,9 @@ char *getenv(const char *name);
 void openlog(const char *ident, int option, int facility);
 void syslog(int priority, const char *format, ...);
 void closelog(void);
+void *malloc(size_t size);
+void *realloc(void *ptr, size_t size);
+void free(void *ptr);
 char *strerror(int err);
 
 #endif // LIBC_H

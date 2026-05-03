@@ -12,7 +12,7 @@
 #define DIR_BIN "/etc/x3d-toggle.d"
 #endif
 
-#include "config.h" 
+#include "../build/config.h" 
 #include "xui.h"
 #include "cli.h"
 #include "error.h"
@@ -290,6 +290,34 @@ void config_load(DaemonConfig *cfg) {
     }
     close(fd);
   }
+}
+
+const char *config_get(const char *key) {
+  static char val[128];
+  extern DaemonConfig cfg;
+  if (strcmp(key, "POLLING_INTERVAL") == 0)
+    printf_sn(val, sizeof(val), "%d", cfg.polling_interval);
+  else if (strcmp(key, "LOAD_THRESHOLD") == 0)
+    printf_sn(val, sizeof(val), "%d", (int)cfg.load_threshold);
+  else if (strcmp(key, "DETECTION_LEVEL") == 0)
+    printf_sn(val, sizeof(val), "%d", cfg.detection_level);
+  else if (strcmp(key, "EBPF_ENABLE") == 0)
+    printf_sn(val, sizeof(val), "%d", cfg.ebpf_enable);
+  else if (strcmp(key, "DEBUG_ENABLE") == 0)
+    printf_sn(val, sizeof(val), "%d", cfg.debug_enable);
+  else if (strcmp(key, "DEV_ENABLE") == 0)
+    printf_sn(val, sizeof(val), "%d", cfg.dev_enable);
+  else if (strcmp(key, "DAEMON_STATE") == 0)
+    return cfg.daemon_state;
+  else if (strcmp(key, "FALLBACK_PROFILE") == 0)
+    return cfg.fallback_profile;
+  else if (strcmp(key, "SERVER_ADDRESS") == 0)
+    return cfg.server_address;
+  else if (strcmp(key, "AFFINITY_MASK") == 0)
+    return cfg.affinity_mask;
+  else
+    return "ERR";
+  return val;
 }
 
 void config_update(const char *key, const char *val) {
