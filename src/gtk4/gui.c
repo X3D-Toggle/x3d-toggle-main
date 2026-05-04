@@ -21,8 +21,10 @@ extern char *strncpy(char *d, const char *s, size_t n);
 #define CONF_PATH DAEMON_CONF_PATH
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+/* ── Config: Read settings.conf / IPC (forward-decl) ─────────── */
 static void config_send(const char *key, const char *value);
-static char *config_get(const char *key);
+static const char *config_get(const char *key);
+static GtkListBoxRow *find_sidebar_row(GtkListBox *lb, const char *name);
 
 static GtkWidget *lbl_status_dump = NULL;
 static GtkEditable *g_cfg_server_ip = NULL;
@@ -292,12 +294,11 @@ static void on_mode_apply_clicked(GtkButton *btn, gpointer data) {
   if (g_stack)
     gtk_stack_set_visible_child_name(g_stack, "dashboard");
   if (g_sidebar) {
-    GtkListBoxRow *r = gtk_list_box_get_row_at_index(g_sidebar, 0);
+    GtkListBoxRow *r = find_sidebar_row(g_sidebar, "dashboard");
     if (r)
       gtk_list_box_select_row(g_sidebar, r);
   }
 }
-
 static void on_mode_cancel_clicked(GtkButton *btn, gpointer data) {
   (void)btn;
   (void)data;
@@ -305,7 +306,7 @@ static void on_mode_cancel_clicked(GtkButton *btn, gpointer data) {
   if (g_stack)
     gtk_stack_set_visible_child_name(g_stack, "dashboard");
   if (g_sidebar) {
-    GtkListBoxRow *r = gtk_list_box_get_row_at_index(g_sidebar, 0);
+    GtkListBoxRow *r = find_sidebar_row(g_sidebar, "dashboard");
     if (r)
       gtk_list_box_select_row(g_sidebar, r);
   }
@@ -485,10 +486,37 @@ static void on_nav_row_selected(GtkListBox *box, GtkListBoxRow *row,
 
 /* ── Config: Read settings.conf ───────────────────────────────── */
 
-static char *config_get(const char *key) {
+/* ── Config: IPC-first lookup, file fallback ──────────────────── */
+
+/* Sidebar row lookup by name (avoids fragile index arithmetic) */
+static GtkListBoxRow *find_sidebar_row(GtkListBox *lb, const char *name) {
+  if (!lb || !name) return NULL;
+  for (int i = 0; ; i++) {
+    GtkListBoxRow *r = gtk_list_box_get_row_at_index(lb, i);
+    if (!r) break;
+    const char *row_name = gtk_widget_get_name(GTK_WIDGET(r));
+    if (row_name && strcmp(row_name, name) == 0)
+      return r;
+  }
+  return NULL;
+}
+
+static const char *config_get(const char *key) {
   static char val[256];
   val[0] = '\0';
 
+  /* 1. Try live IPC: GET_CONFIG <KEY> */
+  char cmd[128];
+  printf_sn(cmd, sizeof(cmd), "GET_CONFIG %s", key);
+  char ipc_resp[256] = {0};
+  if (socket_send(cmd, ipc_resp, sizeof(ipc_resp)) == 0 &&
+      ipc_resp[0] != '\0' && strcmp(ipc_resp, "ERR") != 0) {
+    strncpy(val, ipc_resp, sizeof(val) - 1);
+    val[sizeof(val) - 1] = '\0';
+    return val;
+  }
+
+  /* 2. Fallback: parse DAEMON_CONF_PATH directly (daemon offline) */
   FILE *f = fopen(CONF_PATH, "r");
   if (!f)
     return val;
@@ -509,6 +537,7 @@ static char *config_get(const char *key) {
   fclose(f);
   return val;
 }
+
 
 /* ── Config: IPC send helper ──────────────────────────────────── */
 
@@ -597,7 +626,7 @@ static void on_advanced_enable_toggled(GObject *obj, GParamSpec *pspec,
     if (vis && (strcmp(vis, "advanced") == 0)) {
       gtk_stack_set_visible_child_name(g_stack, "configuration");
       if (g_sidebar) {
-        GtkListBoxRow *r = gtk_list_box_get_row_at_index(g_sidebar, 3);
+        GtkListBoxRow *r = find_sidebar_row(g_sidebar, "configuration");
         if (r)
           gtk_list_box_select_row(g_sidebar, r);
       }
@@ -622,13 +651,14 @@ static void on_dev_enable_toggled(GObject *obj, GParamSpec *pspec,
       gtk_stack_set_visible_child_name(g_stack, "configuration");
       /* Select config row in sidebar */
       if (g_sidebar) {
-        GtkListBoxRow *r = gtk_list_box_get_row_at_index(g_sidebar, 3);
+        GtkListBoxRow *r = find_sidebar_row(g_sidebar, "configuration");
         if (r)
           gtk_list_box_select_row(g_sidebar, r);
       }
     }
   }
 }
+
 
 /* ── Config: Bind all widgets ─────────────────────────────────── */
 
@@ -791,7 +821,7 @@ static void on_cfg_cancel_clicked(GtkButton *btn, gpointer user_data) {
                           atoi(config_get("ADVANCED_CONFIG_ENABLE")) != 0);
 
   if (g_cfg_server_ip && g_cfg_server_port) {
-    char *val = config_get("SERVER_ADDRESS");
+    const char *val = config_get("SERVER_ADDRESS");
     if (val && val[0]) {
       char buf[128];
       strncpy(buf, val, sizeof(buf) - 1);
@@ -811,8 +841,8 @@ static void on_cfg_cancel_clicked(GtkButton *btn, gpointer user_data) {
   set_config_dirty(FALSE);
 }
 
-static void bind_config(GtkBuilder *builder) {
-  char *val;
+static void config_bind(GtkBuilder *builder) {
+  const char *val;
   GObject *w;
 
   config_ignoring_changes = TRUE;
@@ -898,6 +928,7 @@ static void bind_config(GtkBuilder *builder) {
     val = config_get("ADVANCED_CONFIG_ENABLE");
     gboolean adv = atoi(val) != 0;
     gtk_switch_set_active(GTK_SWITCH(w), adv);
+    /* Use the real visibility-toggling handler, not the generic dirty-bit one */
     g_signal_connect(w, "notify::active",
                      G_CALLBACK(on_advanced_enable_toggled), NULL);
     gtk_widget_set_visible(row_advanced, adv);
@@ -910,12 +941,14 @@ static void bind_config(GtkBuilder *builder) {
     val = config_get("DEV_ENABLE");
     gboolean dev = atoi(val) != 0;
     gtk_switch_set_active(GTK_SWITCH(w), dev);
+    /* Use the real visibility-toggling handler, not the generic dirty-bit one */
     g_signal_connect(w, "notify::active", G_CALLBACK(on_dev_enable_toggled),
                      NULL);
     /* Set initial visibility */
     gtk_widget_set_visible(row_developer, dev);
     gtk_widget_set_visible(row_debug, dev);
   }
+
 
   /* Switch: DEBUG_ENABLE */
   w = gtk_builder_get_object(builder, "cfg_debug_enable");
@@ -1133,6 +1166,14 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
   (void)user_data;
   GObject *w;
 
+  gtk_window_set_default_icon_name("x3d-toggle");
+
+  /* Follow the system color scheme (light/dark/default) via the XDG
+   * settings portal. Must be called after GTK is initialized (i.e. inside
+   * the activate signal), not before g_application_run(). */
+  adw_style_manager_set_color_scheme(adw_style_manager_get_default(),
+                                     ADW_COLOR_SCHEME_DEFAULT);
+
   /* Load CSS */
   GtkCssProvider *provider = gtk_css_provider_new();
   gtk_css_provider_load_from_resource(provider,
@@ -1240,7 +1281,7 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
       GTK_DROP_DOWN(gtk_builder_get_object(builder, "lifecycle_dropdown"));
 
   /* Bind config widgets */
-  bind_config(builder);
+  config_bind(builder);
 
   g_object_unref(builder);
   gtk_window_present(window);
@@ -1255,7 +1296,6 @@ int main(int argc, char **argv) {
   AdwApplication *app =
       adw_application_new("org.x3d.toggle", G_APPLICATION_DEFAULT_FLAGS);
   g_signal_connect(app, "activate", G_CALLBACK(on_app_activate), NULL);
-  gtk_window_set_default_icon_name("x3d-toggle");
   int status = g_application_run(G_APPLICATION(app), argc, argv);
   g_object_unref(app);
   return status;

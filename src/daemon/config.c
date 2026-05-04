@@ -245,6 +245,7 @@ void config_load(DaemonConfig *cfg) {
   cfg->dev_enable = CONFIG_DEV_ENABLE;
   cfg->affinity_level = CONFIG_AFFINITY_LEVEL;
   printf_sn(cfg->affinity_mask, 63, "%s", CONFIG_AFFINITY_MASK);
+  printf_sn(cfg->affinity_freq_mask, 63, "%s", CONFIG_AFFINITY_FREQ_MASK);
 
   cfg->load_threshold = CONFIG_LOAD_THRESHOLD;
   cfg->detection_level = CONFIG_DETECTION_LEVEL;
@@ -283,6 +284,8 @@ void config_load(DaemonConfig *cfg) {
             else if (strcmp(ln, "DAEMON_STATE") == 0) printf_sn(cfg->daemon_state, 31, "%s", val);
             else if (strcmp(ln, "FALLBACK_PROFILE") == 0) printf_sn(cfg->fallback_profile, 63, "%s", val);
             else if (strcmp(ln, "SERVER_ADDRESS") == 0) printf_sn(cfg->server_address, 127, "%s", val);
+            else if (strcmp(ln, "AFFINITY_MASK") == 0) printf_sn(cfg->affinity_mask, 63, "%s", val);
+            else if (strcmp(ln, "AFFINITY_FREQ_MASK") == 0) printf_sn(cfg->affinity_freq_mask, 63, "%s", val);
           }
         }
         ln = nxt ? nxt + 1 : (void*)0;
@@ -315,6 +318,12 @@ const char *config_get(const char *key) {
     return cfg.server_address;
   else if (strcmp(key, "AFFINITY_MASK") == 0)
     return cfg.affinity_mask;
+  else if (strcmp(key, "AFFINITY_FREQ_MASK") == 0)
+    return cfg.affinity_freq_mask;
+  else if (strcmp(key, "AFFINITY_LEVEL") == 0)
+    printf_sn(val, sizeof(val), "%d", cfg.affinity_level);
+  else if (strcmp(key, "REFRESH_INTERVAL") == 0)
+    printf_sn(val, sizeof(val), "%.2f", cfg.refresh_interval);
   else
     return "ERR";
   return val;

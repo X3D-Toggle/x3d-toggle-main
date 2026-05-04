@@ -323,6 +323,18 @@ void socket_handle(int server_fd) {
           }
         } else if (strcmp(kv, "AFFINITY_MASK") == 0) {
           printf_sn(cfg.affinity_mask, sizeof(cfg.affinity_mask), "%s", v);
+        } else if (strcmp(kv, "AFFINITY_FREQ_MASK") == 0) {
+          printf_sn(cfg.affinity_freq_mask, sizeof(cfg.affinity_freq_mask), "%s", v);
+        } else if (strcmp(kv, "DEV_ENABLE") == 0) {
+          cfg.dev_enable = atoi(v);
+        } else if (strcmp(kv, "DEBUG_ENABLE") == 0) {
+          cfg.debug_enable = atoi(v);
+        } else if (strcmp(kv, "AFFINITY_LEVEL") == 0) {
+          cfg.affinity_level = atoi(v);
+        } else if (strcmp(kv, "REFRESH_INTERVAL") == 0) {
+          cfg.refresh_interval = atof(v);
+        } else if (strcmp(kv, "FALLBACK_PROFILE") == 0) {
+          printf_sn(cfg.fallback_profile, sizeof(cfg.fallback_profile), "%s", v);
         }
         journal_info(DAEMON_TRANSIT, "Configuration Update: %s -> %s", kv, v);
         send(client_fd, "OK", 2, MSG_NOSIGNAL);
@@ -330,7 +342,17 @@ void socket_handle(int server_fd) {
         send(client_fd, "ERR", 3, MSG_NOSIGNAL);
     } else if (strncmp(buf, "SET_WRAPPER ", 12) == 0) {
       extern volatile int wrapper_lock;
-      wrapper_lock = atoi(buf + 12);
+      int enable = atoi(buf + 12);
+      
+      wrapper_lock = enable;
+      
+      if (enable) {
+          cli_set_mode("cache");
+          active_override = 1;
+      } else {
+          cli_set_mode("frequency"); 
+          active_override = 0;
+      }
       send(client_fd, "OK", 2, MSG_NOSIGNAL);
     } else if (strncmp(buf, "DAEMON_DISABLE", 14) == 0) {
       active_keep = 0;

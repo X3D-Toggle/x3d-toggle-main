@@ -9,6 +9,7 @@
 #include "modes.h"
 #include "status.h"
 #include "xui.h"
+#include "steam.h"
 
 #define _POSIX_C_SOURCE 202405L
 
@@ -38,19 +39,28 @@ static bool scan_pid(const char *pid_str) {
         }
     }
 
+    /* GameMode detection: process has libgamemodeauto.so in its maps */
     printf_sn(path, sizeof(path), "/proc/%s/maps", pid_str);
-    int fd = open(path, O_RDONLY);
-    if (fd >= 0) {
+    int maps_fd = open(path, O_RDONLY);
+    if (maps_fd >= 0) {
         ssize_t n;
-        while ((n = read(fd, buf, sizeof(buf) - 1)) > 0) {
+        while ((n = read(maps_fd, buf, sizeof(buf) - 1)) > 0) {
             buf[n] = '\0';
             if (strstr(buf, "libgamemodeauto.so")) {
-                close(fd);
+                close(maps_fd);
                 return true;
             }
         }
-        close(fd);
+        close(maps_fd);
     }
+
+    /* Steam detection: process has SteamAppId set in its environment.
+     * This covers Steam games launched without gamemoderun.
+     * The Steam client itself never has SteamAppId, and we also guard
+     * against known Steam infrastructure process names (steamwebhelper,
+     * reaper, pressure-vessel, etc.) in scan_pid_steam(). */
+    if (scan_pid_steam(pid_str))
+        return true;
 
     return false;
 }

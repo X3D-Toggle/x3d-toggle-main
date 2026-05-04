@@ -19,6 +19,7 @@
 #include <systemd/sd-bus.h>
 
 extern int printf_sn(char *buf, size_t size, const char *fmt, ...);
+#include "../steam.h"
 
 #define _POSIX_C_SOURCE 202405L
 
@@ -43,6 +44,7 @@ static int handle_event(void *ctx, void *data, size_t data_sz) {
   const struct process_event *e = data;
 
   if (games_match(&gl, e->comm)) {
+    /* Curated game list match */
     if (e->is_exit) {
       if (active_games > 0)
         active_games--;
@@ -51,9 +53,22 @@ static int handle_event(void *ctx, void *data, size_t data_sz) {
       active_games++;
       journal_log(BPF_HIT, e->comm, e->pid, "launched", active_games);
     }
+  } else if (!e->is_exit && (is_game_engine_comm(e->comm) || scan_pid_steam_by_pid(e->pid))) {
+    /* Steam game detected via SteamAppId environ or common game engine thread names.
+     * Only check on exec events — for exit we rely on the active_games
+     * decrement path via the Steam-detected launch counter below. */
+    active_games++;
+    journal_log(BPF_HIT, e->comm, e->pid, "launched [Steam]", active_games);
+  } else if (e->is_exit && active_games > 0) {
+    /* Conservative: decrement on any exit if we have active games tracked.
+     * This avoids leaking the counter when a Steam game exits but was
+     * detected via the environ path (comm may not match anything). */
+    active_games--;
+    journal_log(BPF_HIT, e->comm, e->pid, "exited [unmatched]", active_games);
   }
   return 0;
 }
+
 
 static int on_gamemode_signal(sd_bus_message *m, void *userdata,
                               sd_bus_error *ret_error) {

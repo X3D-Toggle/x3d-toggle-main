@@ -145,6 +145,7 @@ printf_step "2,${GEAR} Writing synchronized Configuration ruleset: build/config.
 #define CONFIG_DEV_ENABLE        ${DEV_ENABLE}
 #define CONFIG_AFFINITY_LEVEL    ${AFFINITY_LEVEL}
 #define CONFIG_AFFINITY_MASK     \"${AFFINITY_MASK}\"
+#define CONFIG_AFFINITY_FREQ_MASK \"${AFFINITY_FREQ_MASK}\"
 #define CONFIG_LOAD_THRESHOLD    ${LOAD_THRESHOLD}
 #define CONFIG_DETECTION_LEVEL   ${DETECTION_LEVEL}
 #define CONFIG_EBPF_ENABLE       ${EBPF_ENABLE}
@@ -158,6 +159,7 @@ double refresh_interval;
 int    dev_enable;
 int    affinity_level;
 char   affinity_mask[64];
+char   affinity_freq_mask[64];
 double load_threshold;
 int    detection_level;
 int    ebpf_enable;

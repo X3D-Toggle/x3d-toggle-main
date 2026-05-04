@@ -32,25 +32,22 @@ int run_game(int argc, char *argv[]) {
   socket_send("SET_WRAPPER 1", NULL, 0);
   udelay(1000);
 
-  priority(1);
-
   pid_t pid = fork();
   if (pid < 0) {
     journal_error(ERR_IO, "Failed to fork for game execution");
-    priority(0);
     return ERR_IO;
   }
 
   if (pid == 0) {
     execvp(cmd, &argv[start_idx]);
 
-    write(2, "X3D Error: Execution failed\n", 28);
+    /* execvp only returns on failure — report via project error handler */
+    journal_error(ERR_IO, cmd);
     _exit(1);
   } else {
     int status;
     waitpid(pid, &status, 0);
 
-    priority(0);
     socket_send("SET_WRAPPER 0", NULL, 0);
 
     if (WIFEXITED(status)) {
