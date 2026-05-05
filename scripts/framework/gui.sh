@@ -83,3 +83,5 @@ fi
 
 printf_step "2,${ALRIGHT} GTK4 GUI installed successfully"
 exit 0
+
+## end of GUI.SH

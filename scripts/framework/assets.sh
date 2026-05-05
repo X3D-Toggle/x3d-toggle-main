@@ -1,8 +1,6 @@
 #!/bin/sh
 ## Assets Package Manager for the X3D Toggle Project
-##
 ## `assets.sh`
-##
 ## Installation bridge for icon assets.
 
 _l_dir_lib="$(cd "$(dirname "$0")" && pwd)"

@@ -81,6 +81,14 @@ static const msg_t registry_msg[] = {
     [36] = {"GUI Execution Failure", "Dashboard error: %s"},
     [37] = {"Direct execution restricted", "Please use the 'x3d-toggle' CLI or run via the installer."},
     [39] = {"Path component too long", "Assembled path exceeds 4096 bytes: %s"},
+    [40] = {"IRQ Binding Failed", "Failed to write affinity mask for IRQ %d: %s"},
+    [41] = {"IRQ MSI Verification Failed", "Device %s is not using MSI; legacy APIC pin detected"},
+    [42] = {"irqbalance Control Failed", "Failed to %s irqbalance service: %s"},
+    [43] = {"udev Rule Generation Failed", "Could not write 99-x3d-irq.rules: %s"},
+    [44] = {"IRQ Discovery Failed", "No IRQ vectors found for device class: %s"},
+    [45] = {"IRQ Teardown Incomplete", "Failed to restore affinity for IRQ %d; system may require reboot"},
+    [46] = {"IRQ Coalescing Error", "Failed to apply ethtool parameters to NIC: %s"},
+    [47] = {"IRQ Watch Error", "Daemon polling loop encountered an unexpected failure"},
 };
 
 static const msg_t registry_status[] = {

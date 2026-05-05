@@ -75,5 +75,10 @@ int cli_misc_insults(int argc, char *argv[]);
 int cli_misc_fallback(int argc, char *argv[]);
 int cli_scheduler_gaming(int argc, char *argv[]);
 int cli_scheduler_balanced(int argc, char *argv[]);
+int cli_irq_bind(int argc, char *argv[]);
+int cli_irq_reset(int argc, char *argv[]);
+int cli_irq_status(int argc, char *argv[]);
+int cli_irq_udev(int argc, char *argv[]);
+int cli_irq_watch(int argc, char *argv[]);
 
 #endif // CLI.H

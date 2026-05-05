@@ -738,4 +738,4 @@ void printf_signature(void) {
     exit 0
 fi
 
-# end of X3D_XUI.SH
+## end of XUI.SH

@@ -37,7 +37,8 @@ package_x3d-toggle() {
                 'libadwaita: Modern adaptive GTK4 widgets')
 
     backup=('etc/x3d-toggle.d/settings.conf'
-            'etc/x3d-toggle.d/games.conf')
+            'etc/x3d-toggle.d/games.conf'
+            'etc/x3d-toggle.d/irq.conf')
 
     cd "${pkgbase}-${pkgver}" || return
     make DESTDIR="${pkgdir}" PREFIX="/usr" install

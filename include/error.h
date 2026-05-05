@@ -68,7 +68,14 @@ typedef int error_code;
 #define ERR_EXEC         -37
 #define ERR_INVALID_ARGS -38
 #define ERR_LONG         -39
-
+#define ERR_IRQ_BIND     -40
+#define ERR_IRQ_NO_MSI   -41
+#define ERR_IRQ_BALANCER -42
+#define ERR_IRQ_UDEV     -43
+#define ERR_IRQ_DISCOVER -44
+#define ERR_IRQ_TEARDOWN -45
+#define ERR_IRQ_COALESCE -46
+#define ERR_IRQ_WATCH    -47
 void journal_error(error_code code, ...);
 void journal_warn(error_code code, ...);
 void journal_info(error_code code, ...);

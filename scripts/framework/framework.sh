@@ -445,11 +445,13 @@ if [ "$X3D_FRAMEWORK" = "1" ] && [ "$(basename -- "$0")" = "framework.sh" ]; the
                         --gen-ebpf|--gen-scheduler)
                             conf_framework "eBPF Object Constructor" "$X3D_TOGGLE/scripts/framework/ebpftool.sh" "$X3D_BUILD/bpf.o" "$X3D_TOGGLE/src/daemon/bpf/bpf.c" --gen-ebpf; shift ;;
                         --gen-config)
-                            conf_framework "Core Configurator" "$X3D_TOGGLE/scripts/framework/config.sh" "$X3D_BUILD/config.h" "$X3D_TOGGLE/config/settings.conf $X3D_TOGGLE/config/games.conf"; shift ;;
+                            conf_framework "Core Configurator" "$X3D_TOGGLE/scripts/framework/config.sh" "$X3D_BUILD/config.h" "$X3D_TOGGLE/config/settings.conf $X3D_TOGGLE/config/games.conf $X3D_TOGGLE/config/irq.conf"; shift ;;
+                        --gen-irq)
+                            conf_framework "IRQ Binding Bridge" "$X3D_TOGGLE/scripts/framework/irq.sh" "$X3D_BUILD/irq_rules.stamp" "$X3D_TOGGLE/config/settings.conf $X3D_TOGGLE/config/irq.conf" --gen-irq; shift ;;
                         --gen-config-file)
                             shift; config_generate "$1" "$2"; exit 0 ;;
                         --gen-all)
-                            X3D_EXEC=1 X3D_FRAMEWORK=1 sh "$X3D_TOGGLE/scripts/framework/framework.sh" $UPDATE $VERIFY --gen-xui --gen-ccd --gen-ebpf --gen-config || exit 1; shift ;;
+                            X3D_EXEC=1 X3D_FRAMEWORK=1 sh "$X3D_TOGGLE/scripts/framework/framework.sh" $UPDATE $VERIFY --gen-xui --gen-ccd --gen-ebpf --gen-config --gen-irq || exit 1; shift ;;
                         *)
                             journal_write -6 "$1"; exit 1 ;; # Syntax error
                     esac

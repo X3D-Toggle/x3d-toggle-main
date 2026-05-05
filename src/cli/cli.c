@@ -132,6 +132,11 @@ const Command cmd_table[] = {
     {"bible", cli_misc_insults, "Alias for insults"},
     {"sched-gaming", cli_scheduler_gaming, "Scheduler: Tighten CFS to 3ms + BORE Shift 14"},
     {"sched-balanced", cli_scheduler_balanced, "Scheduler: Restore 5ms CFS + BORE Shift 12"},
+    {"irq-bind", cli_irq_bind, "IRQ Affinity: Apply IRQ bindings from settings.conf"},
+    {"irq-reset", cli_irq_reset, "IRQ Affinity: Teardown all IRQ bindings and restore irqbalance"},
+    {"irq-status", cli_irq_status, "IRQ Affinity: Display current IRQ vector affinity map"},
+    {"irq-udev", cli_irq_udev, "IRQ Affinity: Regenerate 99-x3d-irq.rules udev ruleset"},
+    {"irq-watch", cli_irq_watch, "IRQ Affinity: Persistent loop to re-assert active bindings"},
     {"gui-log", cli_gui_log, "Internal: Log GUI errors"},
 
     {NULL, NULL, NULL}};

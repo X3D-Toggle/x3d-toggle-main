@@ -11,7 +11,9 @@ if [ "$X3D_EXEC" != "1" ]; then
     journal_write -37
 fi
 . "$X3D_TOGGLE/config/settings.conf"
-
+if [ -f "$X3D_TOGGLE/config/irq.conf" ]; then
+    . "$X3D_TOGGLE/config/irq.conf"
+fi
 guard() {
     _var_name="$1"
     
@@ -28,6 +30,15 @@ guard() {
                     break
                 fi
             done < "$X3D_TOGGLE/config/settings.conf"
+            
+            if [ -z "$_default_val" ] && [ -f "$X3D_TOGGLE/config/irq.conf" ]; then
+                while IFS='=' read -r key val; do
+                    if [ "$key" = "$_var_name" ]; then
+                        _default_val="$val"
+                        break
+                    fi
+                done < "$X3D_TOGGLE/config/irq.conf"
+            fi
         fi
         
         printf_step "3,${WARN} config.sh: '$_var_name' null/unset, falling back to '$_default_val'"
@@ -52,6 +63,16 @@ guard "DAEMON_STATE"
 guard "SERVER_ADDRESS"
 guard "JOURNAL_KEEP"
 guard "JOURNAL_MAX_MB"
+guard "IRQ_PINNING"
+guard "IRQ_CUSTOM"
+guard "IRQ_ENABLE"
+guard "IRQ_GPU"
+guard "IRQ_NVME"
+guard "IRQ_USB"
+guard "IRQ_NIC"
+guard "IRQ_AUDIO"
+guard "IRQ_COALESCE"
+guard "IRQ_WATCH"
 
 _DAEMON_CONF="${DIR_BIN}/daemon.conf"
 
@@ -113,6 +134,7 @@ fi
 if [ "$1" = "--check" ]; then
     if [ ! -f "$_DAEMON_CONF" ] || \
        [ "$X3D_TOGGLE/config/settings.conf" -nt "$_DAEMON_CONF" ] || \
+       [ "$X3D_TOGGLE/config/irq.conf"      -nt "$_DAEMON_CONF" ] || \
        [ "$X3D_TOGGLE/config/games.conf"    -nt "$_DAEMON_CONF" ]; then
         X3D_EXEC=1 sh "$0" --update
     fi
@@ -206,7 +228,17 @@ printf_step "2,${GEAR} Writing synchronized configuration payload: build/daemon.
                 "DAEMON_STATE=${DAEMON_STATE}" \
                 "SERVER_ADDRESS=${SERVER_ADDRESS}" \
                 "JOURNAL_KEEP=${JOURNAL_KEEP}" \
-                "JOURNAL_MAX_MB=${JOURNAL_MAX_MB}"
+                "JOURNAL_MAX_MB=${JOURNAL_MAX_MB}" \
+                "IRQ_PINNING=${IRQ_PINNING}" \
+                "IRQ_CUSTOM=${IRQ_CUSTOM}" \
+                "IRQ_ENABLE=${IRQ_ENABLE}" \
+                "IRQ_GPU=${IRQ_GPU}" \
+                "IRQ_NVME=${IRQ_NVME}" \
+                "IRQ_USB=${IRQ_USB}" \
+                "IRQ_NIC=${IRQ_NIC}" \
+                "IRQ_AUDIO=${IRQ_AUDIO}" \
+                "IRQ_COALESCE=${IRQ_COALESCE}" \
+                "IRQ_WATCH=${IRQ_WATCH}"
     printf_br
     printf_step "[GAMES_SYS]"
     while IFS= read -r _l_game; do
@@ -220,4 +252,4 @@ printf_step "2,${GEAR} Writing synchronized configuration payload: build/daemon.
     printf_step "[GAMES_USR]"
 } > "$X3D_TOGGLE/build/daemon.conf"
 
-## end of config.sh
+## end of CONFIG.SH

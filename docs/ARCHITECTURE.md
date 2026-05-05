@@ -21,120 +21,150 @@
 
 ```text
 x3d-toggle-main
-└─ assets
-    ├─ amd.svg
-    ├─ ryzen.jpeg
-    ├─ ryzenlogo.svg
-    └─ ryzen.svg
-└─ bin // Compiled Binaries
-    ├─ x3d-daemon
-    ├─ x3d-run
-    └─ x3d-toggle
-└─ build // Compiled Object Files/Artifacts
-    ├─ bpf.h
-    ├─ bpf.o
-    ├─ ccd.c
-    ├─ ccd.h
-    ├─ config.h
-    ├─ daemon.conf
-    ├─ socket.c -> ~/x3d-toggle-main/src/socket.c
-    ├─ socket.h -> ~/x3d-toggle-main/include/socket.h
-    ├─ vmlinux.h
-    ├─ worker.c -> ~/x3d-toggle-main/src/worker.c
-    ├─ xui.c
-    └─ xui.h
-└─ config
-    ├─ games.conf
-    └─ settings.conf
-└─ dev
-    ├─ dev-install.sh
-    ├─ dev-README.md
-    ├─ dev-uninstall.sh
-    ├─ logging
-    │   ├─ audits
-    │   └─ logs
-    └─ sandbox
-└─ docs
-    ├─ ARCHITECTURE.md
-    ├─ CODE_OF_CONDUCT.md
-    ├─ DISCLAIMER
-    ├─ ROADMAP.md
-    ├─ SCRATCHPAD.md
-    └─ x3d-toggle.1
-└─ include
-    ├─ cli.h
-    ├─ cppc.h
-    ├─ daemon.h
-    ├─ error.h
-    ├─ games.h
-    ├─ libc.h
-    ├─ misc.h
-    ├─ modes.h
-    ├─ socket.h
-    ├─ status.h
-    ├─ systemd.h
-    └─ worker.h
-└─ packaging
-    ├─ 50-service.rules
-    ├─ 99-sysfs.rules
-    ├─ PKGBUILD
-    ├─ sysusers.conf
-    ├─ tmpfiles.conf
-    ├─ toggle.desktop
-    └─ toggle.service
-└─ scripts
-    ├─ framework
-    │   ├─ assets.sh
-    │   ├─ ccd.sh
-    │   ├─ config.sh
-    │   ├─ ebpftool.sh
-    │   ├─ framework.sh
-    │   ├─ policies.sh
-    │   └─ xui.sh
-    └─ tools
-        ├─ debug.sh
-        ├─ linter.sh
-        ├─ reset.sh
-        └─ rotate.sh
-└─ src
-    ├─ cli
-    │   ├─ cli.c
-    │   ├─ dialog.c
-    │   └─ misc.c
-    ├─ daemon
-    │   ├─ bpf
-    │   │   ├─ bpf.c
-    │   │   ├─ bpf-user.c
-    │   │   └─ bpf-user.h
-    │   ├─ config.c
-    │   ├─ cppc.c
-    │   ├─ daemon.c
-    │   ├─ diag.c
-    │   ├─ modes.c
-    │   └─ polling
-    │       ├─ polling.c
-    │       └─ polling.h
-    ├─ error.c
-    ├─ games.c
-    ├─ libc.c
-    ├─ run.c
-    ├─ socket.c
-    ├─ status.c
-    ├─ stress.c
-    ├─ sysfs.c
-    ├─ systemd.c
-    ├─ toggle.c
-    └─ worker.c
-─ CHANGELOG.md
-─ compile_commands.json
-─ CONTRIBUTING.md
-─ deploy.sh
-─ install.sh
-─ LICENSE
-─ Makefile
-─ README.md
-─ setup.sh
-─ uninstall.sh
+├── assets
+│   ├── amd.svg
+│   ├── ryzen.jpeg
+│   ├── ryzen.jpg
+│   ├── ryzenlogo.svg
+│   ├── ryzen.svg
+│   ├── x3d-toggle.jpg
+│   ├── x3d-toggle.png
+│   └── x3d-toggle.svg
+├── bin (Compiled Binaries)
+│   ├── x3d-daemon
+│   ├── x3d-run
+│   └── x3d-toggle
+├── build (Build Artifacts)
+│   ├── bpf.h
+│   ├── bpf.o
+│   ├── ccd.c
+│   ├── ccd.h
+│   ├── config.h
+│   ├── daemon.conf
+│   ├── irq_rules.stamp
+│   ├── vmlinux.h
+│   ├── xui.c
+│   └── xui.h
+├── CODE_OF_CONDUCT.md
+├── compile_commands.json
+├── config
+│   ├── games.conf
+│   ├── irq.conf
+│   └── settings.conf
+├── CONTRIBUTING.md
+├── deploy.sh
+├── dev
+│   ├── dev-install.sh
+│   ├── dev-README.md
+│   ├── dev-uninstall.sh
+│   ├── logging
+│   │   ├── audits
+│   │   ├── coredump
+│   │   └── logs
+│   ├── sandbox //future implementation
+│   │   └── ide-install.json
+│   └── toolsets
+│       └── codeql
+│           ├── codeql-config.yml
+│           └── install-deps.sh
+├── docs
+│   ├── ARCHITECTURE.md
+│   ├── CHANGELOG.md
+│   ├── DISCLAIMER
+│   ├── ROADMAP.md
+│   ├── SCRATCHPAD.md
+│   ├── x3d-toggle.1
+│   └── x3d-toggle.1.md
+├── include
+│   ├── ccd.h -> ../build/ccd.h
+│   ├── cli.h
+│   ├── cppc.h
+│   ├── daemon.h
+│   ├── error.h
+│   ├── games.h
+│   ├── ipc.h
+│   ├── irq.h
+│   ├── libc.h
+│   ├── misc.h
+│   ├── modes.h
+│   ├── scheduler.h
+│   ├── status.h
+│   ├── systemd.h
+│   └── xui.h -> ../build/xui.h
+├── install.sh
+├── LICENSE
+├── Makefile
+├── meson.build
+├── packaging
+│   ├── 50-x3d_toggle-service.rules
+│   ├── PKGBUILD
+│   ├── sysfs.rules
+│   ├── sysusers.conf
+│   ├── tmpfiles.conf
+│   ├── x3d-toggle.desktop
+│   └── x3d-toggle.service
+├── README.md
+├── scripts
+│   ├── framework
+│   │   ├── assets.sh
+│   │   ├── ccd.sh
+│   │   ├── config.sh
+│   │   ├── ebpftool.sh
+│   │   ├── framework.sh
+│   │   ├── gui.sh
+│   │   ├── irq.sh
+│   │   ├── policies.sh
+│   │   └── xui.sh
+│   └── tools
+│       ├── archive.sh
+│       ├── coredump.sh
+│       ├── debug.sh
+│       ├── linter.sh
+│       ├── reset.sh
+│       └── rotate.sh
+├── setup.sh
+├── src
+│   ├── affinity.c
+│   ├── cli
+│   │   ├── cli.c
+│   │   ├── dialog.c
+│   │   └── misc.c
+│   ├── daemon
+│   │   ├── bpf
+│   │   │   ├── bpf.c
+│   │   │   ├── bpf.h -> ../../../build/bpf.h
+│   │   │   ├── bpf-user.c
+│   │   │   ├── bpf-user.h
+│   │   │   └── vmlinux.h
+│   │   ├── config.c
+│   │   ├── cppc.c
+│   │   ├── daemon.c
+│   │   ├── diag.c
+│   │   ├── modes.c
+│   │   ├── polling
+│   │   │   ├── polling.c
+│   │   │   └── polling.h
+│   │   └── steam.h
+│   ├── error.c
+│   ├── games.c
+│   ├── gtk4
+│   │   ├── gui.c
+│   │   ├── stubs.c
+│   │   ├── theme.css
+│   │   ├── x3d-toggle-gui.gresource.xml
+│   │   └── x3d-toggle.ui
+│   ├── irq.c
+│   ├── libc.c
+│   ├── run.c
+│   ├── scheduler.c
+│   ├── socket.c
+│   ├── status.c
+│   ├── stress.c
+│   ├── sysfs.c
+│   ├── systemd.c
+│   ├── toggle.c
+│   └── worker.c
+└── uninstall.sh
 ```
     
 ### 🧩  Component Breakdown  🧩

@@ -30,7 +30,6 @@ static int config_write(int argc, char *argv[], const char *ipc_command,
     return 0;
   }
 
-  /* Daemon offline — write config directly (files are group-writable) */
   if (config_key != NULL && config_value != NULL) {
     config_update(config_key, config_value);
   } else if (strncmp(ipc_command, "GAME_ADD ", 9) == 0) {
@@ -375,7 +374,7 @@ void config_update(const char *key, const char *val) {
 }
 
 int config_generate(const char *src, const char *games, const char *dest) {
-  (void)games; // Processed by independent logic
+  (void)games;
   int sfd = open(src, O_RDONLY);
   if (sfd < 0) return ERR_IO;
   
@@ -388,6 +387,17 @@ int config_generate(const char *src, const char *games, const char *dest) {
   int dfd = open(dest, O_WRONLY | O_CREAT | O_TRUNC, 0664);
   if (dfd < 0) return ERR_IO;
   write(dfd, buf, (size_t)n);
+  
+  int irq_fd = open("config/irq.conf", O_RDONLY);
+  if (irq_fd >= 0) {
+    ssize_t in = read(irq_fd, buf, sizeof(buf)-1);
+    if (in > 0) {
+      write(dfd, "\n", 1);
+      write(dfd, buf, (size_t)in);
+    }
+    close(irq_fd);
+  }
+  
   close(dfd);
   return ERR_SUCCESS;
 }

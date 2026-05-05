@@ -54,6 +54,14 @@ static GtkSwitch *g_cfg_debug_enable = NULL;
 static GtkSwitch *g_cfg_dev_enable = NULL;
 static GtkSwitch *g_cfg_advanced_enable = NULL;
 
+static GtkSwitch *g_cfg_irq_enable = NULL;
+static GtkSwitch *g_cfg_irq_gpu = NULL;
+static GtkSwitch *g_cfg_irq_nvme = NULL;
+static GtkSwitch *g_cfg_irq_usb = NULL;
+static GtkSwitch *g_cfg_irq_nic = NULL;
+static GtkSwitch *g_cfg_irq_audio = NULL;
+static GtkSwitch *g_cfg_irq_coalesce = NULL;
+static GtkSwitch *g_cfg_irq_watch = NULL;
 static gboolean config_dirty = FALSE;
 static gboolean config_ignoring_changes = FALSE;
 
@@ -724,6 +732,40 @@ static void on_rotation_cancel_clicked(GtkButton *btn, gpointer data) {
   }
 }
 
+static void on_irq_apply_clicked(GtkButton *btn, gpointer data) {
+  (void)btn;
+  (void)data;
+  
+  if (g_cfg_irq_enable) config_send("IRQ_ENABLE", gtk_switch_get_active(g_cfg_irq_enable) ? "1" : "0");
+  if (g_cfg_irq_gpu) config_send("IRQ_GPU", gtk_switch_get_active(g_cfg_irq_gpu) ? "1" : "0");
+  if (g_cfg_irq_nvme) config_send("IRQ_NVME", gtk_switch_get_active(g_cfg_irq_nvme) ? "1" : "0");
+  if (g_cfg_irq_usb) config_send("IRQ_USB", gtk_switch_get_active(g_cfg_irq_usb) ? "1" : "0");
+  if (g_cfg_irq_nic) config_send("IRQ_NIC", gtk_switch_get_active(g_cfg_irq_nic) ? "1" : "0");
+  if (g_cfg_irq_audio) config_send("IRQ_AUDIO", gtk_switch_get_active(g_cfg_irq_audio) ? "1" : "0");
+  if (g_cfg_irq_coalesce) config_send("IRQ_COALESCE", gtk_switch_get_active(g_cfg_irq_coalesce) ? "1" : "0");
+  if (g_cfg_irq_watch) config_send("IRQ_WATCH", gtk_switch_get_active(g_cfg_irq_watch) ? "1" : "0");
+
+  set_config_dirty(FALSE);
+  
+  /* Trigger background IPC call to apply bindings */
+  char *args[] = {(char *)"/usr/bin/x3d-toggle", (char *)"irq-bind", NULL};
+  gui_spawn(args, NULL);
+}
+
+static void on_irq_status_clicked(GtkButton *btn, gpointer data) {
+  (void)btn;
+  (void)data;
+  /* Launch terminal to show status */
+  char *args[] = {
+      (char *)"/bin/sh", (char *)"-c",
+      (char *)"kgx -e 'watch -n1 x3d-toggle irq-status' || "
+              "gnome-terminal -- watch -n1 x3d-toggle irq-status || "
+              "konsole -e watch -n1 x3d-toggle irq-status || "
+              "xterm -e watch -n1 x3d-toggle irq-status",
+      NULL};
+  gui_spawn(args, NULL);
+}
+
 static void on_cfg_apply_clicked(GtkButton *btn, gpointer user_data) {
   (void)btn;
   (void)user_data;
@@ -960,6 +1002,34 @@ static void config_bind(GtkBuilder *builder) {
                      (gpointer) "DEBUG_ENABLE");
   }
 
+  /* ── IRQ Subsystem Switches ── */
+  struct {
+    const char *id;
+    const char *key;
+    GtkSwitch **ptr;
+  } irq_switches[] = {
+      {"cfg_irq_enable", "IRQ_ENABLE", &g_cfg_irq_enable},
+      {"cfg_irq_gpu", "IRQ_GPU", &g_cfg_irq_gpu},
+      {"cfg_irq_nvme", "IRQ_NVME", &g_cfg_irq_nvme},
+      {"cfg_irq_usb", "IRQ_USB", &g_cfg_irq_usb},
+      {"cfg_irq_nic", "IRQ_NIC", &g_cfg_irq_nic},
+      {"cfg_irq_audio", "IRQ_AUDIO", &g_cfg_irq_audio},
+      {"cfg_irq_coalesce", "IRQ_COALESCE", &g_cfg_irq_coalesce},
+      {"cfg_irq_watch", "IRQ_WATCH", &g_cfg_irq_watch},
+      {NULL, NULL, NULL}};
+
+  for (int i = 0; irq_switches[i].id; i++) {
+    w = gtk_builder_get_object(builder, irq_switches[i].id);
+    if (w) {
+      if (irq_switches[i].ptr) *(irq_switches[i].ptr) = GTK_SWITCH(w);
+      val = config_get(irq_switches[i].key);
+      gtk_switch_set_active(GTK_SWITCH(w), atoi(val) != 0);
+      /* Use same generic handler since these are just config variables */
+      g_signal_connect(w, "notify::active", G_CALLBACK(on_cfg_switch_changed),
+                       (gpointer)irq_switches[i].key);
+    }
+  }
+
   /* ── Developer tab: Clang-Tidy switches ── */
   struct {
     const char *id;
@@ -1098,6 +1168,16 @@ static void config_bind(GtkBuilder *builder) {
     gtk_widget_set_sensitive(btn_cfg_apply, FALSE);
     g_signal_connect(w, "clicked", G_CALLBACK(on_cfg_apply_clicked), builder);
   }
+
+  w = gtk_builder_get_object(builder, "btn_irq_apply");
+  if (w) {
+    g_signal_connect(w, "clicked", G_CALLBACK(on_irq_apply_clicked), NULL);
+  }
+
+  w = gtk_builder_get_object(builder, "btn_irq_status");
+  if (w) {
+    g_signal_connect(w, "clicked", G_CALLBACK(on_irq_status_clicked), NULL);
+  }
   w = gtk_builder_get_object(builder, "btn_cfg_cancel");
   if (w) {
     btn_cfg_cancel = GTK_WIDGET(w);
@@ -1211,6 +1291,7 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
   add_nav_row(sidebar, "modes", "Modes");
 
   row_affinity = add_nav_row(sidebar, "affinity", "Threaded Affinity Settings");
+  add_nav_row(sidebar, "irq", "IRQ Vector Binding");
 
   add_nav_row(sidebar, "configuration", "Configuration");
   row_advanced = add_nav_row(sidebar, "advanced", "Advanced Configuration");

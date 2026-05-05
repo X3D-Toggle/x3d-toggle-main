@@ -84,6 +84,7 @@ SRCS_CORE       = $(DIR_BUILD)/xui.c \
                   $(SRC_DAEMON)/cppc.c \
                   $(SRC_DAEMON)/diag.c \
                   $(SRC)/affinity.c \
+                  $(SRC)/irq.c \
                   $(SRC)/stress.c \
                   $(SRC)/scheduler.c \
                   $(SRC_DAEMON)/daemon.c
@@ -183,6 +184,7 @@ install: build
 
 	install -dm755 $(DEST_ETC)
 	install -m644 config/settings.conf $(DEST_ETC)/settings.conf
+	install -m644 config/irq.conf $(DEST_ETC)/irq.conf
 	install -m644 config/games.conf $(DEST_ETC)/games.conf
 
 	install -dm775 $(DEST_LOGS)
