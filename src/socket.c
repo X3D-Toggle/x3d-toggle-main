@@ -114,12 +114,20 @@ void socket_handle(int server_fd) {
         active_override = 0;
       } else if (strstr(val, "cache")) {
         active_override = 1;
+        cli_set_mode("cache");
+        cli_mode_apply(PART_CACHE);
       } else if (strstr(val, "frequency")) {
         active_override = 2;
+        cli_set_mode("frequency");
+        cli_mode_apply(PART_FREQ);
       } else if (strstr(val, "dual")) {
         active_override = 3;
+        cli_set_dual();
+        cli_mode_apply(PART_DUAL);
       } else if (strstr(val, "swap")) {
         active_override = 4;
+        cli_set_swap();
+        cli_mode_apply(PART_DUAL);
       } else
         matched = 0;
       send(client_fd, matched ? "OK" : "ERR", matched ? 2 : 3, MSG_NOSIGNAL);

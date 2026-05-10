@@ -259,22 +259,10 @@ static void on_mode_apply_clicked(GtkButton *btn, gpointer data) {
   (void)btn;
   (void)data;
 
-  /* 1. Execute Hardware Mode via IPC */
+  /* 1. Execute Hardware Mode via CLI Dispatch */
   if (g_selected_mode) {
-    char cmd[64] = {0};
-    if (strcmp(g_selected_mode, "reset") == 0) {
-      /* Reset: clear override and let daemon re-probe */
-      socket_send("SET_MODE reset", NULL, 0);
-    } else if (strcmp(g_selected_mode, "default") == 0) {
-      /* Default: restore daemon defaults */
-      socket_send("SET_DAEMON default", NULL, 0);
-      socket_send("CONFIG_SYNC", NULL, 0);
-    } else {
-      /* cache / frequency / dual: set mode + suspend daemon */
-      printf_sn(cmd, sizeof(cmd), "SET_MODE %s", g_selected_mode);
-      socket_send("SET_DAEMON manual", NULL, 0);
-      socket_send(cmd, NULL, 0);
-    }
+    char *args[] = {(char *)"/usr/bin/x3d-toggle", (char *)g_selected_mode, NULL};
+    gui_spawn(args, NULL);
   }
 
   /* 2. Execute Lifecycle Action via IPC */
