@@ -161,6 +161,7 @@ int daemon_status(Status *st) {
     if (st_val) {
       printf_sn(st->daemon_state, sizeof(st->daemon_state), "%s", st_val + 6);
       char *sc = strchr(st->daemon_state, ';');
+      if (!sc) sc = strchr(st->daemon_state, '|');
       if (sc) *sc = '\0';
     }
     if (ov_val)

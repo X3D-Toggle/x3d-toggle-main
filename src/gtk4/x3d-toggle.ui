@@ -82,28 +82,100 @@
                                   </object>
                                 </child>
 
-                                <!-- Live Data Card -->
+                                <!-- Live Data Cards -->
                                 <child>
-                                  <object class="GtkBox">
-                                    <property name="orientation">vertical</property>
-                                    <property name="vexpand">true</property>
+                                  <object class="GtkGrid">
+                                    <property name="row-spacing">12</property>
+                                    <property name="column-spacing">12</property>
+                                    <property name="column-homogeneous">true</property>
+                                    <property name="vexpand">false</property>
                                     <property name="hexpand">true</property>
-                                    <property name="valign">start</property>
-                                    <style><class name="x3d-card"/></style>
+                                    
+                                    <!-- Daemon / Core Status -->
                                     <child>
-                                      <object class="GtkLabel">
-                                        <property name="label">DAEMON / CORE STATUS</property>
-                                        <style><class name="x3d-card-title"/></style>
-                                        <property name="halign">start</property>
+                                      <object class="GtkBox">
+                                        <property name="orientation">vertical</property>
+                                        <property name="vexpand">false</property>
+                                        <property name="valign">start</property>
+                                        <style><class name="x3d-card"/></style>
+                                        <layout>
+                                          <property name="column">0</property>
+                                          <property name="row">0</property>
+                                        </layout>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label">DAEMON / CORE STATUS</property>
+                                            <style><class name="x3d-card-title"/></style>
+                                            <property name="halign">start</property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="lbl_status_daemon">
+                                            <property name="label">Connecting to daemon...</property>
+                                            <style><class name="x3d-value"/></style>
+                                            <property name="halign">start</property>
+                                          </object>
+                                        </child>
                                       </object>
                                     </child>
+
+                                    <!-- Hardware Topology -->
                                     <child>
-                                      <object class="GtkLabel" id="lbl_status_dump">
-                                        <property name="label">Connecting to daemon...</property>
-                                        <style><class name="x3d-value"/></style>
-                                        <property name="halign">start</property>
+                                      <object class="GtkBox">
+                                        <property name="orientation">vertical</property>
+                                        <property name="vexpand">false</property>
+                                        <property name="valign">start</property>
+                                        <style><class name="x3d-card"/></style>
+                                        <layout>
+                                          <property name="column">1</property>
+                                          <property name="row">0</property>
+                                        </layout>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label">HARDWARE TOPOLOGY</property>
+                                            <style><class name="x3d-card-title"/></style>
+                                            <property name="halign">start</property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="lbl_status_hardware">
+                                            <property name="label">Connecting to daemon...</property>
+                                            <style><class name="x3d-value"/></style>
+                                            <property name="halign">start</property>
+                                          </object>
+                                        </child>
                                       </object>
                                     </child>
+
+                                    <!-- System Profile -->
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="orientation">vertical</property>
+                                        <property name="vexpand">false</property>
+                                        <property name="valign">start</property>
+
+                                        <style><class name="x3d-card"/></style>
+                                        <layout>
+                                          <property name="column">0</property>
+                                          <property name="row">1</property>
+                                        </layout>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="label">SYSTEM PROFILE</property>
+                                            <style><class name="x3d-card-title"/></style>
+                                            <property name="halign">start</property>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="lbl_status_system">
+                                            <property name="label">Connecting to daemon...</property>
+                                            <style><class name="x3d-value"/></style>
+                                            <property name="halign">start</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+
                                   </object>
                                 </child>
                               </object>

@@ -26,7 +26,9 @@ static void config_send(const char *key, const char *value);
 static const char *config_get(const char *key);
 static GtkListBoxRow *find_sidebar_row(GtkListBox *lb, const char *name);
 
-static GtkWidget *lbl_status_dump = NULL;
+static GtkWidget *lbl_status_daemon = NULL;
+static GtkWidget *lbl_status_hardware = NULL;
+static GtkWidget *lbl_status_system = NULL;
 static GtkEditable *g_cfg_server_ip = NULL;
 static GtkEditable *g_cfg_server_port = NULL;
 static GtkSpinButton *g_cfg_journal_keep = NULL;
@@ -80,16 +82,43 @@ static GtkWidget *mode_btns[5]; /* Cache, Frequency, Dual, Default, Reset */
 
 static int daemon_retry_cooldown = 0;
 
+static void status_sysfs(const char *path, char *out, size_t max_len) {
+  int fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    printf_sn(out, max_len, "N/A");
+    return;
+  }
+  ssize_t n = read(fd, out, max_len - 1);
+  if (n > 0) {
+    out[n] = '\0';
+    for (int i = 0; i < n; i++)
+      if (out[i] == '\n' || out[i] == '\r')
+        out[i] = '\0';
+  } else {
+    printf_sn(out, max_len, "N/A");
+  }
+  close(fd);
+}
+
+static void status_upper(char *str) {
+  for (int idx = 0; str[idx]; idx++) {
+    str[idx] = toupper((unsigned char)str[idx]);
+  }
+}
+
 static gboolean update_dashboard_cb(gpointer user_data) {
   (void)user_data;
-  if (!lbl_status_dump)
+  if (!lbl_status_daemon || !lbl_status_hardware || !lbl_status_system)
     return G_SOURCE_CONTINUE;
 
   char info[BUFF_INFO] = {0};
-  if (socket_send("DAEMON_INFO", info, sizeof(info)) != 0) {
-    gtk_label_set_label(GTK_LABEL(lbl_status_dump),
-                        "Daemon offline — attempting restart...");
+  int socket_ok = (socket_send("DAEMON_INFO", info, sizeof(info)) == 0);
 
+  char ipc_status[64] = "SOCKET OFFLINE";
+  if (socket_ok) {
+    printf_sn(ipc_status, sizeof(ipc_status), "SOCKET ONLINE");
+    daemon_retry_cooldown = 0;
+  } else {
     /* Auto-restart guardrail: try to revive daemon, with cooldown */
     if (daemon_retry_cooldown <= 0) {
       daemon_retry_cooldown = 10; /* wait 10 polls before retrying */
@@ -101,46 +130,134 @@ static gboolean update_dashboard_cb(gpointer user_data) {
     } else {
       daemon_retry_cooldown--;
     }
-    return G_SOURCE_CONTINUE;
   }
-  daemon_retry_cooldown = 0;
 
-  char display[BUFF_LINE * 2] = {0};
-  char state_str[BUFF_STATE] = "Unknown";
-  char active_str[BUFF_STATE] = "Inactive";
+  char daemon_state[64] = "STOPPED";
+  char ebpf_status[64] = "INACTIVE";
+  char sched_mode[64] = "INACTIVE (MANUAL OVERRIDE)";
+  char ccd_state[64] = "AFFINITY PINNED";
+  int override_val = 0;
+  int affinity_active = 0;
 
-  char *st = strstr(info, "STATE=");
-  char *ba = strstr(info, "BPF_ACTIVE=");
+  if (socket_ok) {
+    char *st_val = strstr(info, "STATE=");
+    char *ov_val = strstr(info, "OVERRIDE=");
+    char *ba_val = strstr(info, "BPF_ACTIVE=");
+    char *mk = strstr(info, "MASK=");
 
-  if (st) {
-    strncpy(state_str, st + 6, sizeof(state_str) - 1);
-    state_str[sizeof(state_str) - 1] = '\0';
-    char *sep = strchr(state_str, ';');
-    if (!sep)
-      sep = strchr(state_str, '|');
-    if (sep)
-      *sep = '\0';
+    if (st_val) {
+      printf_sn(daemon_state, sizeof(daemon_state), "%s", st_val + 6);
+      char *sc = strchr(daemon_state, ';');
+      if (!sc) sc = strchr(daemon_state, '|');
+      if (sc) *sc = '\0';
+    }
+    if (ov_val) override_val = atoi(ov_val + 9);
+    if (mk && strncmp(mk + 5, "none", 4) != 0) affinity_active = 1;
+    if (ba_val) {
+      printf_sn(ebpf_status, sizeof(ebpf_status), "%s",
+                (atoi(ba_val + 11) ? "HEALTHY" : "POLLING (FALLBACK)"));
+    }
+
+    status_upper(daemon_state);
+    if (strcmp(daemon_state, "DEFAULT") == 0) {
+      printf_sn(daemon_state, sizeof(daemon_state), "ACTIVE");
+      printf_sn(sched_mode, sizeof(sched_mode), "ACTIVE");
+    } else if (strcmp(daemon_state, "HARD_RESET") == 0 || strcmp(daemon_state, "AUTO") == 0) {
+      printf_sn(daemon_state, sizeof(daemon_state), "CPPC NATIVE");
+    } else {
+      printf_sn(daemon_state, sizeof(daemon_state), "SUSPENDED");
+      printf_sn(ebpf_status, sizeof(ebpf_status), "INACTIVE (MANUAL OVERRIDE)");
+    }
   }
-  if (ba && atoi(ba + 11))
-    strncpy(active_str, "eBPF (Active)", sizeof(active_str) - 1);
-  else
-    strncpy(active_str, "Polling", sizeof(active_str) - 1);
-  active_str[sizeof(active_str) - 1] = '\0';
 
   /* Fetch v-Cache mode via MODE IPC */
-  char mode_str[BUFF_STATE] = "Unknown";
-  if (socket_send("MODE", mode_str, sizeof(mode_str)) != 0) {
-    strncpy(mode_str, "N/A", sizeof(mode_str) - 1);
-    mode_str[sizeof(mode_str) - 1] = '\0';
+  char mode_str[BUFF_STATE] = "N/A";
+  if (socket_ok && socket_send("MODE", mode_str, sizeof(mode_str)) == 0) {
+    status_upper(mode_str);
   }
 
-  printf_sn(display, sizeof(display),
-            "<b>Daemon State:</b>  %s\n"
-            "<b>Detection:</b>     %s\n"
-            "<b>v-Cache Mode:</b>  %s",
-            state_str, active_str, mode_str);
+  /* CCD States */
+  char ccd0_st[32] = "ONLINE";
+  char ccd1_st[32] = "ONLINE";
+  char path[256];
+  char b0[8] = "1";
+  printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", 0);
+  int fd = open(path, O_RDONLY);
+  if (fd >= 0) {
+    if (read(fd, b0, sizeof(b0) - 1) > 0 && b0[0] == '0') strcpy(ccd0_st, "PARKED");
+    close(fd);
+  }
+#ifndef CCD1_START
+#define CCD1_START 8
+#endif
+  printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", CCD1_START);
+  b0[0] = '1';
+  fd = open(path, O_RDONLY);
+  if (fd >= 0) {
+    if (read(fd, b0, sizeof(b0) - 1) > 0 && b0[0] == '0') strcpy(ccd1_st, "PARKED");
+    close(fd);
+  }
 
-  gtk_label_set_markup(GTK_LABEL(lbl_status_dump), display);
+  if (affinity_active) {
+    strcpy(ccd_state, "AFFINITY PINNED");
+  } else if (strcmp(ccd1_st, "ONLINE") == 0) {
+    strcpy(ccd_state, (override_val == 4) ? "INVERTED" : "FULL THROUGHPUT");
+  } else {
+    strcpy(ccd_state, "CCD ISOLATED");
+  }
+
+  char d_buff[64], epp[64], gov[64], smt[64], plat[64], bst_raw[64];
+  status_sysfs("/sys/devices/system/cpu/amd_pstate/status", d_buff, sizeof(d_buff));
+  status_sysfs("/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference", epp, sizeof(epp));
+  status_sysfs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor", gov, sizeof(gov));
+  status_sysfs("/sys/devices/system/cpu/smt/control", smt, sizeof(smt));
+  status_sysfs("/sys/firmware/acpi/platform_profile", plat, sizeof(plat));
+  status_sysfs("/sys/devices/system/cpu/cpufreq/boost", bst_raw, sizeof(bst_raw));
+  char boost_str[64];
+  printf_sn(boost_str, sizeof(boost_str), "%s", (strcmp(bst_raw, "1") == 0) ? "ENABLED" : "DISABLED");
+
+  status_upper(d_buff);
+  status_upper(epp);
+  status_upper(gov);
+  status_upper(smt);
+  status_upper(plat);
+
+  char display_daemon[BUFF_LINE * 2] = {0};
+  char display_hardware[BUFF_LINE * 2] = {0};
+  char display_system[BUFF_LINE * 2] = {0};
+
+  printf_sn(display_daemon, sizeof(display_daemon),
+            "<span font_family=\"monospace\">"
+            "  <b>Daemon Status:</b>  %s\n"
+            "  <b>IPC Status:</b>     %s\n"
+            "  <b>eBPF Health:</b>    %s\n"
+            "  <b>Scheduler Mode:</b> %s\n"
+            "</span>",
+            daemon_state, ipc_status, ebpf_status, sched_mode);
+
+  printf_sn(display_hardware, sizeof(display_hardware),
+            "<span font_family=\"monospace\">"
+            "  <b>v-Cache Mode:</b>   %s\n"
+            "  <b>Boost Mode:</b>     %s\n"
+            "  <b>CCD State:</b>      %s\n"
+            "  <b>CCD0 Status:</b>    %s\n"
+            "  <b>CCD1 Status:</b>    %s\n"
+            "</span>",
+            mode_str, boost_str, ccd_state, ccd0_st, ccd1_st);
+
+  printf_sn(display_system, sizeof(display_system),
+            "<span font_family=\"monospace\">"
+            "  <b>Driver Mode:</b>    %s\n"
+            "  <b>EPP Profile:</b>    %s\n"
+            "  <b>Governor:</b>       %s\n"
+            "  <b>SMT Status:</b>     %s\n"
+            "  <b>Platform:</b>       %s\n"
+            "</span>",
+            d_buff, epp, gov, smt, plat);
+
+  gtk_label_set_markup(GTK_LABEL(lbl_status_daemon), display_daemon);
+  gtk_label_set_markup(GTK_LABEL(lbl_status_hardware), display_hardware);
+  gtk_label_set_markup(GTK_LABEL(lbl_status_system), display_system);
   return G_SOURCE_CONTINUE;
 }
 
@@ -436,8 +553,8 @@ static void on_affinity_apply_clicked(GtkButton *btn, gpointer user_data) {
   }
 
   /* Brief visual confirmation (Update status label if available) */
-  if (lbl_status_dump) {
-    gtk_label_set_label(GTK_LABEL(lbl_status_dump),
+  if (lbl_status_daemon) {
+    gtk_label_set_label(GTK_LABEL(lbl_status_daemon),
                         "Affinity Settings Applied");
   }
 
@@ -1258,8 +1375,12 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
       GTK_WINDOW(gtk_builder_get_object(builder, "main_window"));
   gtk_window_set_application(window, app);
 
-  lbl_status_dump =
-      GTK_WIDGET(gtk_builder_get_object(builder, "lbl_status_dump"));
+  lbl_status_daemon =
+      GTK_WIDGET(gtk_builder_get_object(builder, "lbl_status_daemon"));
+  lbl_status_hardware =
+      GTK_WIDGET(gtk_builder_get_object(builder, "lbl_status_hardware"));
+  lbl_status_system =
+      GTK_WIDGET(gtk_builder_get_object(builder, "lbl_status_system"));
 
   /* Bind Navigation */
   GtkListBox *sidebar =
