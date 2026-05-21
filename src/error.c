@@ -71,7 +71,7 @@ static const msg_t registry_msg[] = {
             "Automated audit suite reported errors (Code: %d)"},
     [29] = {"Memory allocation failure", "Failed to allocate %zu bytes"},
     [30] = {"Critical Error: Configuration File Not Found",
-            "/etc/x3d-toggle.d user configuration file is missing. Run install "
+            "/etc/x3d-toggle.d user configuration file is missing. Run the installer "
             "or regenerate it."},
     [31] = {"Scaffolding Component Failure", "Failed to generate: %s"},
     [32] = {"Build Artifact Permission Overlap", "Permission denied on: %s. Run 'sudo make clean'."},
