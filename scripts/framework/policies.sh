@@ -27,6 +27,11 @@ install_policies() {
         install -m644 "$X3D_TOGGLE/packaging/50-x3d_toggle-service.rules" "$DESTDIR$SYS_POLKIT/50-x3d_toggle-service.rules"
     fi
 
+    if [ -f "$X3D_TOGGLE/packaging/org.x3d_toggle.debug.policy" ]; then
+        install -dm755 "$DESTDIR$USR_SHARE/polkit-1/actions"
+        install -m644 "$X3D_TOGGLE/packaging/org.x3d_toggle.debug.policy" "$DESTDIR$USR_SHARE/polkit-1/actions/org.x3d_toggle.debug.policy"
+    fi
+
     if [ -f "$X3D_TOGGLE/packaging/sysusers.conf" ]; then
         install -dm755 "$DESTDIR$SYS_SYSUSERS"
         install -m644 "$X3D_TOGGLE/packaging/sysusers.conf" "$DESTDIR$SYS_SYSUSERS/x3d_toggle-sysusers.conf"

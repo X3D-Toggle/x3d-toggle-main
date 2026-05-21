@@ -431,6 +431,19 @@
                                     <child><object class="AdwActionRow"><property name="title">Performance</property><property name="subtitle">Checks for performance-related issues</property><child type="suffix"><object class="GtkSwitch" id="cfg_lint_clang_performance"><property name="valign">center</property></object></child></object></child>
                                     <child><object class="AdwActionRow"><property name="title">Portability</property><property name="subtitle">Checks for code portability issues</property><child type="suffix"><object class="GtkSwitch" id="cfg_lint_clang_portability"><property name="valign">center</property></object></child></object></child>
                                     <child><object class="AdwActionRow"><property name="title">Analyzer</property><property name="subtitle">Enable Clang Static Analyzer checks</property><child type="suffix"><object class="GtkSwitch" id="cfg_lint_clang_analyzer"><property name="valign">center</property></object></child></object></child>
+                                    <child>
+                                      <object class="AdwActionRow">
+                                        <property name="title">Analyze and Present Report</property>
+                                        <property name="subtitle">Run Clang-Tidy static analysis on the codebase</property>
+                                        <child type="suffix">
+                                          <object class="GtkButton" id="btn_lint_clang_run">
+                                            <property name="label">Run Analysis</property>
+                                            <property name="valign">center</property>
+                                            <style><class name="x3d-primary"/></style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
                                   </object>
                                 </child>
 
@@ -444,6 +457,19 @@
                                     <child><object class="AdwActionRow"><property name="title">Portability</property><property name="subtitle">Enable portability warnings</property><child type="suffix"><object class="GtkSwitch" id="cfg_lint_cppcheck_portability"><property name="valign">center</property></object></child></object></child>
                                     <child><object class="AdwActionRow"><property name="title">Information</property><property name="subtitle">Enable informational messages</property><child type="suffix"><object class="GtkSwitch" id="cfg_lint_cppcheck_information"><property name="valign">center</property></object></child></object></child>
                                     <child><object class="AdwActionRow"><property name="title">Unused</property><property name="subtitle">Check for unused functions and variables</property><child type="suffix"><object class="GtkSwitch" id="cfg_lint_cppcheck_unused"><property name="valign">center</property></object></child></object></child>
+                                    <child>
+                                      <object class="AdwActionRow">
+                                        <property name="title">Analyze and Present Report</property>
+                                        <property name="subtitle">Run Cppcheck bug hunting on the codebase</property>
+                                        <child type="suffix">
+                                          <object class="GtkButton" id="btn_lint_cppcheck_run">
+                                            <property name="label">Run Analysis</property>
+                                            <property name="valign">center</property>
+                                            <style><class name="x3d-primary"/></style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
                                   </object>
                                 </child>
 
@@ -453,6 +479,35 @@
                                     <child><object class="AdwActionRow"><property name="title">Analysis Mode</property><property name="subtitle">full / summary / disabled</property><child type="suffix"><object class="GtkDropDown" id="cfg_lint_valgrind_mode"><property name="model"><object class="GtkStringList"><items><item>full</item><item>summary</item><item>disabled</item></items></object></property><property name="valign">center</property></object></child></object></child>
                                     <child><object class="AdwActionRow"><property name="title">Leak Kinds</property><property name="subtitle">all / definite / indirect / possible / reachable</property><child type="suffix"><object class="GtkDropDown" id="cfg_lint_valgrind_kinds"><property name="model"><object class="GtkStringList"><items><item>all</item><item>definite</item><item>indirect</item><item>possible</item><item>reachable</item></items></object></property><property name="valign">center</property></object></child></object></child>
                                     <child><object class="AdwActionRow"><property name="title">Origin Tracking</property><property name="subtitle">High CPU overhead</property><child type="suffix"><object class="GtkSwitch" id="cfg_lint_valgrind_origins"><property name="valign">center</property></object></child></object></child>
+                                    <child>
+                                      <object class="AdwActionRow">
+                                        <property name="title">Analyze and Present Report</property>
+                                        <property name="subtitle">Run Valgrind runtime analysis on the daemon</property>
+                                        <child type="suffix">
+                                          <object class="GtkButton" id="btn_lint_valgrind_run">
+                                            <property name="label">Run Analysis</property>
+                                            <property name="valign">center</property>
+                                            <style><class name="x3d-primary"/></style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="AdwPreferencesGroup">
+                                    <property name="title">UI Overrides</property>
+                                    <child>
+                                      <object class="AdwActionRow">
+                                        <property name="title">Force Show Unsupported Options</property>
+                                        <property name="subtitle">Bypass kernel capability discovery logic</property>
+                                        <child type="suffix">
+                                          <object class="GtkSwitch" id="cfg_force_unsupported">
+                                            <property name="valign">center</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
                                   </object>
                                 </child>
                               </object>
@@ -472,7 +527,7 @@
 
                                 <child>
                                   <object class="AdwPreferencesGroup">
-                                    <property name="title">Diagnostics &amp;amp; Auditing</property>
+                                    <property name="title">Diagnostics and Auditing</property>
                                     <child>
                                       <object class="AdwActionRow">
                                         <property name="title">Debug Logging</property>
@@ -793,20 +848,159 @@
                               <object class="GtkBox">
                                 <property name="orientation">vertical</property>
                                 <property name="spacing">12</property>
-                                <child><object class="GtkLabel"><property name="label">Advanced Configuration</property><style><class name="x3d-hero-title x3d-dev-title"/></style><property name="halign">start</property></object></child>
+                                <child><object class="GtkLabel"><property name="label">Advanced Configuration</property><style><class name="x3d-hero-title"/></style><property name="halign">start</property></object></child>
 
                                 <child>
                                   <object class="AdwPreferencesGroup">
-                                    <property name="title">Network</property>
+                                    <property name="title">BORE Scheduler Tunables</property>
+                                    <child>
+                                      <object class="AdwActionRow" id="row_sched_bore">
+                                        <property name="title">Sched BORE</property>
+                                        <property name="subtitle">Enable Burst-Oriented Response Enhancer</property>
+                                        <child type="suffix"><object class="GtkSwitch" id="cfg_sched_bore"><property name="valign">center</property></object></child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="row_sched_bit_shift">
+                                        <property name="title">Sched Bit Shift</property>
+                                        <property name="subtitle">BORE potency adjustment (0-15)</property>
+                                        <child type="suffix"><object class="GtkSpinButton" id="cfg_sched_bit_shift"><property name="valign">center</property><property name="adjustment"><object class="GtkAdjustment"><property name="lower">0</property><property name="upper">15</property><property name="step-increment">1</property></object></property></object></child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="row_sched_burst_fork">
+                                        <property name="title">Sched Burst Fork</property>
+                                        <property name="subtitle">Inherit burst score on fork</property>
+                                        <child type="suffix"><object class="GtkSwitch" id="cfg_sched_burst_fork"><property name="valign">center</property></object></child>
+                                      </object>
+                                    </child>
                                     <child>
                                       <object class="AdwActionRow">
-                                        <property name="title">Server IP</property>
-                                        <property name="subtitle">Remote IP Address</property>
+                                        <property name="title">CFS Bandwidth Slice</property>
+                                        <property name="subtitle">Scheduling slice in microseconds (us)</property>
+                                        <child type="suffix"><object class="GtkSpinButton" id="cfg_sched_slice_us"><property name="valign">center</property><property name="adjustment"><object class="GtkAdjustment"><property name="lower">100</property><property name="upper">10000</property><property name="step-increment">100</property></object></property></object></child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwPreferencesGroup">
+                                    <property name="title">Kernel Performance</property>
+                                    <child>
+                                      <object class="AdwActionRow">
+                                        <property name="title">VM Max Map Count</property>
+                                        <property name="subtitle">Max memory map areas (for Wine/Steam)</property>
+                                        <child type="suffix"><object class="GtkEntry" id="cfg_vm_max_map"><property name="valign">center</property><property name="width-request">150</property></object></child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="row_split_lock">
+                                        <property name="title">Split Lock Mitigate</property>
+                                        <property name="subtitle">Mitigate split lock performance penalties</property>
+                                        <child type="suffix"><object class="GtkSwitch" id="cfg_split_lock_detect"><property name="valign">center</property></object></child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="row_nmi_watchdog">
+                                        <property name="title">NMI Watchdog</property>
+                                        <property name="subtitle">Disable for minor performance boost</property>
+                                        <child type="suffix"><object class="GtkSwitch" id="cfg_nmi_watchdog"><property name="valign">center</property></object></child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="row_thp_mode">
+                                        <property name="title">THP Mode</property>
+                                        <property name="subtitle">Transparent Hugepages state</property>
+                                        <child type="suffix"><object class="GtkDropDown" id="cfg_thp_mode"><property name="model"><object class="GtkStringList"><items><item>always</item><item>madvise</item><item>never</item></items></object></property><property name="valign">center</property></object></child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwPreferencesGroup">
+                                    <property name="title">Developer</property>
+                                    <child><object class="AdwActionRow"><property name="title">Developer Mode</property><property name="subtitle">Enable extended diagnostics</property><child type="suffix"><object class="GtkSwitch" id="cfg_dev_enable"><property name="valign">center</property></object></child></object></child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="orientation">horizontal</property>
+                                    <property name="spacing">12</property>
+                                    <property name="halign">end</property>
+                                    <property name="margin-top">24</property>
+                                    <child><object class="GtkButton" id="btn_adv_cancel"><property name="label">Cancel</property></object></child>
+                                    <child><object class="GtkButton" id="btn_adv_apply"><property name="label">Apply</property><style><class name="x3d-primary"/></style></object></child>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+
+                        <!-- Networking Settings Page -->
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">networking</property>
+                            <property name="child">
+                              <object class="GtkBox">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">12</property>
+                                <child><object class="GtkLabel"><property name="label">Networking Settings</property><style><class name="x3d-hero-title"/></style><property name="halign">start</property></object></child>
+
+                                <child>
+                                  <object class="AdwPreferencesGroup">
+                                    <property name="title">Network Performance</property>
+                                    <child>
+                                      <object class="AdwActionRow" id="row_net_qdisc">
+                                        <property name="title">Default QDisc</property>
+                                        <property name="subtitle">Queueing discipline (fq_codel, cake, etc.)</property>
+                                        <child type="suffix"><object class="GtkEntry" id="cfg_net_qdisc"><property name="valign">center</property><property name="width-request">150</property></object></child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="row_net_fastopen">
+                                        <property name="title">TCP Fast Open</property>
+                                        <property name="subtitle">Reduce latency on connection initiation (0-3)</property>
+                                        <child type="suffix"><object class="GtkSpinButton" id="cfg_net_fastopen"><property name="valign">center</property><property name="adjustment"><object class="GtkAdjustment"><property name="lower">0</property><property name="upper">3</property><property name="step-increment">1</property></object></property></object></child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwPreferencesGroup">
+                                    <property name="title">Network Security and Filtering</property>
+                                    <child>
+                                      <object class="AdwActionRow">
+                                        <property name="title">Reverse Path Filter</property>
+                                        <property name="subtitle">Mitigate IP spoofing (0=Off, 1=Strict, 2=Loose)</property>
+                                        <child type="suffix"><object class="GtkSpinButton" id="cfg_net_rp_filter"><property name="valign">center</property><property name="adjustment"><object class="GtkAdjustment"><property name="lower">0</property><property name="upper">2</property><property name="step-increment">1</property></object></property></object></child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow">
+                                        <property name="title">Accept Source Route</property>
+                                        <property name="subtitle">Enable/Disable IPv4 source routing</property>
+                                        <child type="suffix"><object class="GtkSwitch" id="cfg_net_source_route"><property name="valign">center</property></object></child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwPreferencesGroup">
+                                    <property name="title">Remote Management</property>
+                                    <child>
+                                      <object class="AdwActionRow">
+                                        <property name="title">Server IP Address</property>
+                                        <property name="subtitle">IP address of the target daemon (e.g. 127.0.0.1)</property>
                                         <child type="suffix">
-                                          <object class="GtkEntry" id="cfg_server_ip">
+                                          <object class="GtkEntry" id="cfg_server_address">
                                             <property name="valign">center</property>
                                             <property name="width-request">200</property>
-                                            <property name="placeholder-text">127.0.0.1</property>
                                           </object>
                                         </child>
                                       </object>
@@ -814,12 +1008,32 @@
                                     <child>
                                       <object class="AdwActionRow">
                                         <property name="title">Server Port</property>
-                                        <property name="subtitle">Remote Endpoint Port</property>
+                                        <property name="subtitle">Port number of the target daemon (e.g. 9370)</property>
                                         <child type="suffix">
                                           <object class="GtkEntry" id="cfg_server_port">
                                             <property name="valign">center</property>
                                             <property name="width-request">200</property>
-                                            <property name="placeholder-text">9370</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow">
+                                        <property name="title">SSH Mode</property>
+                                        <property name="subtitle">Pick connection type (local, remote, or SSH tunnel only)</property>
+                                        <child type="suffix">
+                                          <object class="GtkDropDown" id="cfg_server_ssh">
+                                            <property name="valign">center</property>
+                                            <property name="width-request">200</property>
+                                            <property name="model">
+                                              <object class="GtkStringList">
+                                                <items>
+                                                  <item>Local</item>
+                                                  <item>Remote</item>
+                                                  <item>SSH Tunnel Only</item>
+                                                </items>
+                                              </object>
+                                            </property>
                                           </object>
                                         </child>
                                       </object>
@@ -828,9 +1042,13 @@
                                 </child>
 
                                 <child>
-                                  <object class="AdwPreferencesGroup">
-                                    <property name="title">Advanced</property>
-                                    <child><object class="AdwActionRow"><property name="title">Developer Mode</property><property name="subtitle">Enable extended diagnostics and dev tools</property><child type="suffix"><object class="GtkSwitch" id="cfg_dev_enable"><property name="valign">center</property></object></child></object></child>
+                                  <object class="GtkBox">
+                                    <property name="orientation">horizontal</property>
+                                    <property name="spacing">12</property>
+                                    <property name="halign">end</property>
+                                    <property name="margin-top">24</property>
+                                    <child><object class="GtkButton" id="btn_net_cancel"><property name="label">Cancel</property></object></child>
+                                    <child><object class="GtkButton" id="btn_net_apply"><property name="label">Apply Settings</property><style><class name="x3d-primary"/></style></object></child>
                                   </object>
                                 </child>
                               </object>

@@ -35,6 +35,7 @@ export VAR_LOG      ?= $(VAR)/log/x3d-toggle
 export LIB_UDEV     ?= $(USR_LIB)/udev
 export LIB_SYSTEMD  ?= $(USR_LIB)/systemd
 export LIB_POLKIT   ?= $(USR_LIB)/polkit-1
+export SYS_POLKIT_ACTIONS ?= $(USR_SHARE)/polkit-1/actions
 export SYS_SYSUSERS ?= $(USR_LIB)/sysusers.d
 export SYS_TMPFILES ?= $(USR_LIB)/tmpfiles.d
 export USR_LIBS     ?= $(USR_LIB)/x3d-toggle
@@ -123,6 +124,7 @@ DEST_RUN        = $(DESTDIR)$(RUN)
 DEST_SYSTEMD    = $(DESTDIR)$(SYS_SYSTEMD)
 DEST_UDEV       = $(DESTDIR)$(SYS_UDEV)
 DEST_POLKIT     = $(DESTDIR)$(SYS_POLKIT)
+DEST_POLKIT_ACTIONS = $(DESTDIR)$(SYS_POLKIT_ACTIONS)
 DEST_SYSUSERS   = $(DESTDIR)$(SYS_SYSUSERS)
 DEST_TMPFILES   = $(DESTDIR)$(SYS_TMPFILES)
 DEST_APPS       = $(DESTDIR)$(USR_APPS)
@@ -206,6 +208,9 @@ install: build
 	install -dm755 $(DEST_POLKIT)
 	install -m644 packaging/50-x3d_toggle-service.rules $(DEST_POLKIT)/50-x3d_toggle-service.rules
 
+	install -dm755 $(DEST_POLKIT_ACTIONS)
+	install -m644 packaging/org.x3d_toggle.debug.policy $(DEST_POLKIT_ACTIONS)/org.x3d_toggle.debug.policy
+
 	install -dm755 $(DEST_TOOLS)
 	install -dm755 $(DEST_FRAMEWORK)
 	install -m755 scripts/tools/*.sh $(DEST_TOOLS)/
@@ -264,9 +269,11 @@ uninstall:
 	rm -f $(DEST_BIN)/x3d
 	rm -f $(DEST_SYSUSERS)/x3d_toggle-sysusers.conf
 	rm -f $(DEST_TMPFILES)/x3d_toggle-tmpfiles.conf
+	rm -f $(DEST_TMPFILES)/x3d-toggle.conf
 	rm -f $(DEST_SYSTEMD)/x3d-toggle.service
 	rm -f $(DEST_UDEV)/99-x3d_toggle-sysfs.rules
-	rm -f $(DEST_POLKIT)/50-x3d_toggle-service.rules	
+	rm -f $(DEST_POLKIT)/50-x3d_toggle-service.rules
+	rm -f $(DEST_POLKIT_ACTIONS)/org.x3d_toggle.debug.policy
 	rm -f $(DEST_UDEV)/99-x3d-toggle.rules
 	rm -f $(DEST_POLKIT)/x3d-toggle.rules
 	rm -f $(DEST_PIXMAPS)/x3d-toggle.jpg

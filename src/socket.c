@@ -88,12 +88,12 @@ void socket_handle(int server_fd) {
       mode(current, sizeof(current));
       send(client_fd, current, strlen(current), MSG_NOSIGNAL);
     } else if (strncmp(buf, "DAEMON_INFO", 11) == 0) {
-      char info[256];
+      char info[512];
       printf_sn(info, sizeof(info),
                 "STATE=%s|OVERRIDE=%d|BPF_ACTIVE=%d|REFRESH_INTERVAL=%.1f|"
-                "MASK=%s",
+                "MASK=%s|CAPS=%llx",
                 cfg.daemon_state, active_override, bpf_active ? 1 : 0,
-                cfg.refresh_interval, cfg.affinity_mask);
+                cfg.refresh_interval, cfg.affinity_mask, cfg.capabilities);
       send(client_fd, info, strlen(info), MSG_NOSIGNAL);
     } else if (strncmp(buf, "GET_CONFIG ", 11) == 0) {
       extern const char *config_get(const char *key);
@@ -344,6 +344,32 @@ void socket_handle(int server_fd) {
         } else if (strcmp(kv, "FALLBACK_PROFILE") == 0) {
           printf_sn(cfg.fallback_profile, sizeof(cfg.fallback_profile), "%s", v);
         }
+        /* Advanced Tunables */
+        else if (strcmp(kv, "SCHED_BORE") == 0) cfg.sched_bore = atoi(v);
+        else if (strcmp(kv, "SCHED_BIT_SHIFT") == 0) cfg.sched_bit_shift = atoi(v);
+        else if (strcmp(kv, "SCHED_BURST_FORK") == 0) cfg.sched_burst_fork = atoi(v);
+        else if (strcmp(kv, "SCHED_SLICE_US") == 0) cfg.sched_slice_us = atoi(v);
+        else if (strcmp(kv, "VM_MAX_MAP") == 0) cfg.vm_max_map = atoi(v);
+        else if (strcmp(kv, "SPLIT_LOCK_DETECT") == 0) cfg.split_lock_detect = atoi(v);
+        else if (strcmp(kv, "NMI_WATCHDOG") == 0) cfg.nmi_watchdog = atoi(v);
+        else if (strcmp(kv, "THP_MODE") == 0) printf_sn(cfg.thp_mode, sizeof(cfg.thp_mode), "%s", v);
+        /* Networking */
+        else if (strcmp(kv, "NET_QDISC") == 0) printf_sn(cfg.net_qdisc, sizeof(cfg.net_qdisc), "%s", v);
+        else if (strcmp(kv, "NET_FASTOPEN") == 0) cfg.net_fastopen = atoi(v);
+        else if (strcmp(kv, "NET_RP_FILTER") == 0) cfg.net_rp_filter = atoi(v);
+        else if (strcmp(kv, "NET_SOURCE_ROUTE") == 0) cfg.net_source_route = atoi(v);
+        /* IRQ Subsystem */
+        else if (strcmp(kv, "IRQ_ENABLE") == 0) cfg.irq_enable = atoi(v);
+        else if (strcmp(kv, "IRQ_GPU") == 0) cfg.irq_gpu = atoi(v);
+        else if (strcmp(kv, "IRQ_NVME") == 0) cfg.irq_nvme = atoi(v);
+        else if (strcmp(kv, "IRQ_USB") == 0) cfg.irq_usb = atoi(v);
+        else if (strcmp(kv, "IRQ_NIC") == 0) cfg.irq_nic = atoi(v);
+        else if (strcmp(kv, "IRQ_AUDIO") == 0) cfg.irq_audio = atoi(v);
+        else if (strcmp(kv, "IRQ_COALESCE") == 0) cfg.irq_coalesce = atoi(v);
+        else if (strcmp(kv, "IRQ_WATCH") == 0) cfg.irq_watch = atoi(v);
+        /* Developer */
+        else if (strcmp(kv, "ADVANCED_CONFIG_ENABLE") == 0) cfg.advanced_config_enable = atoi(v);
+        else if (strcmp(kv, "FORCE_UNSUPPORTED_DISPLAY") == 0) cfg.force_unsupported_display = atoi(v);
         journal_info(DAEMON_TRANSIT, "Configuration Update: %s -> %s", kv, v);
         send(client_fd, "OK", 2, MSG_NOSIGNAL);
       } else
@@ -372,6 +398,101 @@ void socket_handle(int server_fd) {
       char list_buf[512] = "";
       printf_sn(list_buf, sizeof(list_buf), "GAMES_SYNCED");
       send(client_fd, list_buf, strlen(list_buf), MSG_NOSIGNAL);
+    } else if (strncmp(buf, "ADVANCED_GET ", 13) == 0) {
+      char *key = buf + 13;
+      char path[256] = {0};
+      char val[128] = {0};
+      int ret = -1;
+      
+      if (strcmp(key, "kernel.sched_bore") == 0) printf_sn(path, 256, "/proc/sys/kernel/sched_bore");
+      else if (strcmp(key, "kernel.sched_bit_shift") == 0) printf_sn(path, 256, "/proc/sys/kernel/sched_bit_shift");
+      else if (strcmp(key, "kernel.sched_burst_fork_at_init") == 0) printf_sn(path, 256, "/proc/sys/kernel/sched_burst_fork_at_init");
+      else if (strcmp(key, "kernel.sched_cfs_bandwidth_slice_us") == 0) printf_sn(path, 256, "/proc/sys/kernel/sched_cfs_bandwidth_slice_us");
+      else if (strcmp(key, "vm.max_map_count") == 0) printf_sn(path, 256, "/proc/sys/vm/max_map_count");
+      else if (strcmp(key, "kernel.split_lock_mitigate") == 0) printf_sn(path, 256, "/proc/sys/kernel/split_lock_mitigate");
+      else if (strcmp(key, "kernel.nmi_watchdog") == 0) printf_sn(path, 256, "/proc/sys/kernel/nmi_watchdog");
+      else if (strcmp(key, "net.core.default_qdisc") == 0) printf_sn(path, 256, "/proc/sys/net/core/default_qdisc");
+      else if (strcmp(key, "net.ipv4.tcp_fastopen") == 0) printf_sn(path, 256, "/proc/sys/net/ipv4/tcp_fastopen");
+      else if (strcmp(key, "net.ipv4.conf.all.rp_filter") == 0) printf_sn(path, 256, "/proc/sys/net/ipv4/conf/all/rp_filter");
+      else if (strcmp(key, "net.ipv4.conf.all.accept_source_route") == 0) printf_sn(path, 256, "/proc/sys/net/ipv4/conf/all/accept_source_route");
+      else if (strcmp(key, "target_thp_mode") == 0) printf_sn(path, 256, "/sys/kernel/mm/transparent_hugepage/enabled");
+
+      if (path[0]) {
+          ret = sysctl_read(path, val, sizeof(val));
+      }
+      
+      if (ret == 0) send(client_fd, val, strlen(val), MSG_NOSIGNAL);
+      else send(client_fd, "ERR", 3, MSG_NOSIGNAL);
+    } else if (strncmp(buf, "ADVANCED_SET ", 13) == 0) {
+      char *key = buf + 13;
+      char *val = strchr(key, ' ');
+      int ret = -1;
+      if (val) {
+          *val = '\0';
+          val++;
+          char path[256] = {0};
+          
+          if (strcmp(key, "kernel.sched_bore") == 0) {
+              printf_sn(path, 256, "/proc/sys/kernel/sched_bore");
+              cfg.sched_bore = atoi(val);
+          } else if (strcmp(key, "kernel.sched_bit_shift") == 0) {
+              printf_sn(path, 256, "/proc/sys/kernel/sched_bit_shift");
+              cfg.sched_bit_shift = atoi(val);
+          } else if (strcmp(key, "kernel.sched_burst_fork_at_init") == 0) {
+              printf_sn(path, 256, "/proc/sys/kernel/sched_burst_fork_at_init");
+              cfg.sched_burst_fork = atoi(val);
+          } else if (strcmp(key, "kernel.sched_cfs_bandwidth_slice_us") == 0) {
+              printf_sn(path, 256, "/proc/sys/kernel/sched_cfs_bandwidth_slice_us");
+              cfg.sched_slice_us = atoi(val);
+          } else if (strcmp(key, "vm.max_map_count") == 0) {
+              printf_sn(path, 256, "/proc/sys/vm/max_map_count");
+              cfg.vm_max_map = atoi(val);
+          } else if (strcmp(key, "kernel.split_lock_mitigate") == 0) {
+              printf_sn(path, 256, "/proc/sys/kernel/split_lock_mitigate");
+              cfg.split_lock_detect = atoi(val);
+          } else if (strcmp(key, "kernel.nmi_watchdog") == 0) {
+              printf_sn(path, 256, "/proc/sys/kernel/nmi_watchdog");
+              cfg.nmi_watchdog = atoi(val);
+          } else if (strcmp(key, "net.core.default_qdisc") == 0) {
+              printf_sn(path, 256, "/proc/sys/net/core/default_qdisc");
+              printf_sn(cfg.net_qdisc, 31, "%s", val);
+          } else if (strcmp(key, "net.ipv4.tcp_fastopen") == 0) {
+              printf_sn(path, 256, "/proc/sys/net/ipv4/tcp_fastopen");
+              cfg.net_fastopen = atoi(val);
+          } else if (strcmp(key, "net.ipv4.conf.all.rp_filter") == 0) {
+              printf_sn(path, 256, "/proc/sys/net/ipv4/conf/all/rp_filter");
+              cfg.net_rp_filter = atoi(val);
+          } else if (strcmp(key, "net.ipv4.conf.all.accept_source_route") == 0) {
+              printf_sn(path, 256, "/proc/sys/net/ipv4/conf/all/accept_source_route");
+              cfg.net_source_route = atoi(val);
+          } else if (strcmp(key, "target_thp_mode") == 0) {
+              printf_sn(path, 256, "/sys/kernel/mm/transparent_hugepage/enabled");
+              printf_sn(cfg.thp_mode, 15, "%s", val);
+          }
+          
+          if (path[0]) {
+              ret = sysctl_write(path, val);
+              if (ret == 0) {
+                  /* Persist change to daemon.conf */
+                  char ckey[64];
+                  if (strcmp(key, "kernel.sched_bore") == 0) strcpy(ckey, "SCHED_BORE");
+                  else if (strcmp(key, "kernel.sched_bit_shift") == 0) strcpy(ckey, "SCHED_BIT_SHIFT");
+                  else if (strcmp(key, "kernel.sched_burst_fork_at_init") == 0) strcpy(ckey, "SCHED_BURST_FORK");
+                  else if (strcmp(key, "kernel.sched_cfs_bandwidth_slice_us") == 0) strcpy(ckey, "SCHED_SLICE_US");
+                  else if (strcmp(key, "vm.max_map_count") == 0) strcpy(ckey, "VM_MAX_MAP");
+                  else if (strcmp(key, "kernel.split_lock_mitigate") == 0) strcpy(ckey, "SPLIT_LOCK_DETECT");
+                  else if (strcmp(key, "kernel.nmi_watchdog") == 0) strcpy(ckey, "NMI_WATCHDOG");
+                  else if (strcmp(key, "net.core.default_qdisc") == 0) strcpy(ckey, "NET_QDISC");
+                  else if (strcmp(key, "net.ipv4.tcp_fastopen") == 0) strcpy(ckey, "NET_FASTOPEN");
+                  else if (strcmp(key, "net.ipv4.conf.all.rp_filter") == 0) strcpy(ckey, "NET_RP_FILTER");
+                  else if (strcmp(key, "net.ipv4.conf.all.accept_source_route") == 0) strcpy(ckey, "NET_SOURCE_ROUTE");
+                  else if (strcmp(key, "target_thp_mode") == 0) strcpy(ckey, "THP_MODE");
+                  
+                  config_update(ckey, val);
+              }
+          }
+      }
+      send(client_fd, (ret == 0) ? "OK" : "ERR", (ret == 0) ? 2 : 3, MSG_NOSIGNAL);
     } else {
       send(client_fd, "ERR", 3, MSG_NOSIGNAL);
     }

@@ -21,9 +21,16 @@ LINT_TARGETS_SH="*.sh scripts/framework/*.sh \
 ROOT_REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT_REPO/scripts/framework/framework.sh"
 
-if [ -f "$ROOT_REPO/config/settings.conf" ]; then
+if [ -f "/etc/x3d-toggle.d/settings.conf" ]; then
+    . "/etc/x3d-toggle.d/settings.conf"
+elif [ -f "$ROOT_REPO/config/settings.conf" ]; then
     . "$ROOT_REPO/config/settings.conf"
 fi
+if [ -f "/etc/x3d-toggle.d/daemon.conf" ]; then
+    . "/etc/x3d-toggle.d/daemon.conf"
+fi
+
+MODE="${1:-all}"
 
 CLANG_TIDY_CHECKS=""
 [ "${LINT_CLANG_DIAGNOSTIC:-disabled}" = "enabled" ] && CLANG_TIDY_CHECKS="${CLANG_TIDY_CHECKS}clang-diagnostic-*,"
@@ -57,41 +64,94 @@ JOURNAL_AUDIT="$VAR_AUDITS/linter_$TIMESTAMP"
 cd "$ROOT_REPO" || exit 1
 mkdir -p "$JOURNAL_AUDIT"
 
+RUN_CLANG=0
+RUN_CPPCHECK=0
+RUN_VALGRIND=0
+RUN_SHELL=0
 
+case "$MODE" in
+    clang) RUN_CLANG=1 ;;
+    cppc) RUN_CPPCHECK=1 ;;
+    valgrind) RUN_VALGRIND=1 ;;
+    shell) RUN_SHELL=1 ;;
+    *) RUN_CLANG=1; RUN_CPPCHECK=1; RUN_VALGRIND=1; RUN_SHELL=1 ;;
+esac
 
-printf_step "${HAMMER} Building Project (Silent Build) via bear for clang-tidy..."
-bear --output build/compile_commands.json -- make -s build > "$JOURNAL_AUDIT/build.log" 2>&1 || journal_write -audit "Build" "$JOURNAL_AUDIT/build.log" "$?"
+# ── 1. Clang-Tidy ───────────────────────────────────────────────
+if [ "$RUN_CLANG" -eq 1 ]; then
+    printf_step "${HAMMER} Building Project (Silent Build) via bear for clang-tidy..."
+    bear --output build/compile_commands.json -- make -s build > "$JOURNAL_AUDIT/build.log" 2>&1 || journal_write -audit "Build" "$JOURNAL_AUDIT/build.log" "$?"
+    
+    printf_step "${GEAR} Running clang-tidy (Advanced Audit)..."
+    # shellcheck disable=SC2086
+    clang-tidy -p build/ -checks="$CLANG_TIDY_CHECKS" $LINT_TARGETS_C > "$JOURNAL_AUDIT/clang-tidy.txt" 2>&1 || journal_write -audit "clang-tidy" "$JOURNAL_AUDIT/clang-tidy.txt" "$?"
+fi
 
-printf_step "${GEAR} Running clang-tidy (Advanced Audit)..."
-# shellcheck disable=SC2086
-clang-tidy -p build/ -checks="$CLANG_TIDY_CHECKS" $LINT_TARGETS_C > "$JOURNAL_AUDIT/clang-tidy.txt" 2>&1 || journal_write -audit "clang-tidy" "$JOURNAL_AUDIT/clang-tidy.txt" "$?"
+# ── 2. Cppcheck ─────────────────────────────────────────────────
+if [ "$RUN_CPPCHECK" -eq 1 ]; then
+    printf_step "${SEARCH} Running cppcheck (C11/POSIX Scan) for bugs..."
+    # shellcheck disable=SC2086
+    cppcheck $CPPCHECK_FLAGS -Iinclude -Ibuild . > "$JOURNAL_AUDIT/cppcheck.txt" 2>&1 || journal_write -audit "cppcheck" "$JOURNAL_AUDIT/cppcheck.txt" "$?"
+fi
 
-printf_step "${SEARCH} Running cppcheck (C11/POSIX Scan) for bugs..."
-# shellcheck disable=SC2086
-cppcheck $CPPCHECK_FLAGS -Iinclude -Ibuild . > "$JOURNAL_AUDIT/cppcheck.txt" 2>&1 || journal_write -audit "cppcheck" "$JOURNAL_AUDIT/cppcheck.txt" "$?"
-printf_step "${WAND} Running valgrind (Status Check) for memory leaks..."
-# shellcheck disable=SC2086
-valgrind $VALGRIND_FLAGS ./bin/x3d-toggle status > "$JOURNAL_AUDIT/valgrind.txt" 2>&1
-VAL_RES=$?
-if [ $VAL_RES -ne 0 ]; then
-    _fatal_error=0
-    while IFS= read -r _l_line || [ -n "$_l_line" ]; do
-        case "$_l_line" in
-            *"Fatal error at startup"*) _fatal_error=1; break ;;
-        esac
-    done < "$JOURNAL_AUDIT/valgrind.txt"
-    if [ "$_fatal_error" -eq 1 ]; then
-        printf_step "2,${WARN} Notice: Valgrind startup failed (Missing system symbols/Stripped ld.so)."
-        printf_step "2,        This is a system environment issue, not a project memory leak."
-    else
-        journal_write -audit "valgrind" "$JOURNAL_AUDIT/valgrind.txt" "$VAL_RES"
+# ── 3. Valgrind ─────────────────────────────────────────────────
+if [ "$RUN_VALGRIND" -eq 1 ]; then
+    printf_step "${WAND} Running valgrind (Status Check) for memory leaks..."
+    # shellcheck disable=SC2086
+    valgrind $VALGRIND_FLAGS ./bin/x3d-toggle status > "$JOURNAL_AUDIT/valgrind.txt" 2>&1
+    VAL_RES=$?
+    if [ $VAL_RES -ne 0 ]; then
+        _fatal_error=0
+        while IFS= read -r _l_line || [ -n "$_l_line" ]; do
+            case "$_l_line" in
+                *"Fatal error at startup"*) _fatal_error=1; break ;;
+            esac
+        done < "$JOURNAL_AUDIT/valgrind.txt"
+        if [ "$_fatal_error" -eq 1 ]; then
+            printf_step "2,${WARN} Notice: Valgrind startup failed (Missing system symbols/Stripped ld.so)."
+            printf_step "2,        This is a system environment issue, not a project memory leak."
+        else
+            journal_write -audit "valgrind" "$JOURNAL_AUDIT/valgrind.txt" "$VAL_RES"
+        fi
     fi
 fi
 
-printf_step "${SHIELD} Running shellcheck for syntax errors..."
-# shellcheck disable=SC2086
-shellcheck $LINT_TARGETS_SH > "$JOURNAL_AUDIT/shellcheck.txt" 2>&1 || journal_write -audit "shellcheck" "$JOURNAL_AUDIT/shellcheck.txt" "$?"
+# ── 4. Shellcheck ───────────────────────────────────────────────
+if [ "$RUN_SHELL" -eq 1 ]; then
+    printf_step "${SHIELD} Running shellcheck for syntax errors..."
+    # shellcheck disable=SC2086
+    shellcheck $LINT_TARGETS_SH > "$JOURNAL_AUDIT/shellcheck.txt" 2>&1 || journal_write -audit "shellcheck" "$JOURNAL_AUDIT/shellcheck.txt" "$?"
+fi
 
-printf_step "${ALRIGHT} Linter suite complete. Results saved in $JOURNAL_AUDIT"
+# ── 5. Report Presentation ──────────────────────────────────────
+if [ "$MODE" != "all" ]; then
+    printf_br
+    printf_step "📜 Analysis Report for $MODE:"
+    case "$MODE" in
+        clang) _rep_file="$JOURNAL_AUDIT/clang-tidy.txt" ;;
+        cppc) _rep_file="$JOURNAL_AUDIT/cppcheck.txt" ;;
+        valgrind) _rep_file="$JOURNAL_AUDIT/valgrind.txt" ;;
+        shell) _rep_file="$JOURNAL_AUDIT/shellcheck.txt" ;;
+    esac
+    
+    if [ -f "$_rep_file" ]; then
+        if [ ! -s "$_rep_file" ]; then
+            printf "    No issues found!\n"
+        else
+            while IFS= read -r _l_line || [ -n "$_l_line" ]; do
+                echo "$_l_line"
+            done < "$_rep_file"
+        fi
+    else
+        printf "    Report file not found or check skipped.\n"
+    fi
+    printf_br
+    printf "    Press [ENTER] to close window..."
+    read -r _unused
+else
+    printf_step "${ALRIGHT} Linter suite complete. Results saved in $JOURNAL_AUDIT"
+fi
+
+exit 0
 
 ## end of LINTER.SH

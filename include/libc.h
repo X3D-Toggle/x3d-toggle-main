@@ -230,6 +230,8 @@ int affinity_partition(pid_t pid, int partition);
 pid_t fork(void);
 int execve(const char *path, char *const argv[], char *const envp[]);
 int execvp(const char *file, char *const argv[]);
+int sysctl_read(const char *path, char *buf, size_t size);
+int sysctl_write(const char *path, const char *val);
 void priority(int enable);
 pid_t waitpid(pid_t pid, int *status, int options);
 void udelay(unsigned int usec);

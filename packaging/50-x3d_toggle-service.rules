@@ -18,6 +18,10 @@ polkit.addRule(function(action, subject) {
         if (action.id == "org.freedesktop.systemd1.reload-daemon") {
             return polkit.Result.YES;
         }
+
+        if (action.id == "org.x3d_toggle.debug") {
+            return polkit.Result.YES;
+        }
     }
 });
 

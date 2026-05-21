@@ -20,6 +20,8 @@
 #include "ipc.h"
 #include "libc.h"
 
+void config_probe_capabilities(DaemonConfig *cfg);
+
 static int config_write(int argc, char *argv[], const char *ipc_command,
                         const char *config_key, const char *config_value,
                         const char *user_message) {
@@ -102,17 +104,35 @@ int cli_config_ebpf(int argc, char *argv[]) {
 int cli_config_server(int argc, char *argv[]) {
   if (argc < 3)
     return 1;
-  char payload[256], message[256], value[128];
-  if (argc >= 4) {
-    printf_sn(value, 128, "%s:%s", argv[2], argv[3]);
-    printf_sn(payload, 256, "SET_CONFIG SERVER_ADDRESS %s:%s", argv[2],
-              argv[3]);
+  char payload[256], message[256];
+  char ip[128] = "";
+  char port[32] = "";
+  
+  const char *colon = strchr(argv[2], ':');
+  if (colon) {
+    size_t ip_len = colon - argv[2];
+    if (ip_len >= sizeof(ip)) ip_len = sizeof(ip) - 1;
+    memcpy(ip, argv[2], ip_len);
+    ip[ip_len] = '\0';
+    strncpy(port, colon + 1, sizeof(port) - 1);
   } else {
-    printf_sn(value, 128, "%s", argv[2]);
-    printf_sn(payload, 256, "SET_CONFIG SERVER_ADDRESS %s", argv[2]);
+    strncpy(ip, argv[2], sizeof(ip) - 1);
+    if (argc >= 4) {
+      strncpy(port, argv[3], sizeof(port) - 1);
+    }
   }
-  printf_sn(message, 256, "Dashboard server set to %s.", value);
-  return config_write(argc, argv, payload, "SERVER_ADDRESS", value, message);
+
+  printf_sn(payload, sizeof(payload), "SET_CONFIG SERVER_ADDRESS %s", ip);
+  printf_sn(message, sizeof(message), "Dashboard server IP set to %s.", ip);
+  config_write(argc, argv, payload, "SERVER_ADDRESS", ip, message);
+
+  if (port[0]) {
+    printf_sn(payload, sizeof(payload), "SET_CONFIG SERVER_PORT %s", port);
+    printf_sn(message, sizeof(message), "Dashboard server port set to %s.", port);
+    config_write(argc, argv, payload, "SERVER_PORT", port, message);
+  }
+  
+  return 0;
 }
 
 int cli_config_add(int argc, char *argv[]) {
@@ -239,6 +259,7 @@ int cli_config_generate(int argc, char *argv[]) {
 }
 
 void config_load(DaemonConfig *cfg) {
+  config_probe_capabilities(cfg);
   cfg->polling_interval = CONFIG_POLLING_INTERVAL;
   cfg->refresh_interval = CONFIG_REFRESH_INTERVAL;
   cfg->dev_enable = CONFIG_DEV_ENABLE;
@@ -252,7 +273,27 @@ void config_load(DaemonConfig *cfg) {
   cfg->debug_enable = CONFIG_DEBUG_ENABLE;
   printf_sn(cfg->daemon_state, 31, "default");
   printf_sn(cfg->fallback_profile, 63, "%s", CONFIG_FALLBACK_PROFILE);
+  cfg->server_enabled = CONFIG_SERVER_ENABLED;
   printf_sn(cfg->server_address, 127, "%s", CONFIG_SERVER_ADDRESS);
+  cfg->server_port = CONFIG_SERVER_PORT;
+  printf_sn(cfg->server_ssh, 31, "%s", CONFIG_SERVER_SSH);
+  printf_sn(cfg->lint_clang_diagnostic, 15, "enabled");
+  printf_sn(cfg->lint_clang_bugprone, 15, "enabled");
+  printf_sn(cfg->lint_clang_modernize, 15, "enabled");
+  printf_sn(cfg->lint_clang_readability, 15, "enabled");
+  printf_sn(cfg->lint_clang_performance, 15, "enabled");
+  printf_sn(cfg->lint_clang_portability, 15, "enabled");
+  printf_sn(cfg->lint_clang_analyzer, 15, "enabled");
+  printf_sn(cfg->lint_cppcheck_all, 15, "enabled");
+  printf_sn(cfg->lint_cppcheck_warning, 15, "enabled");
+  printf_sn(cfg->lint_cppcheck_style, 15, "enabled");
+  printf_sn(cfg->lint_cppcheck_performance, 15, "enabled");
+  printf_sn(cfg->lint_cppcheck_portability, 15, "enabled");
+  printf_sn(cfg->lint_cppcheck_information, 15, "disabled");
+  printf_sn(cfg->lint_cppcheck_unused, 15, "enabled");
+  printf_sn(cfg->lint_valgrind_mode, 15, "full");
+  printf_sn(cfg->lint_valgrind_kinds, 31, "all");
+  printf_sn(cfg->lint_valgrind_origins, 15, "enabled");
 
   int fd = open(DAEMON_CONF_PATH, O_RDONLY);
   if (fd < 0) {
@@ -282,9 +323,57 @@ void config_load(DaemonConfig *cfg) {
             else if (strcmp(ln, "DEBUG_ENABLE") == 0) cfg->debug_enable = atoi(val);
             else if (strcmp(ln, "DAEMON_STATE") == 0) printf_sn(cfg->daemon_state, 31, "%s", val);
             else if (strcmp(ln, "FALLBACK_PROFILE") == 0) printf_sn(cfg->fallback_profile, 63, "%s", val);
+            else if (strcmp(ln, "SERVER_ENABLED") == 0) cfg->server_enabled = (strcmp(val, "true") == 0 || atoi(val) != 0);
             else if (strcmp(ln, "SERVER_ADDRESS") == 0) printf_sn(cfg->server_address, 127, "%s", val);
+            else if (strcmp(ln, "SERVER_PORT") == 0) cfg->server_port = atoi(val);
+            else if (strcmp(ln, "SERVER_SSH") == 0) printf_sn(cfg->server_ssh, 31, "%s", val);
             else if (strcmp(ln, "AFFINITY_MASK") == 0) printf_sn(cfg->affinity_mask, 63, "%s", val);
             else if (strcmp(ln, "AFFINITY_FREQ_MASK") == 0) printf_sn(cfg->affinity_freq_mask, 63, "%s", val);
+            /* Advanced */
+            else if (strcmp(ln, "SCHED_BORE") == 0) cfg->sched_bore = atoi(val);
+            else if (strcmp(ln, "SCHED_BIT_SHIFT") == 0) cfg->sched_bit_shift = atoi(val);
+            else if (strcmp(ln, "SCHED_BURST_FORK") == 0) cfg->sched_burst_fork = atoi(val);
+            else if (strcmp(ln, "SCHED_SLICE_US") == 0) cfg->sched_slice_us = atoi(val);
+            else if (strcmp(ln, "VM_MAX_MAP") == 0) cfg->vm_max_map = atoi(val);
+            else if (strcmp(ln, "SPLIT_LOCK_DETECT") == 0) cfg->split_lock_detect = atoi(val);
+            else if (strcmp(ln, "NMI_WATCHDOG") == 0) cfg->nmi_watchdog = atoi(val);
+            else if (strcmp(ln, "THP_MODE") == 0) printf_sn(cfg->thp_mode, 15, "%s", val);
+            /* Networking */
+            else if (strcmp(ln, "NET_QDISC") == 0) printf_sn(cfg->net_qdisc, 31, "%s", val);
+            else if (strcmp(ln, "NET_FASTOPEN") == 0) cfg->net_fastopen = atoi(val);
+            else if (strcmp(ln, "NET_RP_FILTER") == 0) cfg->net_rp_filter = atoi(val);
+            else if (strcmp(ln, "NET_SOURCE_ROUTE") == 0) cfg->net_source_route = atoi(val);
+            /* IRQ Subsystem */
+            else if (strcmp(ln, "IRQ_ENABLE") == 0) cfg->irq_enable = atoi(val);
+            else if (strcmp(ln, "IRQ_GPU") == 0) cfg->irq_gpu = atoi(val);
+            else if (strcmp(ln, "IRQ_NVME") == 0) cfg->irq_nvme = atoi(val);
+            else if (strcmp(ln, "IRQ_USB") == 0) cfg->irq_usb = atoi(val);
+            else if (strcmp(ln, "IRQ_NIC") == 0) cfg->irq_nic = atoi(val);
+            else if (strcmp(ln, "IRQ_AUDIO") == 0) cfg->irq_audio = atoi(val);
+            else if (strcmp(ln, "IRQ_COALESCE") == 0) cfg->irq_coalesce = atoi(val);
+            else if (strcmp(ln, "IRQ_WATCH") == 0) cfg->irq_watch = atoi(val);
+            /* Developer & Linting */
+            else if (strcmp(ln, "ADVANCED_CONFIG_ENABLE") == 0) cfg->advanced_config_enable = atoi(val);
+            else if (strcmp(ln, "FORCE_UNSUPPORTED_DISPLAY") == 0) cfg->force_unsupported_display = atoi(val);
+            else if (strcmp(ln, "LINT_CLANG_DIAGNOSTIC") == 0) printf_sn(cfg->lint_clang_diagnostic, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CLANG_BUGPRONE") == 0) printf_sn(cfg->lint_clang_bugprone, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CLANG_MODERNIZE") == 0) printf_sn(cfg->lint_clang_modernize, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CLANG_READABILITY") == 0) printf_sn(cfg->lint_clang_readability, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CLANG_PERFORMANCE") == 0) printf_sn(cfg->lint_clang_performance, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CLANG_PORTABILITY") == 0) printf_sn(cfg->lint_clang_portability, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CLANG_ANALYZER") == 0) printf_sn(cfg->lint_clang_analyzer, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CPPCHECK_ALL") == 0) printf_sn(cfg->lint_cppcheck_all, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CPPCHECK_WARNING") == 0) printf_sn(cfg->lint_cppcheck_warning, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CPPCHECK_STYLE") == 0) printf_sn(cfg->lint_cppcheck_style, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CPPCHECK_PERFORMANCE") == 0) printf_sn(cfg->lint_cppcheck_performance, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CPPCHECK_PORTABILITY") == 0) printf_sn(cfg->lint_cppcheck_portability, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CPPCHECK_INFORMATION") == 0) printf_sn(cfg->lint_cppcheck_information, 15, "%s", val);
+            else if (strcmp(ln, "LINT_CPPCHECK_UNUSED") == 0) printf_sn(cfg->lint_cppcheck_unused, 15, "%s", val);
+            else if (strcmp(ln, "LINT_VALGRIND_MODE") == 0) printf_sn(cfg->lint_valgrind_mode, 15, "%s", val);
+            else if (strcmp(ln, "LINT_VALGRIND_KINDS") == 0) printf_sn(cfg->lint_valgrind_kinds, 31, "%s", val);
+            else if (strcmp(ln, "LINT_VALGRIND_ORIGINS") == 0) printf_sn(cfg->lint_valgrind_origins, 15, "%s", val);
+            else if (strcmp(ln, "JOURNAL_KEEP") == 0) cfg->journal_keep = atoi(val);
+            else if (strcmp(ln, "JOURNAL_MAX_MB") == 0) cfg->journal_max_mb = atoi(val);
           }
         }
         ln = nxt ? nxt + 1 : (void*)0;
@@ -313,14 +402,65 @@ const char *config_get(const char *key) {
     return cfg.daemon_state;
   else if (strcmp(key, "FALLBACK_PROFILE") == 0)
     return cfg.fallback_profile;
+  else if (strcmp(key, "SERVER_ENABLED") == 0)
+    printf_sn(val, sizeof(val), "%d", cfg.server_enabled);
   else if (strcmp(key, "SERVER_ADDRESS") == 0)
     return cfg.server_address;
+  else if (strcmp(key, "SERVER_PORT") == 0)
+    printf_sn(val, sizeof(val), "%d", cfg.server_port);
+  else if (strcmp(key, "SERVER_SSH") == 0)
+    return cfg.server_ssh;
   else if (strcmp(key, "AFFINITY_MASK") == 0)
     return cfg.affinity_mask;
   else if (strcmp(key, "AFFINITY_FREQ_MASK") == 0)
     return cfg.affinity_freq_mask;
   else if (strcmp(key, "AFFINITY_LEVEL") == 0)
     printf_sn(val, sizeof(val), "%d", cfg.affinity_level);
+  /* Advanced */
+  else if (strcmp(key, "SCHED_BORE") == 0) printf_sn(val, sizeof(val), "%d", cfg.sched_bore);
+  else if (strcmp(key, "SCHED_BIT_SHIFT") == 0) printf_sn(val, sizeof(val), "%d", cfg.sched_bit_shift);
+  else if (strcmp(key, "SCHED_BURST_FORK") == 0) printf_sn(val, sizeof(val), "%d", cfg.sched_burst_fork);
+  else if (strcmp(key, "SCHED_SLICE_US") == 0) printf_sn(val, sizeof(val), "%d", cfg.sched_slice_us);
+  else if (strcmp(key, "VM_MAX_MAP") == 0) printf_sn(val, sizeof(val), "%d", cfg.vm_max_map);
+  else if (strcmp(key, "SPLIT_LOCK_DETECT") == 0) printf_sn(val, sizeof(val), "%d", cfg.split_lock_detect);
+  else if (strcmp(key, "NMI_WATCHDOG") == 0) printf_sn(val, sizeof(val), "%d", cfg.nmi_watchdog);
+  else if (strcmp(key, "THP_MODE") == 0) return cfg.thp_mode;
+  /* Networking */
+  else if (strcmp(key, "NET_QDISC") == 0) return cfg.net_qdisc;
+  else if (strcmp(key, "NET_FASTOPEN") == 0) printf_sn(val, sizeof(val), "%d", cfg.net_fastopen);
+  else if (strcmp(key, "NET_RP_FILTER") == 0) printf_sn(val, sizeof(val), "%d", cfg.net_rp_filter);
+  else if (strcmp(key, "NET_SOURCE_ROUTE") == 0) printf_sn(val, sizeof(val), "%d", cfg.net_source_route);
+  /* IRQ Subsystem */
+  else if (strcmp(key, "IRQ_ENABLE") == 0) printf_sn(val, sizeof(val), "%d", cfg.irq_enable);
+  else if (strcmp(key, "IRQ_GPU") == 0) printf_sn(val, sizeof(val), "%d", cfg.irq_gpu);
+  else if (strcmp(key, "IRQ_NVME") == 0) printf_sn(val, sizeof(val), "%d", cfg.irq_nvme);
+  else if (strcmp(key, "IRQ_USB") == 0) printf_sn(val, sizeof(val), "%d", cfg.irq_usb);
+  else if (strcmp(key, "IRQ_NIC") == 0) printf_sn(val, sizeof(val), "%d", cfg.irq_nic);
+  else if (strcmp(key, "IRQ_AUDIO") == 0) printf_sn(val, sizeof(val), "%d", cfg.irq_audio);
+  else if (strcmp(key, "IRQ_COALESCE") == 0) printf_sn(val, sizeof(val), "%d", cfg.irq_coalesce);
+  else if (strcmp(key, "IRQ_WATCH") == 0) printf_sn(val, sizeof(val), "%d", cfg.irq_watch);
+  /* Developer & Linting */
+  else if (strcmp(key, "ADVANCED_CONFIG_ENABLE") == 0) printf_sn(val, sizeof(val), "%d", cfg.advanced_config_enable);
+  else if (strcmp(key, "FORCE_UNSUPPORTED_DISPLAY") == 0) printf_sn(val, sizeof(val), "%d", cfg.force_unsupported_display);
+  else if (strcmp(key, "LINT_CLANG_DIAGNOSTIC") == 0) return cfg.lint_clang_diagnostic;
+  else if (strcmp(key, "LINT_CLANG_BUGPRONE") == 0) return cfg.lint_clang_bugprone;
+  else if (strcmp(key, "LINT_CLANG_MODERNIZE") == 0) return cfg.lint_clang_modernize;
+  else if (strcmp(key, "LINT_CLANG_READABILITY") == 0) return cfg.lint_clang_readability;
+  else if (strcmp(key, "LINT_CLANG_PERFORMANCE") == 0) return cfg.lint_clang_performance;
+  else if (strcmp(key, "LINT_CLANG_PORTABILITY") == 0) return cfg.lint_clang_portability;
+  else if (strcmp(key, "LINT_CLANG_ANALYZER") == 0) return cfg.lint_clang_analyzer;
+  else if (strcmp(key, "LINT_CPPCHECK_ALL") == 0) return cfg.lint_cppcheck_all;
+  else if (strcmp(key, "LINT_CPPCHECK_WARNING") == 0) return cfg.lint_cppcheck_warning;
+  else if (strcmp(key, "LINT_CPPCHECK_STYLE") == 0) return cfg.lint_cppcheck_style;
+  else if (strcmp(key, "LINT_CPPCHECK_PERFORMANCE") == 0) return cfg.lint_cppcheck_performance;
+  else if (strcmp(key, "LINT_CPPCHECK_PORTABILITY") == 0) return cfg.lint_cppcheck_portability;
+  else if (strcmp(key, "LINT_CPPCHECK_INFORMATION") == 0) return cfg.lint_cppcheck_information;
+  else if (strcmp(key, "LINT_CPPCHECK_UNUSED") == 0) return cfg.lint_cppcheck_unused;
+  else if (strcmp(key, "LINT_VALGRIND_MODE") == 0) return cfg.lint_valgrind_mode;
+  else if (strcmp(key, "LINT_VALGRIND_KINDS") == 0) return cfg.lint_valgrind_kinds;
+  else if (strcmp(key, "LINT_VALGRIND_ORIGINS") == 0) return cfg.lint_valgrind_origins;
+  else if (strcmp(key, "JOURNAL_KEEP") == 0) printf_sn(val, sizeof(val), "%d", cfg.journal_keep);
+  else if (strcmp(key, "JOURNAL_MAX_MB") == 0) printf_sn(val, sizeof(val), "%d", cfg.journal_max_mb);
   else if (strcmp(key, "REFRESH_INTERVAL") == 0)
     printf_sn(val, sizeof(val), "%.2f", cfg.refresh_interval);
   else
@@ -434,6 +574,41 @@ int cli_config_update(int argc, char *argv[]) {
   else
     printf_string("✅ Configuration rebuilt (daemon offline — will apply on next start).");
   return ERR_SUCCESS;
+}
+
+void config_probe_capabilities(DaemonConfig *cfg) {
+    cfg->capabilities = 0;
+    if (access("/proc/sys/kernel/sched_bore", F_OK) == 0) cfg->capabilities |= CAP_BORE;
+    if (access("/sys/kernel/mm/transparent_hugepage/enabled", F_OK) == 0) cfg->capabilities |= CAP_THP;
+    if (access("/proc/sys/kernel/split_lock_mitigate", F_OK) == 0) cfg->capabilities |= CAP_SPLIT_LOCK;
+    if (access("/proc/sys/kernel/nmi_watchdog", F_OK) == 0) cfg->capabilities |= CAP_NMI_WATCHDOG;
+    
+    /* Network checks - simplified for now */
+    if (access("/proc/sys/net/ipv4/tcp_fastopen", F_OK) == 0) cfg->capabilities |= CAP_FASTOPEN;
+    if (access("/proc/sys/net/core/default_qdisc", F_OK) == 0) cfg->capabilities |= CAP_QDISC;
+}
+
+int cli_advanced_config(int argc, char *argv[]) {
+    if (argc < 3) return 1;
+    char payload[256], message[256];
+    
+    if (strcmp(argv[2], "get") == 0) {
+        if (argc < 4) return 1;
+        printf_sn(payload, 256, "ADVANCED_GET %s", argv[3]);
+        char resp[256] = {0};
+        if (socket_send(payload, resp, sizeof(resp)) == 0) {
+            printf_string("%s = %s", argv[3], resp);
+            return 0;
+        }
+        journal_error(ERR_IPC, -1);
+        return 1;
+    } else if (strcmp(argv[2], "set") == 0) {
+        if (argc < 5) return 1;
+        printf_sn(payload, 256, "ADVANCED_SET %s %s", argv[3], argv[4]);
+        printf_sn(message, 256, "Advanced configuration '%s' set to '%s'.", argv[3], argv[4]);
+        return config_write(argc, argv, payload, argv[3], argv[4], message);
+    }
+    return 1;
 }
 
 /* end of CONFIG.C */

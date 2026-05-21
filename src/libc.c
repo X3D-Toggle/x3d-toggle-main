@@ -820,6 +820,29 @@ unsigned long long strtoull(const char *p, char **e, int b) {
   return r;
 }
 
+int sysctl_read(const char *path, char *buf, size_t size) {
+  int fd = open(path, 0); /* O_RDONLY = 0 */
+  if (fd < 0) return -1;
+  ssize_t n = read(fd, buf, size - 1);
+  close(fd);
+  if (n < 0) return -1;
+  buf[n] = '\0';
+  /* Trim trailing newline */
+  while (n > 0 && (buf[n - 1] == '\n' || buf[n - 1] == '\r' || buf[n - 1] == ' ')) {
+    buf[--n] = '\0';
+  }
+  return 0;
+}
+
+int sysctl_write(const char *path, const char *val) {
+  int fd = open(path, 1); /* O_WRONLY = 1 */
+  if (fd < 0) return -1;
+  size_t len = strlen(val);
+  ssize_t n = write(fd, val, len);
+  close(fd);
+  return (n == (ssize_t)len) ? 0 : -1;
+}
+
 void priority(int enable) {
   const char *targets[] = {
       "/sys/class/amd_x3d/vcache_mode",

@@ -10,7 +10,7 @@
 
 #define PROC_KERNEL "/proc/sys/kernel/"
 
-static int sysctl_write(const char *node, const char *value) {
+static int sysctl_kernel_write(const char *node, const char *value) {
   char path[128];
   int n = printf_sn(path, sizeof(path), "%s%s", PROC_KERNEL, node);
   if (n < 0 || (size_t)n >= sizeof(path)) {
@@ -42,28 +42,28 @@ int scheduler_set(sched_t mode) {
   }
 
   if (mode == SCHED_GAMING) {
-    if (sysctl_write("sched_cfs_bandwidth_slice_us", "3000") != 0) {
+    if (sysctl_kernel_write("sched_cfs_bandwidth_slice_us", "3000") != 0) {
       return -1;
     }
 
     if (scheduler_check()) {
-      if (sysctl_write("sched_bore", "1") != 0) {
+      if (sysctl_kernel_write("sched_bore", "1") != 0) {
         return -1;
       }
-      if (sysctl_write("sched_bit_shift", "14") != 0) {
+      if (sysctl_kernel_write("sched_bit_shift", "14") != 0) {
         return -1; // Aggressive burst identification
       }
     }
   } else {
-    if (sysctl_write("sched_cfs_bandwidth_slice_us", "5000") != 0) {
+    if (sysctl_kernel_write("sched_cfs_bandwidth_slice_us", "5000") != 0) {
       return -1;
     }
 
     if (scheduler_check()) {
-      if (sysctl_write("sched_bore", "0") != 0) {
+      if (sysctl_kernel_write("sched_bore", "0") != 0) {
         return -1;
       }
-      if (sysctl_write("sched_bit_shift", "12") != 0) {
+      if (sysctl_kernel_write("sched_bit_shift", "12") != 0) {
         return -1; // Default BORE shift
       }
     }

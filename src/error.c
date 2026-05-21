@@ -89,6 +89,7 @@ static const msg_t registry_msg[] = {
     [45] = {"IRQ Teardown Incomplete", "Failed to restore affinity for IRQ %d; system may require reboot"},
     [46] = {"IRQ Coalescing Error", "Failed to apply ethtool parameters to NIC: %s"},
     [47] = {"IRQ Watch Error", "Daemon polling loop encountered an unexpected failure"},
+    [48] = {"Unsupported kernel feature", "Feature '%s' not supported by the current kernel."},
 };
 
 static const msg_t registry_status[] = {
