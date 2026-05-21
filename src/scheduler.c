@@ -50,8 +50,8 @@ int scheduler_set(sched_t mode) {
       if (sysctl_kernel_write("sched_bore", "1") != 0) {
         return -1;
       }
-      if (sysctl_kernel_write("sched_bit_shift", "14") != 0) {
-        return -1; // Aggressive burst identification
+      if (sysctl_kernel_write("sched_bit_shift", "14") != 0) { // Aggressive burst identification
+        return -1;
       }
     }
   } else {
