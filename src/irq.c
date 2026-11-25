@@ -5,11 +5,11 @@
  * and graceful teardown. Reads configuration from the runtime daemon config.
  */
 
-#include "xui.h"
-#include "libc.h"
-#include "error.h"
 #include "irq.h"
 #include "ccd.h"
+#include "error.h"
+#include "libc.h"
+#include "xui.h"
 
 #ifndef CONFIG_PATH
 #define CONFIG_PATH "/etc/x3d-toggle.d/daemon.conf"
@@ -43,15 +43,16 @@ static irq_list_t g_usb_irqs;
 static irq_list_t g_nic_irqs;
 static irq_list_t g_audio_irqs;
 static char g_nic_names[8][32];
-static int  g_nic_count;
-
+static int g_nic_count;
 
 static int read_file_line(const char *path, char *buf, size_t len) {
   int fd = open(path, O_RDONLY);
-  if (fd < 0) return -1;
+  if (fd < 0)
+    return -1;
   ssize_t n = read(fd, buf, len - 1);
   close(fd);
-  if (n <= 0) return -1;
+  if (n <= 0)
+    return -1;
   buf[n] = '\0';
   for (ssize_t i = n - 1; i >= 0 && (buf[i] == '\n' || buf[i] == '\r'); i--)
     buf[i] = '\0';
@@ -60,30 +61,33 @@ static int read_file_line(const char *path, char *buf, size_t len) {
 
 static int write_file(const char *path, const char *val) {
   int fd = open(path, O_WRONLY);
-  if (fd < 0) return -1;
+  if (fd < 0)
+    return -1;
   ssize_t n = write(fd, val, strlen(val));
   close(fd);
   return (n > 0) ? 0 : -1;
 }
 
-static int file_exists(const char *path) {
-  return access(path, F_OK) == 0;
-}
+static int file_exists(const char *path) { return access(path, F_OK) == 0; }
 
 static int parse_conf_int(const char *haystack, const char *key) {
   char search[128];
   printf_sn(search, sizeof(search), "%s=", key);
   const char *p = strstr(haystack, search);
-  if (!p) return 0;
+  if (!p)
+    return 0;
   return atoi(p + strlen(search));
 }
 
-static void parse_conf_str(const char *haystack, const char *key,
-                           char *out, size_t len) {
+static void parse_conf_str(const char *haystack, const char *key, char *out,
+                           size_t len) {
   char search[128];
   printf_sn(search, sizeof(search), "%s=", key);
   const char *p = strstr(haystack, search);
-  if (!p) { out[0] = '\0'; return; }
+  if (!p) {
+    out[0] = '\0';
+    return;
+  }
   p += strlen(search);
   size_t i = 0;
   while (p[i] && p[i] != '\n' && p[i] != '\r' && i < len - 1) {
@@ -103,24 +107,26 @@ static int load_config(void) {
   size_t total = 0;
   while (total < sizeof(buf) - 1) {
     ssize_t n = read(fd, buf + total, sizeof(buf) - 1 - total);
-    if (n <= 0) break;
+    if (n <= 0)
+      break;
     total += (size_t)n;
   }
   close(fd);
-  if (total == 0) return ERR_CONF;
+  if (total == 0)
+    return ERR_CONF;
   buf[total] = '\0';
 
-  g_cfg.irq_enable   = parse_conf_int(buf, "IRQ_ENABLE");
-  g_cfg.irq_pinning  = parse_conf_int(buf, "IRQ_PINNING");
-  g_cfg.irq_gpu      = parse_conf_int(buf, "IRQ_GPU");
-  g_cfg.irq_nvme     = parse_conf_int(buf, "IRQ_NVME");
-  g_cfg.irq_usb      = parse_conf_int(buf, "IRQ_USB");
-  g_cfg.irq_nic      = parse_conf_int(buf, "IRQ_NIC");
-  g_cfg.irq_audio    = parse_conf_int(buf, "IRQ_AUDIO");
+  g_cfg.irq_enable = parse_conf_int(buf, "IRQ_ENABLE");
+  g_cfg.irq_pinning = parse_conf_int(buf, "IRQ_PINNING");
+  g_cfg.irq_gpu = parse_conf_int(buf, "IRQ_GPU");
+  g_cfg.irq_nvme = parse_conf_int(buf, "IRQ_NVME");
+  g_cfg.irq_usb = parse_conf_int(buf, "IRQ_USB");
+  g_cfg.irq_nic = parse_conf_int(buf, "IRQ_NIC");
+  g_cfg.irq_audio = parse_conf_int(buf, "IRQ_AUDIO");
   g_cfg.irq_coalesce = parse_conf_int(buf, "IRQ_COALESCE");
-  g_cfg.irq_watch    = parse_conf_int(buf, "IRQ_WATCH");
+  g_cfg.irq_watch = parse_conf_int(buf, "IRQ_WATCH");
   g_cfg.thread_control = parse_conf_int(buf, "THREAD_CONTROL");
-  g_cfg.thread_cap   = parse_conf_int(buf, "THREAD_CAP");
+  g_cfg.thread_cap = parse_conf_int(buf, "THREAD_CAP");
 
   char custom_buf[64] = {0};
   parse_conf_str(buf, "IRQ_CUSTOM", custom_buf, sizeof(custom_buf));
@@ -133,17 +139,22 @@ static int load_config(void) {
 
 static int resolve_target_core(void) {
   switch (g_cfg.irq_pinning) {
-  case 0: return 0;
+  case 0:
+    return 0;
   case 1: {
     char buf[16] = {0};
-    if (read_file_line(IRQ_STATE_DIR "/irq_target_core", buf, sizeof(buf)) == 0) {
-        return atoi(buf);
+    if (read_file_line(IRQ_STATE_DIR "/irq_target_core", buf, sizeof(buf)) ==
+        0) {
+      return atoi(buf);
     }
     return 0;
   }
-  case 2: return g_cfg.target_core;
-  case 3: return -1;
-  default: return 0;
+  case 2:
+    return g_cfg.target_core;
+  case 3:
+    return -1;
+  default:
+    return 0;
   }
 }
 
@@ -177,7 +188,8 @@ static int restore_irqbalance(void) {
 
 static char *read_proc_interrupts(void) {
   int fd = open("/proc/interrupts", O_RDONLY);
-  if (fd < 0) return NULL;
+  if (fd < 0)
+    return NULL;
 
   size_t cap = 65536;
   size_t len = 0;
@@ -190,7 +202,8 @@ static char *read_proc_interrupts(void) {
   for (;;) {
     if (len + 4096 + 1 > cap) {
       size_t new_cap = cap * 2;
-      if (new_cap > (4UL * 1024UL * 1024UL)) break;
+      if (new_cap > (4UL * 1024UL * 1024UL))
+        break;
       char *tmp = (char *)realloc(buf, new_cap);
       if (!tmp) {
         free(buf);
@@ -206,7 +219,8 @@ static char *read_proc_interrupts(void) {
       close(fd);
       return NULL;
     }
-    if (n == 0) break;
+    if (n == 0)
+      break;
     len += (size_t)n;
   }
 
@@ -222,12 +236,14 @@ static char *read_proc_interrupts(void) {
 static void discover_irqs(const char *driver_token, irq_list_t *list) {
   list->count = 0;
   char *buf = read_proc_interrupts();
-  if (!buf) return;
+  if (!buf)
+    return;
 
   char *line = buf;
   while (line && *line && list->count < IRQ_MAX_VECTORS) {
     char *nl = strchr(line, '\n');
-    if (nl) *nl = '\0';
+    if (nl)
+      *nl = '\0';
 
     if (strstr(line, driver_token)) {
       int irq = atoi(line);
@@ -236,23 +252,28 @@ static void discover_irqs(const char *driver_token, irq_list_t *list) {
       }
     }
 
-    if (nl) line = nl + 1;
-    else break;
+    if (nl)
+      line = nl + 1;
+    else
+      break;
   }
 
   free(buf);
 }
 
 static int verify_msi(int irq) {
-  if (irq <= 0) return 0;
+  if (irq <= 0)
+    return 0;
   char *buf = read_proc_interrupts();
-  if (!buf) return 0;
+  if (!buf)
+    return 0;
 
   int is_msi = 0;
   char *line = buf;
   while (line && *line) {
     char *nl = strchr(line, '\n');
-    if (nl) *nl = '\0';
+    if (nl)
+      *nl = '\0';
 
     if (atoi(line) == irq) {
       if (strstr(line, "PCI-MSI") || strstr(line, "PCI-MSIX"))
@@ -260,8 +281,10 @@ static int verify_msi(int irq) {
       break;
     }
 
-    if (nl) line = nl + 1;
-    else break;
+    if (nl)
+      line = nl + 1;
+    else
+      break;
   }
 
   free(buf);
@@ -270,21 +293,25 @@ static int verify_msi(int irq) {
 
 static int count_msix_vectors(void) {
   char *buf = read_proc_interrupts();
-  if (!buf) return 0;
+  if (!buf)
+    return 0;
 
   int count = 0;
   char *line = buf;
   while (line && *line) {
     char *nl = strchr(line, '\n');
-    if (nl) *nl = '\0';
+    if (nl)
+      *nl = '\0';
 
     if ((strstr(line, "amdgpu") || strstr(line, "nouveau")) &&
         (strstr(line, "PCI-MSI") || strstr(line, "PCI-MSIX"))) {
       count++;
     }
 
-    if (nl) line = nl + 1;
-    else break;
+    if (nl)
+      line = nl + 1;
+    else
+      break;
   }
 
   free(buf);
@@ -294,8 +321,7 @@ static int count_msix_vectors(void) {
 static int save_original_mask(int irq) {
   char path[256], orig_path[256], mask[64] = {0};
   printf_sn(path, sizeof(path), "/proc/irq/%d/smp_affinity_list", irq);
-  printf_sn(orig_path, sizeof(orig_path),
-            IRQ_STATE_DIR "/irq_orig_%d", irq);
+  printf_sn(orig_path, sizeof(orig_path), IRQ_STATE_DIR "/irq_orig_%d", irq);
 
   if (read_file_line(path, mask, sizeof(mask)) == 0) {
     mkdir(IRQ_STATE_DIR, 0755);
@@ -324,8 +350,7 @@ static int apply_affinity(int irq, int core) {
 
 static int restore_affinity(int irq) {
   char orig_path[256], mask[64] = {0}, path[256];
-  printf_sn(orig_path, sizeof(orig_path),
-            IRQ_STATE_DIR "/irq_orig_%d", irq);
+  printf_sn(orig_path, sizeof(orig_path), IRQ_STATE_DIR "/irq_orig_%d", irq);
   printf_sn(path, sizeof(path), "/proc/irq/%d/smp_affinity_list", irq);
 
   if (read_file_line(orig_path, mask, sizeof(mask)) == 0) {
@@ -346,13 +371,15 @@ static void apply_list(irq_list_t *list, int core) {
 static void discover_nic_names(void) {
   g_nic_count = 0;
   char *buf = read_proc_interrupts();
-  if (!buf) return;
+  if (!buf)
+    return;
 
   const char *tokens[] = {"eth", "enp", "eno", "wlan"};
   char *p = buf;
   while (p && *p && g_nic_count < 8) {
     char *nl = strchr(p, '\n');
-    if (nl) *nl = '\0';
+    if (nl)
+      *nl = '\0';
     for (int t = 0; t < 4; t++) {
       char *found = strstr(p, tokens[t]);
       if (found) {
@@ -379,8 +406,10 @@ static void discover_nic_names(void) {
         break;
       }
     }
-    if (nl) p = nl + 1;
-    else break;
+    if (nl)
+      p = nl + 1;
+    else
+      break;
   }
 
   free(buf);
@@ -407,13 +436,17 @@ static void apply_coalescing(int enable) {
 
 int irq_init(void) {
   int rc = load_config();
-  if (rc != ERR_SUCCESS) return rc;
+  if (rc != ERR_SUCCESS)
+    return rc;
 
-  if (!g_cfg.irq_enable) return ERR_SUCCESS;
-  if (g_cfg.irq_pinning == 3) return ERR_SUCCESS;
+  if (!g_cfg.irq_enable)
+    return ERR_SUCCESS;
+  if (g_cfg.irq_pinning == 3)
+    return ERR_SUCCESS;
 
   g_cfg.target_core = resolve_target_core();
-  if (g_cfg.target_core < 0) return ERR_SUCCESS;
+  if (g_cfg.target_core < 0)
+    return ERR_SUCCESS;
 
   disable_irqbalance();
 
@@ -427,8 +460,10 @@ int irq_init(void) {
 }
 
 int irq_bind_gpu(void) {
-  if (!g_cfg.irq_enable || g_cfg.irq_pinning == 3) return ERR_SUCCESS;
-  if (!g_cfg.irq_gpu) return ERR_SUCCESS;
+  if (!g_cfg.irq_enable || g_cfg.irq_pinning == 3)
+    return ERR_SUCCESS;
+  if (!g_cfg.irq_gpu)
+    return ERR_SUCCESS;
 
   discover_irqs("amdgpu", &g_gpu_irqs);
   if (g_gpu_irqs.count == 0) {
@@ -455,7 +490,8 @@ int irq_bind_gpu(void) {
 }
 
 int irq_bind_peripherals(void) {
-  if (!g_cfg.irq_enable || g_cfg.irq_pinning == 3) return ERR_SUCCESS;
+  if (!g_cfg.irq_enable || g_cfg.irq_pinning == 3)
+    return ERR_SUCCESS;
 
   if (g_cfg.irq_nvme) {
     discover_irqs("nvme", &g_nvme_irqs);
@@ -494,7 +530,8 @@ int irq_bind_peripherals(void) {
 }
 
 int irq_gen_udev(void) {
-  if (!g_cfg.irq_enable || g_cfg.irq_pinning == 3) return ERR_SUCCESS;
+  if (!g_cfg.irq_enable || g_cfg.irq_pinning == 3)
+    return ERR_SUCCESS;
 
   int fd = open(IRQ_UDEV_RULES, O_WRONLY | O_CREAT | O_TRUNC, 0644);
   if (fd < 0) {
@@ -510,26 +547,27 @@ int irq_gen_udev(void) {
   int len;
 
   if (g_cfg.irq_gpu) {
-    len = printf_sn(rule, sizeof(rule),
-      "ACTION==\"add\", SUBSYSTEM==\"pci\", "
-      "DRIVER==\"amdgpu|nouveau\", ENV{SYSTEMD_IN_INITRD}!=\"1\", "
-      "RUN+=\"/usr/bin/x3d-toggle irq-bind\"\n");
+    len =
+        printf_sn(rule, sizeof(rule),
+                  "ACTION==\"add\", SUBSYSTEM==\"pci\", "
+                  "DRIVER==\"amdgpu|nouveau\", ENV{SYSTEMD_IN_INITRD}!=\"1\", "
+                  "RUN+=\"/usr/bin/x3d-toggle irq-bind\"\n");
     write(fd, rule, len);
   }
 
   if (g_cfg.irq_nvme) {
     len = printf_sn(rule, sizeof(rule),
-      "ACTION==\"add\", SUBSYSTEM==\"pci\", "
-      "DRIVER==\"nvme\", ENV{SYSTEMD_IN_INITRD}!=\"1\", "
-      "RUN+=\"/usr/bin/x3d-toggle irq-bind\"\n");
+                    "ACTION==\"add\", SUBSYSTEM==\"pci\", "
+                    "DRIVER==\"nvme\", ENV{SYSTEMD_IN_INITRD}!=\"1\", "
+                    "RUN+=\"/usr/bin/x3d-toggle irq-bind\"\n");
     write(fd, rule, len);
   }
 
   if (g_cfg.irq_usb) {
     len = printf_sn(rule, sizeof(rule),
-      "ACTION==\"add\", SUBSYSTEM==\"pci\", "
-      "DRIVER==\"xhci_hcd\", ENV{SYSTEMD_IN_INITRD}!=\"1\", "
-      "RUN+=\"/usr/bin/x3d-toggle irq-bind\"\n");
+                    "ACTION==\"add\", SUBSYSTEM==\"pci\", "
+                    "DRIVER==\"xhci_hcd\", ENV{SYSTEMD_IN_INITRD}!=\"1\", "
+                    "RUN+=\"/usr/bin/x3d-toggle irq-bind\"\n");
     write(fd, rule, len);
   }
 
@@ -540,9 +578,8 @@ int irq_gen_udev(void) {
 }
 
 int irq_teardown(void) {
-  irq_list_t *lists[] = {
-    &g_gpu_irqs, &g_nvme_irqs, &g_usb_irqs, &g_nic_irqs, &g_audio_irqs
-  };
+  irq_list_t *lists[] = {&g_gpu_irqs, &g_nvme_irqs, &g_usb_irqs, &g_nic_irqs,
+                         &g_audio_irqs};
   for (int l = 0; l < 5; l++) {
     for (int i = 0; i < lists[l]->count; i++) {
       restore_affinity(lists[l]->irqs[i]);
@@ -574,16 +611,16 @@ int irq_status(void) {
                       "  GPU MSI-X Vectors: %d\n\n", msix);
   write(FILENO_STDOUT, msix_line, len);
 
-  irq_list_t *lists[] = {
-    &g_gpu_irqs, &g_nvme_irqs, &g_usb_irqs, &g_nic_irqs, &g_audio_irqs
-  };
+  irq_list_t *lists[] = {&g_gpu_irqs, &g_nvme_irqs, &g_usb_irqs, &g_nic_irqs,
+                         &g_audio_irqs};
   const char *labels[] = {"GPU", "NVMe", "USB/xHCI", "NIC", "Audio"};
 
   for (int l = 0; l < 5; l++) {
-    if (lists[l]->count == 0) continue;
+    if (lists[l]->count == 0)
+      continue;
     char label_line[128];
-    len = printf_sn(label_line, sizeof(label_line),
-                    "  [%s] %d vectors\n", labels[l], lists[l]->count);
+    len = printf_sn(label_line, sizeof(label_line), "  [%s] %d vectors\n",
+                    labels[l], lists[l]->count);
     write(FILENO_STDOUT, label_line, len);
 
     for (int i = 0; i < lists[l]->count; i++) {
@@ -592,25 +629,24 @@ int irq_status(void) {
                 lists[l]->irqs[i]);
       read_file_line(path, mask, sizeof(mask));
       char line[128];
-      len = printf_sn(line, sizeof(line),
-                      "    IRQ %3d → Core(s): %s\n",
+      len = printf_sn(line, sizeof(line), "    IRQ %3d → Core(s): %s\n",
                       lists[l]->irqs[i], mask[0] ? mask : "N/A");
       write(FILENO_STDOUT, line, len);
     }
   }
 
   char bal_line[128];
-  len = printf_sn(bal_line, sizeof(bal_line),
-                  "\n  irqbalance: %s\n",
-                  file_exists(IRQ_BALANCER_STATE) ?
-                  "Disabled (by X3D Toggle)" : "Active/Unmanaged");
+  len = printf_sn(bal_line, sizeof(bal_line), "\n  irqbalance: %s\n",
+                  file_exists(IRQ_BALANCER_STATE) ? "Disabled (by X3D Toggle)"
+                                                  : "Active/Unmanaged");
   write(FILENO_STDOUT, bal_line, len);
 
   return ERR_SUCCESS;
 }
 
 int irq_watch(void) {
-  if (!g_cfg.irq_enable || g_cfg.irq_pinning == 3) return ERR_SUCCESS;
+  if (!g_cfg.irq_enable || g_cfg.irq_pinning == 3)
+    return ERR_SUCCESS;
 
   int core = g_cfg.target_core;
   char expected[16];
@@ -629,17 +665,18 @@ int irq_watch(void) {
   }
 
   while (1) {
-    irq_list_t *lists[] = {
-      &g_gpu_irqs, &g_nvme_irqs, &g_usb_irqs, &g_nic_irqs, &g_audio_irqs
-    };
+    irq_list_t *lists[] = {&g_gpu_irqs, &g_nvme_irqs, &g_usb_irqs, &g_nic_irqs,
+                           &g_audio_irqs};
     for (int l = 0; l < 5; l++) {
       for (int i = 0; i < lists[l]->count; i++) {
         char path[256], current[64] = {0};
-        printf_sn(path, sizeof(path), "/proc/irq/%d/smp_affinity_list", lists[l]->irqs[i]);
+        printf_sn(path, sizeof(path), "/proc/irq/%d/smp_affinity_list",
+                  lists[l]->irqs[i]);
         if (read_file_line(path, current, sizeof(current)) == 0) {
           if (strcmp(current, expected) != 0) {
             write_file(path, expected);
-            journal_debug("IRQ Watch: Re-asserted IRQ %d to core %d", lists[l]->irqs[i], core);
+            journal_debug("IRQ Watch: Re-asserted IRQ %d to core %d",
+                          lists[l]->irqs[i], core);
           }
         }
       }
@@ -649,21 +686,23 @@ int irq_watch(void) {
       char *exemptions = g_cfg.thread_exempt;
       char *ex = exemptions;
       char token[64];
-      
+
       while (ex && *ex) {
         int j = 0;
         while (*ex && *ex != ',' && *ex != ' ' && j < 63) {
           token[j++] = *ex++;
         }
         token[j] = '\0';
-        if (*ex == ',' || *ex == ' ') ex++;
-        
+        if (*ex == ',' || *ex == ' ')
+          ex++;
+
         if (token[0]) {
           char cmd[512];
-          printf_sn(cmd, sizeof(cmd), 
-            "for p in $(pidof %s 2>/dev/null); do "
-            "  taskset -p -c %s $p >/dev/null 2>&1; "
-            "done", token, full_mask_str);
+          printf_sn(cmd, sizeof(cmd),
+                    "for p in $(pidof %s 2>/dev/null); do "
+                    "  taskset -p -c %s $p >/dev/null 2>&1; "
+                    "done",
+                    token, full_mask_str);
           system(cmd);
         }
       }
@@ -680,11 +719,14 @@ int cli_irq_bind(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
   int rc = irq_init();
-  if (rc != ERR_SUCCESS) return rc;
+  if (rc != ERR_SUCCESS)
+    return rc;
   rc = irq_bind_gpu();
-  if (rc != ERR_SUCCESS) return rc;
+  if (rc != ERR_SUCCESS)
+    return rc;
   rc = irq_bind_peripherals();
-  if (rc != ERR_SUCCESS) return rc;
+  if (rc != ERR_SUCCESS)
+    return rc;
   return irq_gen_udev();
 }
 
@@ -704,7 +746,8 @@ int cli_irq_udev(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
   int rc = irq_init();
-  if (rc != ERR_SUCCESS) return rc;
+  if (rc != ERR_SUCCESS)
+    return rc;
   return irq_gen_udev();
 }
 
@@ -712,7 +755,8 @@ int cli_irq_watch(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
   int rc = irq_init();
-  if (rc != ERR_SUCCESS) return rc;
+  if (rc != ERR_SUCCESS)
+    return rc;
   return irq_watch();
 }
 

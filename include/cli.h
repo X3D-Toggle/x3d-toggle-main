@@ -55,11 +55,11 @@ int cli_diag_debug(int argc, char *argv[]);
 int cli_diag_status(int argc, char *argv[]);
 int cli_diag_journal(int argc, char *argv[]);
 int cli_diag_archive(int argc, char *argv[]);
-int cli_diag_rotate(int argc, char *argv[]);  //placeholder if not used
-int cli_diag_audit(int argc, char *argv[]);    //placeholder if not used
+int cli_diag_rotate(int argc, char *argv[]); // placeholder if not used
+int cli_diag_audit(int argc, char *argv[]);  // placeholder if not used
 int cli_gui_launch(int argc, char *argv[]);
 int cli_gui_log(int argc, char *argv[]);
-int cli_diag_log(int argc, char *argv[]);    //placeholder if not used
+int cli_diag_log(int argc, char *argv[]); // placeholder if not used
 int cli_diag_dump(int argc, char *argv[]);
 int cli_cppc_perf(int argc, char *argv[]);
 int cli_cppc_bal(int argc, char *argv[]);

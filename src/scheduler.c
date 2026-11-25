@@ -52,7 +52,8 @@ int scheduler_set(sched_t mode) {
       if (sysctl_kernel_write("sched_bore", "1") != 0) {
         return -1;
       }
-      /* Linux 6.13 - 7.x+ EEVDF-BORE uses sched_burst_penalty_offset (0-64, default 24) */
+      /* Linux 6.13 - 7.x+ EEVDF-BORE uses sched_burst_penalty_offset (0-64,
+       * default 24) */
       if (access(PROC_KERNEL "sched_burst_penalty_offset", F_OK) == 0) {
         if (sysctl_kernel_write("sched_burst_penalty_offset", "28") != 0) {
           return -1;
