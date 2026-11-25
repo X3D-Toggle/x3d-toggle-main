@@ -138,6 +138,8 @@ const Command cmd_table[] = {
     {"irq-udev", cli_irq_udev, "IRQ Affinity: Regenerate 99-x3d-irq.rules udev ruleset"},
     {"irq-watch", cli_irq_watch, "IRQ Affinity: Persistent loop to re-assert active bindings"},
     {"advanced", cli_advanced_config, "Advanced Configuration: Get/Set system tunables"},
+    {"gui", cli_gui_launch, "Desktop App: Launch the GTK4 X3D Toggle Dashboard"},
+    {"desktop", cli_gui_launch, "Alias for gui"},
     {"gui-log", cli_gui_log, "Internal: Log GUI errors"},
 
     {NULL, NULL, NULL}};

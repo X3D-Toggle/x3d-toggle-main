@@ -57,6 +57,10 @@ RESET_TOOL="/usr/lib/x3d-toggle/scripts/tools/reset.sh"
         rm -f "/usr/lib/tmpfiles.d/x3d-toggle.conf"
     fi
 
+    rm -f "/etc/udev/rules.d/99-x3d-irq.rules"
+    rm -f "/etc/sysctl.d/99-x3d-networking.conf"
+    rm -rf "/run/x3d-toggle"
+
 # --- STANDARD FILE UNINSTALLATION ---
 
 printf_step "${PACKAGE} Checking installation method..."

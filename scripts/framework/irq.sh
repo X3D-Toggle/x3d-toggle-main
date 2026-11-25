@@ -56,7 +56,7 @@ irq_discover_gpu() {
     while IFS=: read -r irq driver_info; do
         if echo "$driver_info" | grep -qE "amdgpu|nouveau"; then
             irq_num=$(echo "$irq" | tr -d ' ')
-            if grep -qE "PCI-MSI|PCI-MSIX" "/proc/interrupts" | grep -q "^[ ]*${irq_num}:"; then
+            if echo "$driver_info" | grep -qE "PCI-MSI|PCI-MSIX"; then
                 IRQ_GPU_LIST="$IRQ_GPU_LIST $irq_num"
             else
                 journal_write 4 "WARN" "Device is not using MSI; legacy APIC pin detected on IRQ $irq_num"
@@ -97,9 +97,9 @@ irq_gen_udev() {
 # X3D Toggle IRQ Affinity Rules (auto-generated)
 # Re-asserts IRQ affinity on device add/reset events
 
-$([ "$IRQ_GPU" = "1" ] && echo 'ACTION=="add", SUBSYSTEM=="pci", DRIVER=="amdgpu|nouveau", RUN+="/usr/bin/x3d-toggle irq-bind"')
-$([ "$IRQ_NVME" = "1" ] && echo 'ACTION=="add", SUBSYSTEM=="pci", DRIVER=="nvme", RUN+="/usr/bin/x3d-toggle irq-bind"')
-$([ "$IRQ_USB" = "1" ] && echo 'ACTION=="add", SUBSYSTEM=="pci", DRIVER=="xhci_hcd", RUN+="/usr/bin/x3d-toggle irq-bind"')
+$([ "$IRQ_GPU" = "1" ] && echo 'ACTION=="add", SUBSYSTEM=="pci", DRIVER=="amdgpu|nouveau", ENV{SYSTEMD_IN_INITRD}!="1", RUN+="/usr/bin/x3d-toggle irq-bind"')
+$([ "$IRQ_NVME" = "1" ] && echo 'ACTION=="add", SUBSYSTEM=="pci", DRIVER=="nvme", ENV{SYSTEMD_IN_INITRD}!="1", RUN+="/usr/bin/x3d-toggle irq-bind"')
+$([ "$IRQ_USB" = "1" ] && echo 'ACTION=="add", SUBSYSTEM=="pci", DRIVER=="xhci_hcd", ENV{SYSTEMD_IN_INITRD}!="1", RUN+="/usr/bin/x3d-toggle irq-bind"')
 EOF
     
     if command -v udevadm >/dev/null 2>&1; then

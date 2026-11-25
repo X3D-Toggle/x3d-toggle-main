@@ -10,7 +10,10 @@ A portable, high-performance utility for managing CCD priority on the AMD Ryzen 
 
 ### 🔭  Overview  🔭
 
-This utility provides a graphical interface and automation to the `amd-x3d-vcache` kernel driver. It allows for real-time switching of the CPU scheduler bias to optimize for specific workloads on asymmetric dual-CCD processors (like 7950X3D/9950X3D).
+This utility provides a native GTK4 desktop dashboard and automation backend for the `amd_x3d_vcache` and `amd-pstate` kernel drivers. It allows for real-time switching of CPU scheduler bias, SMT-aware L3 cgroup isolation, BORE/EEVDF tuning, and IRQ affinity steering across the AMD Ryzen X3D lineup:
+* **Asymmetric Dual-CCD X3D:** Ryzen 9 9950X3D, 9900X3D, 7950X3D, 7900X3D
+* **Symmetric Dual 3D V-Cache:** Ryzen 9 9950X3D2 (192 MB Dual V-Cache — CCD isolation, CPPC EPP, BORE, eBPF, and IRQ steering)
+* **Single-CCD X3D:** Ryzen 7 9850X3D, 9800X3D, 7800X3D (unified V-Cache with CPPC EPP, BORE, eBPF, and IRQ steering)
 
 * The Problem: CPPC Latency & Asymmetry
   Current CPPC drivers often fail to switch states deterministically, leading to micro-stutters.
@@ -22,11 +25,11 @@ This utility provides a graphical interface and automation to the `amd-x3d-vcach
 
 ### 📜  Prerequisites  📜
 
-* **Linux Kernel**: 6.13 minimum (provides `amd-x3d-vcache` sysfs node); 7.0+ is recommended to take advantage of the daemon's advanced scheduling features (specifically, real-time CPPC dynamic preferred core hinting and zero-latency thread delegation during compute bursts). When coupled with the daemon (and planned eBPF refinements), this brings full feature parity of the Windows AMD 3D V-Cache Performance Optimizer driver to Linux.
-* UEFI Configuration: CPPC Dynamic Preferred Cores set to [Driver].
+* **Linux Kernel**: 6.13 minimum (provides `amd_x3d_vcache` sysfs node); **7.0 – 7.3+** is fully supported and recommended (native EEVDF + modern BORE `sched_burst_penalty_offset` / `sched_burst_inherit_type`, `amd_pstate` active CPPC EPP, and CO-RE eBPF process tracking).
+* UEFI Configuration: CPPC Dynamic Preferred Cores set to `[Driver]` (for asymmetric dual-CCD X3D models).
 * Build Dependencies: `clang`, `make`, `bpftool`.
-* System Dependencies: `polkit`, `libbpf`. (Indirectly utilizes DBus via Polkit and optional GUI components).
-* GUI Dependencies (Optional): `yad`, `kdialog`, `libnotify`.
+* System Dependencies: `polkit`, `libbpf`.
+* GUI Dependencies (Optional): `gtk4`, `libadwaita`.
 
 ### 🛡️  Architecture Security  🛡️
 

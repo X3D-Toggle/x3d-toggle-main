@@ -40,7 +40,6 @@ static GtkDropDown *g_cfg_journal_max_mb = NULL;
 static GtkWidget *row_developer = NULL;
 static GtkWidget *row_debug = NULL;
 static GtkWidget *row_advanced = NULL;
-static GtkWidget *row_affinity = NULL;
 static GtkListBox *g_sidebar = NULL;
 static GtkStack *g_stack = NULL;
 static GtkDropDown *g_lifecycle_dropdown = NULL;
@@ -49,6 +48,7 @@ static GtkGrid *g_grid_topology = NULL;
 static GtkWidget *btn_cfg_apply = NULL;
 static GtkWidget *btn_cfg_cancel = NULL;
 static GtkDropDown *g_cfg_daemon_state = NULL;
+static gboolean config_ignoring_changes = FALSE;
 static GtkDropDown *g_cfg_fallback_profile = NULL;
 static GtkRange *g_cfg_polling_interval = NULL;
 static GtkRange *g_cfg_load_threshold = NULL;
@@ -75,7 +75,6 @@ static GtkSpinButton *g_cfg_net_fastopen = NULL;
 static GtkSpinButton *g_cfg_net_rp_filter = NULL;
 static GtkSwitch *g_cfg_net_source_route = NULL;
 
-static GtkWidget *row_networking = NULL;
 static GtkWidget *row_sched_bore = NULL;
 static GtkWidget *row_sched_bit_shift = NULL;
 static GtkWidget *row_sched_burst_fork = NULL;
@@ -91,11 +90,7 @@ static GtkSwitch *g_cfg_irq_nic = NULL;
 static GtkSwitch *g_cfg_irq_audio = NULL;
 static GtkSwitch *g_cfg_irq_coalesce = NULL;
 static GtkSwitch *g_cfg_irq_watch = NULL;
-static gboolean config_dirty = FALSE;
-static gboolean config_ignoring_changes = FALSE;
-
 static void set_config_dirty(gboolean dirty) {
-  config_dirty = dirty;
   if (btn_cfg_apply)
     gtk_widget_set_sensitive(btn_cfg_apply, dirty);
   if (btn_cfg_cancel)
@@ -231,12 +226,19 @@ static gboolean update_dashboard_cb(gpointer user_data) {
 #ifndef CCD1_START
 #define CCD1_START 8
 #endif
-  printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", CCD1_START);
-  b0[0] = '1';
-  fd = open(path, O_RDONLY);
-  if (fd >= 0) {
-    if (read(fd, b0, sizeof(b0) - 1) > 0 && b0[0] == '0') strcpy(ccd1_st, "PARKED");
-    close(fd);
+#ifndef CCD_COUNT
+#define CCD_COUNT 2
+#endif
+  if (CCD_COUNT >= 2 && CCD1_START > 0) {
+    printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", CCD1_START);
+    b0[0] = '1';
+    fd = open(path, O_RDONLY);
+    if (fd >= 0) {
+      if (read(fd, b0, sizeof(b0) - 1) > 0 && b0[0] == '0') strcpy(ccd1_st, "PARKED");
+      close(fd);
+    }
+  } else {
+    strcpy(ccd1_st, "SINGLE-CCD");
   }
 
   if (affinity_active) {
@@ -735,6 +737,9 @@ static const char *config_get(const char *key) {
 
   /* 2. Fallback: parse DAEMON_CONF_PATH directly (daemon offline) */
   FILE *f = fopen(CONF_PATH, "r");
+  if (!f) {
+    f = fopen("/etc/x3d-toggle.d/settings.conf", "r");
+  }
   if (!f)
     return val;
 
@@ -752,6 +757,26 @@ static const char *config_get(const char *key) {
     }
   }
   fclose(f);
+
+  /* If key wasn't in daemon.conf, check settings.conf fallback */
+  if (val[0] == '\0') {
+    FILE *fs = fopen("/etc/x3d-toggle.d/settings.conf", "r");
+    if (fs) {
+      while (fgets(line, sizeof(line), fs)) {
+        if (line[0] == '#' || line[0] == '\n')
+          continue;
+        if (strncmp(line, key, klen) == 0 && line[klen] == '=') {
+          char *v = line + klen + 1;
+          v[strcspn(v, "\r\n")] = '\0';
+          strncpy(val, v, sizeof(val) - 1);
+          val[sizeof(val) - 1] = '\0';
+          break;
+        }
+      }
+      fclose(fs);
+    }
+  }
+
   return val;
 }
 
@@ -974,27 +999,57 @@ static void on_irq_apply_clicked(GtkButton *btn, gpointer data) {
 
 /* ── Advanced Configuration Callbacks ────────────────────────── */
 
+static void advanced_send(const char *sysctl_key, const char *value) {
+  char cmd[256], resp[64];
+  printf_sn(cmd, sizeof(cmd), "ADVANCED_SET %s %s", sysctl_key, value);
+  socket_send(cmd, resp, sizeof(resp));
+}
+
 static void on_adv_apply_clicked(GtkButton *btn, gpointer data) {
   (void)btn;
   (void)data;
-  if (g_cfg_sched_bore) config_send("SCHED_BORE", gtk_switch_get_active(g_cfg_sched_bore) ? "1" : "0");
+  if (g_cfg_sched_bore) {
+    const char *v = gtk_switch_get_active(g_cfg_sched_bore) ? "1" : "0";
+    config_send("SCHED_BORE", v);
+    advanced_send("kernel.sched_bore", v);
+  }
   if (g_cfg_sched_bit_shift) {
     char buf[16];
     printf_sn(buf, sizeof(buf), "%d", (int)gtk_spin_button_get_value(g_cfg_sched_bit_shift));
     config_send("SCHED_BIT_SHIFT", buf);
+    advanced_send("kernel.sched_burst_penalty_offset", buf);
   }
-  if (g_cfg_sched_burst_fork) config_send("SCHED_BURST_FORK", gtk_switch_get_active(g_cfg_sched_burst_fork) ? "1" : "0");
+  if (g_cfg_sched_burst_fork) {
+    const char *v = gtk_switch_get_active(g_cfg_sched_burst_fork) ? "2" : "0";
+    config_send("SCHED_BURST_FORK", v);
+    advanced_send("kernel.sched_burst_inherit_type", v);
+  }
   if (g_cfg_sched_slice_us) {
     char buf[16];
     printf_sn(buf, sizeof(buf), "%d", (int)gtk_spin_button_get_value(g_cfg_sched_slice_us));
     config_send("SCHED_SLICE_US", buf);
+    advanced_send("kernel.sched_cfs_bandwidth_slice_us", buf);
   }
-  if (g_cfg_vm_max_map) config_send("VM_MAX_MAP", gtk_editable_get_text(g_cfg_vm_max_map));
-  if (g_cfg_split_lock_detect) config_send("SPLIT_LOCK_DETECT", gtk_switch_get_active(g_cfg_split_lock_detect) ? "1" : "0");
-  if (g_cfg_nmi_watchdog) config_send("NMI_WATCHDOG", gtk_switch_get_active(g_cfg_nmi_watchdog) ? "1" : "0");
+  if (g_cfg_vm_max_map) {
+    const char *v = gtk_editable_get_text(g_cfg_vm_max_map);
+    config_send("VM_MAX_MAP", v);
+    advanced_send("vm.max_map_count", v);
+  }
+  if (g_cfg_split_lock_detect) {
+    const char *v = gtk_switch_get_active(g_cfg_split_lock_detect) ? "1" : "0";
+    config_send("SPLIT_LOCK_DETECT", v);
+    advanced_send("kernel.split_lock_mitigate", v);
+  }
+  if (g_cfg_nmi_watchdog) {
+    const char *v = gtk_switch_get_active(g_cfg_nmi_watchdog) ? "1" : "0";
+    config_send("NMI_WATCHDOG", v);
+    advanced_send("kernel.nmi_watchdog", v);
+  }
   if (g_cfg_thp_mode) {
     const char *modes[] = {"always", "madvise", "never"};
-    config_send("THP_MODE", modes[gtk_drop_down_get_selected(g_cfg_thp_mode)]);
+    const char *v = modes[gtk_drop_down_get_selected(g_cfg_thp_mode)];
+    config_send("THP_MODE", v);
+    advanced_send("target_thp_mode", v);
   }
   btn_feedback(btn);
 }
@@ -1736,12 +1791,12 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
   add_nav_row(sidebar, "dashboard", "Dashboard");
   add_nav_row(sidebar, "modes", "Modes");
 
-  row_affinity = add_nav_row(sidebar, "affinity", "Threaded Affinity Settings");
+  add_nav_row(sidebar, "affinity", "Threaded Affinity Settings");
   add_nav_row(sidebar, "irq", "IRQ Vector Binding");
 
   add_nav_row(sidebar, "configuration", "Configuration");
   row_advanced = add_nav_row(sidebar, "advanced", "Advanced Configuration");
-  row_networking = add_nav_row(sidebar, "networking", "Networking Settings");
+  add_nav_row(sidebar, "networking", "Networking Settings");
   row_developer = add_nav_row(sidebar, "developer", "Developer Options");
   row_debug = add_nav_row(sidebar, "debug", "System Journal");
   add_nav_row(sidebar, "extras", "Extras");

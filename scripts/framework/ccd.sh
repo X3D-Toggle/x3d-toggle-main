@@ -1,8 +1,11 @@
 #!/bin/sh
 ## CCD Discovery Component for X3D Toggle Project
 ## `ccd.sh`
-## Identifies the V-Cache CCD by mapping the L3 cache boundary of Core 0.
+## Identifies V-Cache and Frequency CCD core masks by inspecting L3 cache
+## size and shared_cpu_list across all CPU domains (supports asymmetric X3D,
+## symmetric Dual-X3D like 9950X3D2, single-CCD X3D, and 12-core+ Zen 6 CCDs).
 
+_l_OP="$1"
 _l_dir_lib="$(cd "$(dirname "$0")" && pwd)"
 . "$_l_dir_lib/framework.sh"
 
@@ -10,43 +13,93 @@ if [ "$X3D_FRAMEWORK" != "1" ] && [ "$X3D_EXEC" != "1" ]; then
     journal_write -37
 fi
 
-CCD0_CORES=""
-for idx in /sys/devices/system/cpu/cpu0/cache/index*; do
-    if [ -f "$idx/level" ]; then
-        read -r level < "$idx/level"
-        if [ "$level" = "3" ]; then
-            read -r CCD0_CORES < "$idx/shared_cpu_list"
-            break
-        fi
-    fi
+set -- /sys/devices/system/cpu/cpu[0-9]*
+TOTAL_CORES=$#
+[ "$TOTAL_CORES" -lt 1 ] && TOTAL_CORES=16
+
+_l3_masks=""
+_l3_sizes=""
+_ccd_count=0
+_domain0_mask=""
+_domain0_size=0
+_domain1_mask=""
+_domain1_size=0
+
+for _cpu_dir in /sys/devices/system/cpu/cpu[0-9]*; do
+    for _idx in "$_cpu_dir"/cache/index*; do
+        [ -f "$_idx/level" ] || continue
+        read -r _lvl < "$_idx/level"
+        [ "$_lvl" = "3" ] || continue
+        [ -f "$_idx/shared_cpu_list" ] || continue
+        read -r _mask < "$_idx/shared_cpu_list"
+        _sz_raw="0"
+        [ -f "$_idx/size" ] && read -r _sz_raw < "$_idx/size"
+        _sz_kb="${_sz_raw%K}"
+        case "$_sz_kb" in *M) _sz_kb=$(( ${_sz_kb%M} * 1024 )) ;; esac
+
+        case " $_l3_masks " in
+            *" $_mask "*) ;;
+            *)
+                _l3_masks="$_l3_masks $_mask"
+                _l3_sizes="$_l3_sizes $_sz_kb"
+                _ccd_count=$(( _ccd_count + 1 ))
+                if [ "$_ccd_count" -eq 1 ]; then
+                    _domain0_mask="$_mask"
+                    _domain0_size="$_sz_kb"
+                elif [ "$_ccd_count" -eq 2 ]; then
+                    _domain1_mask="$_mask"
+                    _domain1_size="$_sz_kb"
+                fi
+                ;;
+        esac
+        break
+    done
 done
 
-if [ -z "$CCD0_CORES" ]; then
+CCD_COUNT="$_ccd_count"
+SYMMETRIC_X3D=0
+
+if [ "$_ccd_count" -ge 2 ]; then
+    if [ "$_domain1_size" -gt "$_domain0_size" ]; then
+        # V-Cache is on the second enumerated L3 domain
+        CCD0_CORES="$_domain1_mask"
+        CCD1_CORES="$_domain0_mask"
+    elif [ "$_domain0_size" -eq "$_domain1_size" ]; then
+        # Symmetric Dual-CCD (e.g. Ryzen 9 9950X3D2 with 96MB+96MB 3D V-Cache)
+        CCD0_CORES="$_domain0_mask"
+        CCD1_CORES="$_domain1_mask"
+        [ "$_domain0_size" -ge 65536 ] && SYMMETRIC_X3D=1
+    else
+        # Standard Asymmetric Dual-CCD (7900X3D, 7950X3D, 9900X3D, 9950X3D)
+        CCD0_CORES="$_domain0_mask"
+        CCD1_CORES="$_domain1_mask"
+    fi
+elif [ "$_ccd_count" -eq 1 ]; then
+    CCD0_CORES="$_domain0_mask"
+    CCD1_CORES="$_domain0_mask"
+    [ "$_domain0_size" -ge 65536 ] && SYMMETRIC_X3D=1
+else
     PKG_SIBLINGS="/sys/devices/system/cpu/cpu0/topology/package_cpus_list"
     if [ -f "$PKG_SIBLINGS" ]; then
         read -r CCD0_CORES < "$PKG_SIBLINGS"
+    else
+        CCD0_CORES="0-7"
     fi
+    CCD1_CORES="$CCD0_CORES"
+    CCD_COUNT=1
 fi
 
-if [ -z "$CCD0_CORES" ]; then
-    CCD0_CORES="0-7"
+CCD1_START=0
+if [ "$CCD_COUNT" -ge 2 ]; then
+    _first_ccd1="${CCD1_CORES%%[-,]*}"
+    case "$_first_ccd1" in
+        ''|*[!0-9]*) CCD1_START=8 ;;
+        *) CCD1_START="$_first_ccd1" ;;
+    esac
 fi
 
-_l_OP="$1"
 if { [ "$_l_OP" = "--gen-config" ] || [ "$_l_OP" = "--gen-h" ] || [ "$_l_OP" = "--gen-ccd" ]; } && [ "$(basename -- "$0")" = "ccd.sh" ]; then
     if [ "$X3D_EXEC" != "1" ]; then exit 1; fi
-    CCD1_START=8
-    
-    case "$CCD0_CORES" in
-        [0-9]*-[0-9]*)
-            _l_tmp="${CCD0_CORES#*-}"
-            _l_end="${_l_tmp%%,*}"
-            CCD1_START=$(( _l_end + 1 ))
-            ;;
-    esac
-    
-    set -- /sys/devices/system/cpu/cpu[0-9]*
-    TOTAL_CORES=$#
 fi
 
 if [ "$_l_OP" = "--gen-h" ] || [ "$_l_OP" = "--gen-ccd" ]; then
@@ -65,8 +118,11 @@ if [ "$_l_OP" = "--gen-h" ] || [ "$_l_OP" = "--gen-ccd" ]; then
 #ifndef CCD_H
 #define CCD_H
 #define TOTAL_CORES $TOTAL_CORES
+#define CCD_COUNT $CCD_COUNT
+#define SYMMETRIC_X3D $SYMMETRIC_X3D
 #define CCD1_START $CCD1_START
 #define CCD0_CORE_MASK \"$CCD0_CORES\"
+#define CCD1_CORE_MASK \"$CCD1_CORES\"
 #define LOGICAL_TO_PHYSICAL(logical_core) ((logical_core) % (TOTAL_CORES / 2))
                 
 void logical_to_physical(int logical_core, int *physical_core);
@@ -77,6 +133,8 @@ void total_core_to_physical(int total_core, int *physical_core);
 void l3_cache_to_logical(int l3_cache, int *logical_core);
 void l3_cache_to_physical(int l3_cache, int *physical_core);
 int ccd(char *mask, int *ccd1_start, int *total_cores);
+int ccd_freq_mask(char *mask, unsigned long size);
+int cpu_in_cpulist(int cpu, const char *cpulist);
 #endif
 "
     } > "$CCD_H"
@@ -112,6 +170,31 @@ if (ccd1_start) *ccd1_start = CCD1_START;
 if (total_cores) *total_cores = TOTAL_CORES;
 return ERR_SUCCESS;
 }
+int ccd_freq_mask(char *mask, unsigned long size) {
+if (!mask || size == 0) return ERR_INVALID_ARGS;
+printf_sn(mask, size, \"%s\", CCD1_CORE_MASK);
+return ERR_SUCCESS;
+}
+int cpu_in_cpulist(int cpu, const char *cpulist) {
+if (!cpulist || !*cpulist || cpu < 0) return 0;
+const char *p = cpulist;
+while (*p) {
+while (*p == ',' || *p == ' ') p++;
+if (!*p) break;
+char *end = NULL;
+long start = strtol(p, &end, 10);
+if (end == p) break;
+long finish = start;
+if (*end == '-') {
+p = end + 1;
+finish = strtol(p, &end, 10);
+}
+if (cpu >= start && cpu <= finish) return 1;
+p = end;
+if (*p == ',') p++;
+}
+return 0;
+}
 
 // end of \`ccd.c\`
 "
@@ -120,11 +203,14 @@ return ERR_SUCCESS;
 elif [ "$_l_OP" = "--gen-config" ]; then
     printf_step "# X3D CCD DISCOVERY NUMERICALS (AUTO-GENERATED)" \
                 "CCD0_CORE_MASK=\"$CCD0_CORES\"" \
+                "CCD1_CORE_MASK=\"$CCD1_CORES\"" \
+                "CCD_COUNT=$CCD_COUNT" \
+                "SYMMETRIC_X3D=$SYMMETRIC_X3D" \
                 "CCD1_START=$CCD1_START" \
                 "TOTAL_CORES=$TOTAL_CORES" \
                 "# END CCD DISCOVERY BLOCK"
 else
-    printf_string "$CCD0_CORES"
+    printf "%s\n" "$CCD0_CORES"
 fi
 
 ## end of CCD.SH

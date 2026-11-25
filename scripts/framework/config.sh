@@ -67,8 +67,10 @@ get_conf_value() {
 ADV_CONF="$X3D_TOGGLE/config/advanced.conf"
 SCHED_SLICE_US=$(get_conf_value "kernel.sched_cfs_bandwidth_slice_us" "$ADV_CONF")
 SCHED_BORE=$(get_conf_value "kernel.sched_bore" "$ADV_CONF")
-SCHED_BIT_SHIFT=$(get_conf_value "kernel.sched_bit_shift" "$ADV_CONF")
-SCHED_BURST_FORK=$(get_conf_value "kernel.sched_burst_fork_at_init" "$ADV_CONF")
+SCHED_BIT_SHIFT=$(get_conf_value "kernel.sched_burst_penalty_offset" "$ADV_CONF")
+[ -z "$SCHED_BIT_SHIFT" ] && SCHED_BIT_SHIFT=$(get_conf_value "kernel.sched_bit_shift" "$ADV_CONF")
+SCHED_BURST_FORK=$(get_conf_value "kernel.sched_burst_inherit_type" "$ADV_CONF")
+[ -z "$SCHED_BURST_FORK" ] && SCHED_BURST_FORK=$(get_conf_value "kernel.sched_burst_fork_at_init" "$ADV_CONF")
 VM_MAX_MAP=$(get_conf_value "vm.max_map_count" "$ADV_CONF")
 SPLIT_LOCK_DETECT=$(get_conf_value "split_lock_detect" "$ADV_CONF")
 NMI_WATCHDOG=$(get_conf_value "nmi_watchdog" "$ADV_CONF")
@@ -90,8 +92,8 @@ SERVER_SSH=$(get_conf_value "SERVER_SSH" "$NET_CONF")
 # 3. Apply Internal Fallbacks (Prevents "null/unset" warnings if file is missing)
 SCHED_SLICE_US=${SCHED_SLICE_US:-3000}
 SCHED_BORE=${SCHED_BORE:-1}
-SCHED_BIT_SHIFT=${SCHED_BIT_SHIFT:-12}
-SCHED_BURST_FORK=${SCHED_BURST_FORK:-1}
+SCHED_BIT_SHIFT=${SCHED_BIT_SHIFT:-24}
+SCHED_BURST_FORK=${SCHED_BURST_FORK:-2}
 VM_MAX_MAP=${VM_MAX_MAP:-1048576}
 SPLIT_LOCK_DETECT=${SPLIT_LOCK_DETECT:-0}
 NMI_WATCHDOG=${NMI_WATCHDOG:-0}

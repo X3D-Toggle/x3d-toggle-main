@@ -11,7 +11,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 NET_ACTIVE="/etc/sysctl.d/99-x3d-networking.conf"
-NET_TEMPLATE="/usr/lib/x3d-toggle/config/networking.conf"
+NET_TEMPLATE="/etc/x3d-toggle.d/networking.conf"
 
 # Guard 2: Idempotency / Restore
 _needs_restore=0

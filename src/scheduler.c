@@ -42,29 +42,46 @@ int scheduler_set(sched_t mode) {
   }
 
   if (mode == SCHED_GAMING) {
-    if (sysctl_kernel_write("sched_cfs_bandwidth_slice_us", "3000") != 0) {
-      return -1;
+    if (access(PROC_KERNEL "sched_cfs_bandwidth_slice_us", F_OK) == 0) {
+      if (sysctl_kernel_write("sched_cfs_bandwidth_slice_us", "3000") != 0) {
+        return -1;
+      }
     }
 
     if (scheduler_check()) {
       if (sysctl_kernel_write("sched_bore", "1") != 0) {
         return -1;
       }
-      if (sysctl_kernel_write("sched_bit_shift", "14") != 0) { // Aggressive burst identification
-        return -1;
+      /* Linux 6.13 - 7.x+ EEVDF-BORE uses sched_burst_penalty_offset (0-64, default 24) */
+      if (access(PROC_KERNEL "sched_burst_penalty_offset", F_OK) == 0) {
+        if (sysctl_kernel_write("sched_burst_penalty_offset", "28") != 0) {
+          return -1;
+        }
+      } else if (access(PROC_KERNEL "sched_bit_shift", F_OK) == 0) {
+        if (sysctl_kernel_write("sched_bit_shift", "14") != 0) {
+          return -1;
+        }
       }
     }
   } else {
-    if (sysctl_kernel_write("sched_cfs_bandwidth_slice_us", "5000") != 0) {
-      return -1;
+    if (access(PROC_KERNEL "sched_cfs_bandwidth_slice_us", F_OK) == 0) {
+      if (sysctl_kernel_write("sched_cfs_bandwidth_slice_us", "5000") != 0) {
+        return -1;
+      }
     }
 
     if (scheduler_check()) {
-      if (sysctl_kernel_write("sched_bore", "0") != 0) {
+      if (sysctl_kernel_write("sched_bore", "1") != 0) {
         return -1;
       }
-      if (sysctl_kernel_write("sched_bit_shift", "12") != 0) {
-        return -1; // Default BORE shift
+      if (access(PROC_KERNEL "sched_burst_penalty_offset", F_OK) == 0) {
+        if (sysctl_kernel_write("sched_burst_penalty_offset", "24") != 0) {
+          return -1;
+        }
+      } else if (access(PROC_KERNEL "sched_bit_shift", F_OK) == 0) {
+        if (sysctl_kernel_write("sched_bit_shift", "12") != 0) {
+          return -1;
+        }
       }
     }
   }

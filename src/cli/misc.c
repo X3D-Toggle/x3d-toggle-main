@@ -157,6 +157,96 @@ int cli_misc_fallback(int argc, char *argv[]) {
   return 1;
 }
 
+extern char **environ;
+
+static int resolve_gui_path(char *out, size_t out_len) {
+  const char *home = getenv("HOME");
+  if (access("/usr/bin/x3d-gui", X_OK) == 0) {
+    printf_sn(out, out_len, "/usr/bin/x3d-gui");
+    return 0;
+  }
+  if (home && home[0]) {
+    char local_bin[512];
+    printf_sn(local_bin, sizeof(local_bin), "%s/.local/bin/x3d-gui", home);
+    if (access(local_bin, X_OK) == 0) {
+      printf_sn(out, out_len, "%s", local_bin);
+      return 0;
+    }
+  }
+  if (access("./bin/x3d-gui", X_OK) == 0) {
+    printf_sn(out, out_len, "./bin/x3d-gui");
+    return 0;
+  }
+  if (access("./x3d-gui", X_OK) == 0) {
+    printf_sn(out, out_len, "./x3d-gui");
+    return 0;
+  }
+
+  const char *path_env = getenv("PATH");
+  if (path_env) {
+    const char *p = path_env;
+    while (*p) {
+      const char *start = p;
+      while (*p && *p != ':')
+        p++;
+      size_t dlen = (size_t)(p - start);
+      if (dlen > 0 && dlen + 10 < out_len) {
+        memcpy(out, start, dlen);
+        out[dlen] = '/';
+        strcpy(out + dlen + 1, "x3d-gui");
+        if (access(out, X_OK) == 0)
+          return 0;
+      }
+      if (*p == ':')
+        p++;
+    }
+  }
+
+  out[0] = '\0';
+  return -1;
+}
+
+int cli_gui_launch(int argc, char *argv[]) {
+  (void)argc;
+  (void)argv;
+
+  if (!getenv("DISPLAY") && !getenv("WAYLAND_DISPLAY")) {
+    journal_error(ERR_GUI,
+                  "No graphical display detected (run 'x3d-toggle --help' for CLI commands)");
+    return ERR_GUI;
+  }
+
+  char gui_path[512];
+  if (resolve_gui_path(gui_path, sizeof(gui_path)) != 0) {
+    journal_error(ERR_GUI,
+                  "x3d-gui is not installed. Run 'sudo make setup' to install the desktop dashboard, or 'x3d-toggle --help' for CLI usage");
+    return ERR_GUI;
+  }
+
+  pid_t pid = fork();
+  if (pid < 0) {
+    journal_error(ERR_GUI, "Failed to fork desktop process");
+    return ERR_GUI;
+  }
+
+  if (pid == 0) {
+    int devnull = open("/dev/null", O_RDWR);
+    if (devnull >= 0) {
+      dup2(devnull, FILENO_STDIN);
+      dup2(devnull, FILENO_STDOUT);
+      dup2(devnull, FILENO_STDERR);
+      if (devnull > FILENO_STDERR)
+        close(devnull);
+    }
+    char *gui_argv[] = {(char *)"x3d-gui", NULL};
+    execve(gui_path, gui_argv, environ);
+    _exit(1);
+  }
+
+  printf_step("${ROCKET} Launching X3D Toggle Desktop...");
+  return ERR_SUCCESS;
+}
+
 int cli_gui_log(int argc, char *argv[]) {
   if (argc > 2) {
     journal_error(ERR_GUI, argv[2]);

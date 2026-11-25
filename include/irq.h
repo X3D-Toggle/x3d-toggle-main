@@ -9,7 +9,7 @@
 #define IRQ_UDEV_RULES   "/etc/udev/rules.d/99-x3d-irq.rules"
 #define IRQ_BALANCER_STATE IRQ_STATE_DIR "/irqbalance_was_active"
 
-#define IRQ_MAX_VECTORS  64
+#define IRQ_MAX_VECTORS  256
 
 int irq_init(void);
 int irq_bind_gpu(void);

@@ -845,11 +845,11 @@ int sysctl_write(const char *path, const char *val) {
 
 void priority(int enable) {
   const char *targets[] = {
-      "/sys/class/amd_x3d/vcache_mode",
-      "/sys/bus/platform/devices/AMDI0101:00/amd_x3d_mode",
+      "/sys/bus/platform/drivers/amd_x3d_vcache/AMDI0101:00/amd_x3d_mode",
       "/sys/devices/platform/AMDI0101:00/amd_x3d_mode",
-      "/sys/bus/pci/drivers/amd_x3d_vcache/vcache_mode",
-      "/sys/bus/platform/drivers/amd_x3d_vcache/AMDI0101:00/amd_x3d_mode"};
+      "/sys/bus/platform/devices/AMDI0101:00/amd_x3d_mode",
+      "/sys/class/amd_x3d/vcache_mode",
+      "/sys/bus/pci/drivers/amd_x3d_vcache/vcache_mode"};
 
   const char *mode = enable ? "cache" : "frequency";
   size_t len = strlen(mode);

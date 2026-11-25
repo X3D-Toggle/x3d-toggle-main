@@ -113,16 +113,20 @@ int daemon_status(Status *st) {
   }
 
   // CCD1 Logic
-  printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", CCD1_START);
-  char state_buf[BUFF_STATE] = "1";
-  int fd = open(path, O_RDONLY);
-  if (fd >= 0) {
-    if (read(fd, state_buf, sizeof(state_buf) - 1) > 0) {
-      if (state_buf[0] == '0') {
-        ccd1_st = "PARKED";
+  if (CCD_COUNT >= 2 && CCD1_START > 0) {
+    printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", CCD1_START);
+    char state_buf[BUFF_STATE] = "1";
+    int fd = open(path, O_RDONLY);
+    if (fd >= 0) {
+      if (read(fd, state_buf, sizeof(state_buf) - 1) > 0) {
+        if (state_buf[0] == '0') {
+          ccd1_st = "PARKED";
+        }
       }
+      close(fd);
     }
-    close(fd);
+  } else {
+    ccd1_st = "SINGLE-CCD";
   }
 
   printf_sn(st->c_mode, sizeof(st->c_mode), "%s", c_mode_raw);
@@ -221,7 +225,13 @@ int daemon_status(Status *st) {
   printf_sn(st->st_buff_ccd1, sizeof(st->st_buff_ccd1), "%s", ccd1_st);
 
   st->c_icon = QUERY;
-  if (strstr(st->c_mode, "CACHE")) {
+  if (strstr(st->c_mode, "DUAL-VCACHE")) {
+    st->c_icon = DUALIZE;
+    printf_sn(st->c_mode, sizeof(st->c_mode), "DUAL V-CACHE");
+  } else if (strcmp(st->c_mode, "VCACHE") == 0) {
+    st->c_icon = CACHED;
+    printf_sn(st->c_mode, sizeof(st->c_mode), "UNIFIED X3D");
+  } else if (strstr(st->c_mode, "CACHE")) {
     st->c_icon = CACHED;
     printf_sn(st->c_mode, sizeof(st->c_mode), "CACHE");
   } else if (strstr(st->c_mode, "FREQUENCY")) {

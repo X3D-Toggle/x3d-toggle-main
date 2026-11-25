@@ -133,18 +133,33 @@ hw_check() {
     done < /proc/cpuinfo
 
     case "$_l_CPU_MODEL" in
-        *7900X3D*|*7950X3D*|*9900X3D*|*9950X3D*) : ;; # Valid
+        *9950X3D2*)
+            printf_step "2,${NOTICE} Symmetric Dual 3D V-Cache CPU detected (${_l_CPU_MODEL# })." \
+                        "2,CCD cgroup isolation, CPPC EPP, BORE, eBPF, and IRQ steering enabled."
+            return 0
+            ;;
+        *7900X3D*|*7950X3D*|*9900X3D*|*9950X3D*|*10900X3D*|*10950X3D*)
+            ;; # Asymmetric Dual-CCD X3D
+        *5600X3D*|*5700X3D*|*5800X3D*|*7600X3D*|*7800X3D*|*9600X3D*|*9800X3D*|*9850X3D*)
+            printf_step "2,${NOTICE} Single-CCD 3D V-Cache CPU detected (${_l_CPU_MODEL# })." \
+                        "2,Unified L3 V-Cache active; CPPC EPP, BORE, eBPF, and IRQ steering enabled."
+            return 0
+            ;;
+        *X3D*|*3D\ V-Cache*)
+            ;; # Future/EPYC X3D variants
         *)
-            printf_center "${XOUT} Hardware Incompatibility Detected ${XOUT}" \
-                          "2,${XOUT} Error: Heterogeneous dual-CCD AMD X3D processor not detected." \
-                          "2,This utility is specifically designed for the 7950X3D/7900X3D." \
-                          "2,Exiting for hardware safety."
-            exit 1
+            if [ ! -d "/sys/bus/platform/drivers/amd_x3d_vcache" ]; then
+                printf_center "${XOUT} Hardware Incompatibility Detected ${XOUT}" \
+                              "2,${XOUT} Error: Supported AMD 3D V-Cache processor not detected." \
+                              "2,Designed for Ryzen X3D processors (7000X3D / 9000X3D / 9950X3D2+)." \
+                              "2,Exiting for hardware safety."
+                exit 1
+            fi
             ;;
     esac
     
     if [ ! -d "/sys/bus/platform/drivers/amd_x3d_vcache" ]; then
-        printf_step "2,${WARN} Notice: amd_x3d_vcache driver not loaded."
+        printf_step "2,${WARN} Notice: amd_x3d_vcache driver not loaded (check UEFI CPPC Dynamic Preferred Cores = Driver)."
     fi
 }
 
@@ -451,7 +466,7 @@ if [ "$X3D_FRAMEWORK" = "1" ] && [ "$(basename -- "$0")" = "framework.sh" ]; the
                         --gen-config-file)
                             shift; config_generate "$1" "$2"; exit 0 ;;
                         --gen-all)
-                            X3D_EXEC=1 X3D_FRAMEWORK=1 sh "$X3D_TOGGLE/scripts/framework/framework.sh" $UPDATE $VERIFY --gen-xui --gen-ccd --gen-ebpf --gen-config --gen-irq || exit 1; shift ;;
+                            X3D_EXEC=1 X3D_FRAMEWORK=1 sh "$X3D_TOGGLE/scripts/framework/framework.sh" $UPDATE $VERIFY --gen-xui --gen-ccd --gen-ebpf --gen-config || exit 1; shift ;;
                         *)
                             journal_write -6 "$1"; exit 1 ;; # Syntax error
                     esac

@@ -14,7 +14,8 @@
 static void printf_help(void) {
   printf_br();
   printf_center("X3D Toggle - Advanced CLI (IPC Enabled)");
-  printf_center("Usage: x3d-toggle [COMMAND|MODE] [ARGS...]");
+  printf_center("Usage: x3d-toggle                   (Launch Desktop GUI)");
+  printf_center("   or: x3d-toggle [COMMAND] [ARGS...]");
   printf_center("   or: x3d -[COMMAND|MODE] [ARGS...]");
   printf_br();
 
@@ -59,8 +60,7 @@ static void printf_help(void) {
 
 int daemon(int argc, char *argv[]) {
   if (argc < 2) {
-    journal_error(ERR_USAGE);
-    return ERR_USAGE;
+    return cli_gui_launch(argc, argv);
   }
 
   if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0 ||

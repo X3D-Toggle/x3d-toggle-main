@@ -862,15 +862,15 @@
                                     </child>
                                     <child>
                                       <object class="AdwActionRow" id="row_sched_bit_shift">
-                                        <property name="title">Sched Bit Shift</property>
-                                        <property name="subtitle">BORE potency adjustment (0-15)</property>
-                                        <child type="suffix"><object class="GtkSpinButton" id="cfg_sched_bit_shift"><property name="valign">center</property><property name="adjustment"><object class="GtkAdjustment"><property name="lower">0</property><property name="upper">15</property><property name="step-increment">1</property></object></property></object></child>
+                                        <property name="title">Burst Penalty Offset</property>
+                                        <property name="subtitle">BORE interactivity protection offset (0-64, default 24)</property>
+                                        <child type="suffix"><object class="GtkSpinButton" id="cfg_sched_bit_shift"><property name="valign">center</property><property name="adjustment"><object class="GtkAdjustment"><property name="lower">0</property><property name="upper">64</property><property name="step-increment">1</property></object></property></object></child>
                                       </object>
                                     </child>
                                     <child>
                                       <object class="AdwActionRow" id="row_sched_burst_fork">
-                                        <property name="title">Sched Burst Fork</property>
-                                        <property name="subtitle">Inherit burst score on fork</property>
+                                        <property name="title">Burst Inheritance</property>
+                                        <property name="subtitle">Inherit burst score across child processes</property>
                                         <child type="suffix"><object class="GtkSwitch" id="cfg_sched_burst_fork"><property name="valign">center</property></object></child>
                                       </object>
                                     </child>

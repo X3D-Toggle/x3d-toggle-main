@@ -2,12 +2,13 @@
 x3d-toggle - AMD X3D V-Cache Technology Optimizer CLI
 
 # SYNOPSIS
+x3d-toggle
 x3d-toggle [COMMAND | MODE | ALIAS] [ARGS...]
 
 # DESCRIPTION
-x3d-toggle is the command-line frontend for the AMD x3D V-Cache Technology Optimizer (v2.0.0). It provides a fast, standard user interface to interact with the x3d-core POSIX C backend.
+x3d-toggle is the frontend for the AMD X3D V-Cache Technology Optimizer (v2.0.0). Invoking `x3d-toggle` with no arguments launches the GTK4 desktop dashboard (`x3d-gui`); passing a subcommand interacts directly with the POSIX C backend and IPC daemon.
 
-The utility allows users to manually switch CPU affinities and cache modes for AMD 3D V-Cache processors, or hand over control to the autonomous eBPF/Polling daemon (x3d-daemon) for deterministic, latency-free mode switching during gaming workloads.
+Supports asymmetric dual-CCD processors (Ryzen 9 9950X3D, 9900X3D, 7950X3D, 7900X3D), symmetric Dual 3D V-Cache processors (Ryzen 9 9950X3D2), and single-CCD X3D processors (Ryzen 7 9850X3D, 9800X3D, 7800X3D) across Linux kernels 6.13 through 7.3+.
 
 This CLI is designed following a strict Model-View-Controller (MVC) architecture. It acts as an agnostic presentation layer, meaning other frontends (XUI, WebUI, YAD) can easily wrap these commands without needing to replicate hardware-level logic.
 

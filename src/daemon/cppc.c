@@ -15,12 +15,26 @@
 extern char **environ;
 
 int cppc_boost(int enable) {
-  int fd = open("/sys/devices/system/cpu/cpufreq/boost", O_WRONLY);
-  if (fd < 0) return ERR_HW;
   const char *val = enable ? "1" : "0";
-  ssize_t n = write(fd, val, 1);
-  close(fd);
-  return (n > 0) ? ERR_SUCCESS : ERR_IO;
+  int fd = open("/sys/devices/system/cpu/cpufreq/boost", O_WRONLY);
+  if (fd >= 0) {
+    ssize_t n = write(fd, val, 1);
+    close(fd);
+    return (n > 0) ? ERR_SUCCESS : ERR_IO;
+  }
+
+  /* Fallback: per-CPU amd-pstate cpufreq boost (Linux 6.11 - 7.x+) */
+  int applied = 0;
+  for (int i = 0; i < TOTAL_CORES; i++) {
+    char path[256];
+    printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/boost", i);
+    fd = open(path, O_WRONLY);
+    if (fd >= 0) {
+      if (write(fd, val, 1) > 0) applied++;
+      close(fd);
+    }
+  }
+  return (applied > 0) ? ERR_SUCCESS : ERR_HW;
 }
 
 int cppc_tdp(int watts) {
@@ -44,6 +58,7 @@ int cppc_perf(int val) {
   char val_str[16];
   printf_sn(val_str, sizeof(val_str), "%d", val);
   int ret = ERR_SUCCESS;
+  int applied = 0;
 
   for (int i = 0; i < TOTAL_CORES; i++) {
     char path[256];
@@ -51,8 +66,13 @@ int cppc_perf(int val) {
     int fd = open(path, O_WRONLY);
     if (fd >= 0) {
       if (write(fd, val_str, strlen(val_str)) < 0) ret = ERR_IO;
+      else applied++;
       close(fd);
     }
+  }
+  if (applied == 0) {
+    journal_warn(ERR_UNSUPPORTED, "acpi_cppc/desired_perf (unavailable when amd_pstate=active)");
+    return ERR_UNSUPPORTED;
   }
   return ret;
 }
@@ -71,11 +91,12 @@ int cppc_epp(const char *val) {
   return ret;
 }
 
-int cppc_ccd(int ccd, const char *val) {
-  int start = (ccd == 0) ? 0 : CCD1_START;
-  int end = (ccd == 0) ? CCD1_START : TOTAL_CORES;
+int cppc_ccd(int ccd_idx, const char *val) {
+  const char *mask = (ccd_idx == 0) ? CCD0_CORE_MASK : CCD1_CORE_MASK;
   int ret = ERR_SUCCESS;
-  for (int i = start; i < end; i++) {
+  for (int i = 0; i < TOTAL_CORES; i++) {
+    if (!cpu_in_cpulist(i, mask))
+      continue;
     char path[256];
     printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/energy_performance_preference", i);
     int fd = open(path, O_WRONLY);
@@ -111,9 +132,21 @@ int cppc_governor(const char *val) {
 
 int cppc_prefcore(int enable) {
   int fd = open("/sys/devices/system/cpu/amd_pstate/prefcore", O_WRONLY);
-  if (fd < 0) return ERR_HW;
-  const char *val = enable ? "1" : "0";
-  ssize_t n = write(fd, val, 1);
+  if (fd < 0) {
+    if (access("/sys/devices/system/cpu/amd_pstate/prefcore", R_OK) == 0) {
+      /* Read-only sysfs node on Linux 6.13 - 7.x+ (controlled via amd_pstate.prefcore= cmdline) */
+      journal_warn(ERR_UNSUPPORTED,
+                   "amd_pstate/prefcore runtime write (configure via kernel parameter amd_pstate.prefcore=)");
+      return ERR_UNSUPPORTED;
+    }
+    return ERR_HW;
+  }
+  const char *val = enable ? "enabled" : "disabled";
+  ssize_t n = write(fd, val, strlen(val));
+  if (n <= 0) {
+    val = enable ? "1" : "0";
+    n = write(fd, val, 1);
+  }
   close(fd);
   return (n > 0) ? ERR_SUCCESS : ERR_IO;
 }

@@ -22,14 +22,14 @@ done
 
 if [ "$GEN_EBPF" -eq 1 ]; then
     printf_step "3,${HAMMER} Exporting kernel BTF: build/vmlinux.h"
-    bpftool btf dump file /sys/kernel/btf/vmlinux format c > "$X3D_BUILD/vmlinux.h" 2>&1 || journal_write -32 "$X3D_BUILD/vmlinux.h"
+    bpftool btf dump file /sys/kernel/btf/vmlinux format c 1> "$X3D_BUILD/vmlinux.h" 2>/dev/null || journal_write -32 "$X3D_BUILD/vmlinux.h"
 
     printf_step "3,${HAMMER} Compiling eBPF module: src/daemon/bpf/bpf.c -> build/bpf.o"
     clang -g -O2 -target bpf -D__TARGET_ARCH_x86 -I"$X3D_BUILD" \
             -Wno-compare-distinct-pointer-types -c "$X3D_TOGGLE/src/daemon/bpf/bpf.c" -o "$X3D_BUILD/bpf.o" 2>&1 || journal_write -27 "$X3D_BUILD/bpf.o"
 
     printf_step "3,${HAMMER} Exporting program BTF: build/bpf.h"
-    bpftool btf dump file "$X3D_BUILD/bpf.o" format c > "$X3D_BUILD/bpf.h" 2>&1 || journal_write -27 "$X3D_BUILD/bpf.h"
+    bpftool btf dump file "$X3D_BUILD/bpf.o" format c 1> "$X3D_BUILD/bpf.h" 2>/dev/null || journal_write -27 "$X3D_BUILD/bpf.h"
 
     if [ ! -f "$X3D_BUILD/bpf.o" ]; then
         journal_write -27 "$X3D_BUILD/bpf.o"

@@ -30,9 +30,7 @@ int affinity_get_topology(char *cache, char *freq, size_t size) {
   int ccd1_start = 0;
   int total_cores = 0;
   if (ccd(cache, &ccd1_start, &total_cores) != ERR_SUCCESS) return -1;
-  
-  /* Adhere to project structure: Frequency cores are the remainder of the package */
-  printf_sn(freq, size, "%d-%d", ccd1_start, total_cores - 1);
+  if (ccd_freq_mask(freq, size) != ERR_SUCCESS) return -1;
   return 0;
 }
 int affinity_init(void) {
@@ -44,17 +42,15 @@ int affinity_init(void) {
     return ERR_CGROUP;
   }
 
-  /* 2. Assign Default Cores using Framework Discovery */
+  /* 2. Assign Default Cores using L3/SMT-aware Framework Discovery */
   char cache_mask[128] = {0};
+  char freq_mask[128] = {0};
   int ccd1_start = 0;
   int total_cores = 0;
 
-  if (ccd(cache_mask, &ccd1_start, &total_cores) == ERR_SUCCESS) {
+  if (ccd(cache_mask, &ccd1_start, &total_cores) == ERR_SUCCESS &&
+      ccd_freq_mask(freq_mask, sizeof(freq_mask)) == ERR_SUCCESS) {
     cgroup_write_raw("cache/cpuset.cpus", cache_mask);
-    
-    /* Construct frequency mask from discovery numericals */
-    char freq_mask[128];
-    printf_sn(freq_mask, sizeof(freq_mask), "%d-%d", ccd1_start, total_cores - 1);
     cgroup_write_raw("frequency/cpuset.cpus", freq_mask);
   }
 
@@ -117,6 +113,18 @@ int affinity_partition(pid_t pid, int partition) {
 }
 
 int affinity_set_masks(const char *cache, const char *freq) {
+  if (strcmp(cache, "none") == 0 || strcmp(freq, "none") == 0) {
+    char cache_mask[128] = {0};
+    char freq_mask[128] = {0};
+    int ccd1_start = 0, total_cores = 0;
+    if (ccd(cache_mask, &ccd1_start, &total_cores) == ERR_SUCCESS &&
+        ccd_freq_mask(freq_mask, sizeof(freq_mask)) == ERR_SUCCESS) {
+      int r1 = cgroup_write_raw("cache/cpuset.cpus", cache_mask);
+      int r2 = cgroup_write_raw("frequency/cpuset.cpus", freq_mask);
+      return (r1 == ERR_SUCCESS && r2 == ERR_SUCCESS) ? ERR_SUCCESS : ERR_CGROUP;
+    }
+    return ERR_CGROUP;
+  }
   int r1 = cgroup_write_raw("cache/cpuset.cpus", cache);
   int r2 = cgroup_write_raw("frequency/cpuset.cpus", freq);
   return (r1 == ERR_SUCCESS && r2 == ERR_SUCCESS) ? ERR_SUCCESS : ERR_CGROUP;

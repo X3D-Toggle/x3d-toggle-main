@@ -8,7 +8,7 @@ CC             		 = clang
 CFLAGS        		?= -Wall -O2 -Wextra -D_GNU_SOURCE -fno-builtin -nostdlib -fno-stack-protector
 USER_CFLAGS          = -DBPF_NO_PRESERVE_ACCESS_INDEX
 LDFLAGS              = # intentionally empty; linker flags may be provided externally
-INCLUDES             = -Iinclude -Ibuild -Isrc/daemon -Isrc/cli -Isrc/daemon/polling -Isrc/daemon/bpf -DUSR_LIBS=\"$(USR_LIBS)\" -DVAR_LOGS=\"$(VAR_LOGS)\" -DVAR_AUDITS=\"$(VAR_AUDITS)\" -DVAR_DUMPS=\"$(VAR_DUMPS)\" -DDIR_BIN=\"$(DIR_BIN)\" -DDIR_RUN=\"$(DIR_RUN)\" 
+INCLUDES             = -Ibuild -Iinclude -Isrc/daemon -Isrc/cli -Isrc/daemon/polling -Isrc/daemon/bpf -DUSR_LIBS=\"$(USR_LIBS)\" -DVAR_LOGS=\"$(VAR_LOGS)\" -DVAR_AUDITS=\"$(VAR_AUDITS)\" -DVAR_DUMPS=\"$(VAR_DUMPS)\" -DDIR_BIN=\"$(DIR_BIN)\" -DDIR_RUN=\"$(DIR_RUN)\" 
 LIBS          		 = -lbpf -lsystemd -lpthread -lrt -pthread -lc
 CLI           		 = -DCLI_BUILD
 BACKEND         	 = -DBACKEND
@@ -148,7 +148,9 @@ $(DIR_BUILD)/bpf.o: $(SRC_BPF)/bpf.c | prep
 
 $(TARGET_UI) $(TARGET_CCD) $(TARGET_CONFIG): $(TARGET_FRAMEWORK)
 build: $(TARGET_CLI) $(TARGET_DAEMON) $(TARGET_WRAPPER) $(DIR_BUILD)/bpf.o
-	true
+	@if [ -n "$$SUDO_USER" ] && [ "$$SUDO_USER" != "root" ]; then \
+		chown -R "$$SUDO_USER:$$(id -gn "$$SUDO_USER")" $(BIN) $(DIR_BUILD) 2>/dev/null || true; \
+	fi
 
 $(TARGET_CLI): $(SRCS_CLI) $(SRCS_GUI) $(TARGET_UI) $(TARGET_CCD) $(TARGET_FRAMEWORK)
 	$(CC) $(CFLAGS) $(USER_CFLAGS) $(CLI) $(INCLUDES) $(SRCS_CLI) $(SRCS_GUI) -o $(TARGET_CLI) $(LIBS)
@@ -188,6 +190,9 @@ install: build
 	install -m644 config/settings.conf $(DEST_ETC)/settings.conf
 	install -m644 config/irq.conf $(DEST_ETC)/irq.conf
 	install -m644 config/games.conf $(DEST_ETC)/games.conf
+	install -m644 config/networking.conf $(DEST_ETC)/networking.conf
+	install -m644 config/advanced.conf $(DEST_ETC)/advanced.conf
+	install -m644 $(DIR_BUILD)/daemon.conf $(DEST_ETC)/daemon.conf
 
 	install -dm775 $(DEST_LOGS)
 	install -dm775 $(DEST_AUDITS)
@@ -247,6 +252,9 @@ setup:
 clean:
 	rm -rf $(BIN) $(DIR_BUILD)
 	mkdir -p $(BIN) $(DIR_BUILD)
+	@if [ -n "$$SUDO_USER" ] && [ "$$SUDO_USER" != "root" ]; then \
+		chown -R "$$SUDO_USER:$$(id -gn "$$SUDO_USER")" $(BIN) $(DIR_BUILD) 2>/dev/null || true; \
+	fi
 
 uninstall:
 	-systemctl stop x3d-toggle.service
@@ -261,6 +269,7 @@ uninstall:
 	rm -f $(DEST_RUN)/x3d-toggle.lock
 	rm -f $(DEST_RUN)/x3d-toggle.worker
 	rm -f $(DEST_RUN)/x3d-toggle.log
+	rm -rf $(DESTDIR)$(DIR_RUN)
 
 	rm -f $(DEST_BIN)/x3d-toggle
 	rm -f $(DEST_BIN)/x3d-daemon
@@ -275,6 +284,8 @@ uninstall:
 	rm -f $(DEST_POLKIT)/50-x3d_toggle-service.rules
 	rm -f $(DEST_POLKIT_ACTIONS)/org.x3d_toggle.debug.policy
 	rm -f $(DEST_UDEV)/99-x3d-toggle.rules
+	rm -f $(DESTDIR)$(ETC)/udev/rules.d/99-x3d-irq.rules
+	rm -f $(DESTDIR)$(ETC)/sysctl.d/99-x3d-networking.conf
 	rm -f $(DEST_POLKIT)/x3d-toggle.rules
 	rm -f $(DEST_PIXMAPS)/x3d-toggle.jpg
 	rm -f $(DEST_APPS)/x3d-toggle.desktop

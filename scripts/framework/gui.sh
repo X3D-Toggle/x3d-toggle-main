@@ -31,7 +31,7 @@ if ! glib-compile-resources --sourcedir=src/gtk4 \
 fi
 
 if ! clang $(pkg-config --cflags gtk4 libadwaita-1) -Wall -O2 \
-    -Iinclude -Ibuild -DGUI_BUILD -DLIBC_NO_BOOTSTRAP \
+    -Ibuild -Iinclude -DGUI_BUILD -DLIBC_NO_BOOTSTRAP \
     src/gtk4/gui.c src/gtk4/x3d-gui-resources.c src/gtk4/stubs.c \
     src/libc.c src/worker.c build/xui.c build/ccd.c src/error.c src/cli/misc.c \
     -o x3d-gui \

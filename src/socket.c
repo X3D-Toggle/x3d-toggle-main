@@ -182,16 +182,17 @@ void socket_handle(int server_fd) {
       char *target_str = buf + 9;
       int ret = ERR_SUCCESS;
       if (strcmp(target_str, "ccd1") == 0) {
-#ifdef CCD1_START
-        const int ccd1_start = CCD1_START;
-#else
-        const int ccd1_start = TOTAL_CORES / 2;
-#endif
-        for (int i = ccd1_start; i < TOTAL_CORES; i++) {
+#if defined(CCD_COUNT) && CCD_COUNT >= 2
+        for (int i = 1; i < TOTAL_CORES; i++) {
+          if (!cpu_in_cpulist(i, CCD1_CORE_MASK))
+            continue;
           int r = cli_set_core(i, 0);
           if (r != ERR_SUCCESS && r != ERR_LOST)
             ret = r;
         }
+#else
+        ret = ERR_UNSUPPORTED;
+#endif
       } else {
         char *endptr = NULL;
         errno = 0;
@@ -405,8 +406,20 @@ void socket_handle(int server_fd) {
       int ret = -1;
       
       if (strcmp(key, "kernel.sched_bore") == 0) printf_sn(path, 256, "/proc/sys/kernel/sched_bore");
-      else if (strcmp(key, "kernel.sched_bit_shift") == 0) printf_sn(path, 256, "/proc/sys/kernel/sched_bit_shift");
-      else if (strcmp(key, "kernel.sched_burst_fork_at_init") == 0) printf_sn(path, 256, "/proc/sys/kernel/sched_burst_fork_at_init");
+      else if (strcmp(key, "kernel.sched_burst_penalty_offset") == 0 ||
+               strcmp(key, "kernel.sched_bit_shift") == 0) {
+          if (access("/proc/sys/kernel/sched_burst_penalty_offset", F_OK) == 0)
+              printf_sn(path, 256, "/proc/sys/kernel/sched_burst_penalty_offset");
+          else
+              printf_sn(path, 256, "/proc/sys/kernel/sched_bit_shift");
+      }
+      else if (strcmp(key, "kernel.sched_burst_inherit_type") == 0 ||
+               strcmp(key, "kernel.sched_burst_fork_at_init") == 0) {
+          if (access("/proc/sys/kernel/sched_burst_inherit_type", F_OK) == 0)
+              printf_sn(path, 256, "/proc/sys/kernel/sched_burst_inherit_type");
+          else
+              printf_sn(path, 256, "/proc/sys/kernel/sched_burst_fork_at_init");
+      }
       else if (strcmp(key, "kernel.sched_cfs_bandwidth_slice_us") == 0) printf_sn(path, 256, "/proc/sys/kernel/sched_cfs_bandwidth_slice_us");
       else if (strcmp(key, "vm.max_map_count") == 0) printf_sn(path, 256, "/proc/sys/vm/max_map_count");
       else if (strcmp(key, "kernel.split_lock_mitigate") == 0) printf_sn(path, 256, "/proc/sys/kernel/split_lock_mitigate");
@@ -435,11 +448,19 @@ void socket_handle(int server_fd) {
           if (strcmp(key, "kernel.sched_bore") == 0) {
               printf_sn(path, 256, "/proc/sys/kernel/sched_bore");
               cfg.sched_bore = atoi(val);
-          } else if (strcmp(key, "kernel.sched_bit_shift") == 0) {
-              printf_sn(path, 256, "/proc/sys/kernel/sched_bit_shift");
+          } else if (strcmp(key, "kernel.sched_burst_penalty_offset") == 0 ||
+                     strcmp(key, "kernel.sched_bit_shift") == 0) {
+              if (access("/proc/sys/kernel/sched_burst_penalty_offset", F_OK) == 0)
+                  printf_sn(path, 256, "/proc/sys/kernel/sched_burst_penalty_offset");
+              else
+                  printf_sn(path, 256, "/proc/sys/kernel/sched_bit_shift");
               cfg.sched_bit_shift = atoi(val);
-          } else if (strcmp(key, "kernel.sched_burst_fork_at_init") == 0) {
-              printf_sn(path, 256, "/proc/sys/kernel/sched_burst_fork_at_init");
+          } else if (strcmp(key, "kernel.sched_burst_inherit_type") == 0 ||
+                     strcmp(key, "kernel.sched_burst_fork_at_init") == 0) {
+              if (access("/proc/sys/kernel/sched_burst_inherit_type", F_OK) == 0)
+                  printf_sn(path, 256, "/proc/sys/kernel/sched_burst_inherit_type");
+              else
+                  printf_sn(path, 256, "/proc/sys/kernel/sched_burst_fork_at_init");
               cfg.sched_burst_fork = atoi(val);
           } else if (strcmp(key, "kernel.sched_cfs_bandwidth_slice_us") == 0) {
               printf_sn(path, 256, "/proc/sys/kernel/sched_cfs_bandwidth_slice_us");
@@ -476,8 +497,10 @@ void socket_handle(int server_fd) {
                   /* Persist change to daemon.conf */
                   char ckey[64];
                   if (strcmp(key, "kernel.sched_bore") == 0) strcpy(ckey, "SCHED_BORE");
-                  else if (strcmp(key, "kernel.sched_bit_shift") == 0) strcpy(ckey, "SCHED_BIT_SHIFT");
-                  else if (strcmp(key, "kernel.sched_burst_fork_at_init") == 0) strcpy(ckey, "SCHED_BURST_FORK");
+                  else if (strcmp(key, "kernel.sched_burst_penalty_offset") == 0 ||
+                           strcmp(key, "kernel.sched_bit_shift") == 0) strcpy(ckey, "SCHED_BIT_SHIFT");
+                  else if (strcmp(key, "kernel.sched_burst_inherit_type") == 0 ||
+                           strcmp(key, "kernel.sched_burst_fork_at_init") == 0) strcpy(ckey, "SCHED_BURST_FORK");
                   else if (strcmp(key, "kernel.sched_cfs_bandwidth_slice_us") == 0) strcpy(ckey, "SCHED_SLICE_US");
                   else if (strcmp(key, "vm.max_map_count") == 0) strcpy(ckey, "VM_MAX_MAP");
                   else if (strcmp(key, "kernel.split_lock_mitigate") == 0) strcpy(ckey, "SPLIT_LOCK_DETECT");
@@ -493,6 +516,11 @@ void socket_handle(int server_fd) {
           }
       }
       send(client_fd, (ret == 0) ? "OK" : "ERR", (ret == 0) ? 2 : 3, MSG_NOSIGNAL);
+    } else if (strncmp(buf, "IRQ_BIND", 8) == 0) {
+      extern int cli_irq_bind(int argc, char *argv[]);
+      int ret = cli_irq_bind(0, NULL);
+      send(client_fd, (ret == ERR_SUCCESS) ? "OK" : "ERR",
+           (ret == ERR_SUCCESS) ? 2 : 3, MSG_NOSIGNAL);
     } else {
       send(client_fd, "ERR", 3, MSG_NOSIGNAL);
     }

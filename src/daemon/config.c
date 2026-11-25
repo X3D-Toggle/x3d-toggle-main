@@ -591,6 +591,14 @@ void config_probe_capabilities(DaemonConfig *cfg) {
 int cli_advanced_config(int argc, char *argv[]) {
     if (argc < 3) return 1;
     char payload[256], message[256];
+
+    if (strcmp(argv[2], "networking") == 0) {
+        if (argc >= 4 && strcmp(argv[3], "--apply") == 0) {
+            int ret = system("/usr/lib/x3d-toggle/scripts/tools/networking.sh");
+            return (ret == 0) ? 0 : 1;
+        }
+        return 1;
+    }
     
     if (strcmp(argv[2], "get") == 0) {
         if (argc < 4) return 1;

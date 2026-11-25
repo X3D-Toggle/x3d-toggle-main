@@ -94,16 +94,21 @@ static void parse_conf_str(const char *haystack, const char *key,
 }
 
 static int load_config(void) {
-  char buf[4096] = {0};
+  char buf[16384] = {0};
   int fd = open(CONFIG_PATH, O_RDONLY);
   if (fd < 0) {
     journal_warn(ERR_CONF);
     return ERR_CONF;
   }
-  ssize_t n = read(fd, buf, sizeof(buf) - 1);
+  size_t total = 0;
+  while (total < sizeof(buf) - 1) {
+    ssize_t n = read(fd, buf + total, sizeof(buf) - 1 - total);
+    if (n <= 0) break;
+    total += (size_t)n;
+  }
   close(fd);
-  if (n <= 0) return ERR_CONF;
-  buf[n] = '\0';
+  if (total == 0) return ERR_CONF;
+  buf[total] = '\0';
 
   g_cfg.irq_enable   = parse_conf_int(buf, "IRQ_ENABLE");
   g_cfg.irq_pinning  = parse_conf_int(buf, "IRQ_PINNING");
@@ -117,8 +122,9 @@ static int load_config(void) {
   g_cfg.thread_control = parse_conf_int(buf, "THREAD_CONTROL");
   g_cfg.thread_cap   = parse_conf_int(buf, "THREAD_CAP");
 
-  parse_conf_str(buf, "IRQ_CUSTOM", buf, sizeof(buf));
-  g_cfg.target_core = atoi(buf);
+  char custom_buf[64] = {0};
+  parse_conf_str(buf, "IRQ_CUSTOM", custom_buf, sizeof(custom_buf));
+  g_cfg.target_core = atoi(custom_buf);
 
   parse_conf_str(buf, "THREAD_EXEMPT", g_cfg.thread_exempt,
                  sizeof(g_cfg.thread_exempt));
@@ -169,16 +175,54 @@ static int restore_irqbalance(void) {
   return ERR_SUCCESS;
 }
 
+static char *read_proc_interrupts(void) {
+  int fd = open("/proc/interrupts", O_RDONLY);
+  if (fd < 0) return NULL;
+
+  size_t cap = 65536;
+  size_t len = 0;
+  char *buf = (char *)malloc(cap);
+  if (!buf) {
+    close(fd);
+    return NULL;
+  }
+
+  for (;;) {
+    if (len + 4096 + 1 > cap) {
+      size_t new_cap = cap * 2;
+      if (new_cap > (4UL * 1024UL * 1024UL)) break;
+      char *tmp = (char *)realloc(buf, new_cap);
+      if (!tmp) {
+        free(buf);
+        close(fd);
+        return NULL;
+      }
+      buf = tmp;
+      cap = new_cap;
+    }
+    ssize_t n = read(fd, buf + len, cap - len - 1);
+    if (n < 0) {
+      free(buf);
+      close(fd);
+      return NULL;
+    }
+    if (n == 0) break;
+    len += (size_t)n;
+  }
+
+  close(fd);
+  if (len == 0) {
+    free(buf);
+    return NULL;
+  }
+  buf[len] = '\0';
+  return buf;
+}
+
 static void discover_irqs(const char *driver_token, irq_list_t *list) {
   list->count = 0;
-  int fd = open("/proc/interrupts", O_RDONLY);
-  if (fd < 0) return;
-
-  char buf[8192];
-  ssize_t n = read(fd, buf, sizeof(buf) - 1);
-  close(fd);
-  if (n <= 0) return;
-  buf[n] = '\0';
+  char *buf = read_proc_interrupts();
+  if (!buf) return;
 
   char *line = buf;
   while (line && *line && list->count < IRQ_MAX_VECTORS) {
@@ -195,50 +239,55 @@ static void discover_irqs(const char *driver_token, irq_list_t *list) {
     if (nl) line = nl + 1;
     else break;
   }
+
+  free(buf);
 }
 
 static int verify_msi(int irq) {
-  char affinity_path[256];
-  printf_sn(affinity_path, sizeof(affinity_path),
-            "/proc/irq/%d/amdgpu", irq);
-  char msi_check[512];
-  printf_sn(msi_check, sizeof(msi_check),
-            "grep -l 'PCI-MSI' /proc/irq/%d/../type 2>/dev/null", irq);
-  int fd = open("/proc/interrupts", O_RDONLY);
-  if (fd < 0) return 0;
+  if (irq <= 0) return 0;
+  char *buf = read_proc_interrupts();
+  if (!buf) return 0;
 
-  char buf[8192];
-  ssize_t n = read(fd, buf, sizeof(buf) - 1);
-  close(fd);
-  if (n <= 0) return 0;
-  buf[n] = '\0';
+  int is_msi = 0;
+  char *line = buf;
+  while (line && *line) {
+    char *nl = strchr(line, '\n');
+    if (nl) *nl = '\0';
 
-  char irq_str[16];
-  printf_sn(irq_str, sizeof(irq_str), "%d:", irq);
-  char *line = strstr(buf, irq_str);
-  if (line && (strstr(line, "PCI-MSI") || strstr(line, "PCI-MSIX")))
-    return 1;
+    if (atoi(line) == irq) {
+      if (strstr(line, "PCI-MSI") || strstr(line, "PCI-MSIX"))
+        is_msi = 1;
+      break;
+    }
 
-  return 0;
+    if (nl) line = nl + 1;
+    else break;
+  }
+
+  free(buf);
+  return is_msi;
 }
 
 static int count_msix_vectors(void) {
+  char *buf = read_proc_interrupts();
+  if (!buf) return 0;
+
   int count = 0;
-  int fd = open("/proc/interrupts", O_RDONLY);
-  if (fd < 0) return 0;
+  char *line = buf;
+  while (line && *line) {
+    char *nl = strchr(line, '\n');
+    if (nl) *nl = '\0';
 
-  char buf[8192];
-  ssize_t n = read(fd, buf, sizeof(buf) - 1);
-  close(fd);
-  if (n <= 0) return 0;
-  buf[n] = '\0';
-
-  char *p = buf;
-  while ((p = strstr(p, "amdgpu")) != NULL) {
-    if (strstr(p - 80 > buf ? p - 80 : buf, "PCI-MSIX"))
+    if ((strstr(line, "amdgpu") || strstr(line, "nouveau")) &&
+        (strstr(line, "PCI-MSI") || strstr(line, "PCI-MSIX"))) {
       count++;
-    p++;
+    }
+
+    if (nl) line = nl + 1;
+    else break;
   }
+
+  free(buf);
   return count;
 }
 
@@ -296,14 +345,8 @@ static void apply_list(irq_list_t *list, int core) {
 
 static void discover_nic_names(void) {
   g_nic_count = 0;
-  int fd = open("/proc/interrupts", O_RDONLY);
-  if (fd < 0) return;
-
-  char buf[8192];
-  ssize_t n = read(fd, buf, sizeof(buf) - 1);
-  close(fd);
-  if (n <= 0) return;
-  buf[n] = '\0';
+  char *buf = read_proc_interrupts();
+  if (!buf) return;
 
   const char *tokens[] = {"eth", "enp", "eno", "wlan"};
   char *p = buf;
@@ -313,20 +356,34 @@ static void discover_nic_names(void) {
     for (int t = 0; t < 4; t++) {
       char *found = strstr(p, tokens[t]);
       if (found) {
+        char candidate[32];
         int j = 0;
         while (found[j] && found[j] != ' ' && found[j] != '\n' &&
-               found[j] != '-' && j < 31) {
-          g_nic_names[g_nic_count][j] = found[j];
+               found[j] != '-' && found[j] != ':' && j < 31) {
+          candidate[j] = found[j];
           j++;
         }
-        g_nic_names[g_nic_count][j] = '\0';
-        g_nic_count++;
+        candidate[j] = '\0';
+
+        int dup = 0;
+        for (int k = 0; k < g_nic_count; k++) {
+          if (strcmp(g_nic_names[k], candidate) == 0) {
+            dup = 1;
+            break;
+          }
+        }
+        if (!dup && candidate[0]) {
+          strcpy(g_nic_names[g_nic_count], candidate);
+          g_nic_count++;
+        }
         break;
       }
     }
     if (nl) p = nl + 1;
     else break;
   }
+
+  free(buf);
 }
 
 static void apply_coalescing(int enable) {
@@ -455,7 +512,7 @@ int irq_gen_udev(void) {
   if (g_cfg.irq_gpu) {
     len = printf_sn(rule, sizeof(rule),
       "ACTION==\"add\", SUBSYSTEM==\"pci\", "
-      "DRIVER==\"amdgpu|nouveau\", "
+      "DRIVER==\"amdgpu|nouveau\", ENV{SYSTEMD_IN_INITRD}!=\"1\", "
       "RUN+=\"/usr/bin/x3d-toggle irq-bind\"\n");
     write(fd, rule, len);
   }
@@ -463,7 +520,7 @@ int irq_gen_udev(void) {
   if (g_cfg.irq_nvme) {
     len = printf_sn(rule, sizeof(rule),
       "ACTION==\"add\", SUBSYSTEM==\"pci\", "
-      "DRIVER==\"nvme\", "
+      "DRIVER==\"nvme\", ENV{SYSTEMD_IN_INITRD}!=\"1\", "
       "RUN+=\"/usr/bin/x3d-toggle irq-bind\"\n");
     write(fd, rule, len);
   }
@@ -471,7 +528,7 @@ int irq_gen_udev(void) {
   if (g_cfg.irq_usb) {
     len = printf_sn(rule, sizeof(rule),
       "ACTION==\"add\", SUBSYSTEM==\"pci\", "
-      "DRIVER==\"xhci_hcd\", "
+      "DRIVER==\"xhci_hcd\", ENV{SYSTEMD_IN_INITRD}!=\"1\", "
       "RUN+=\"/usr/bin/x3d-toggle irq-bind\"\n");
     write(fd, rule, len);
   }
