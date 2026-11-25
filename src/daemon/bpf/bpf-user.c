@@ -38,6 +38,8 @@ static int active_games = 0;
 extern gamelist gl;
 
 /* --- eBPF Process Event Handler --- */
+/* cppcheck-suppress constParameterCallback ; signature fixed by libbpf
+ * ring_buffer_sample_fn */
 static int handle_event(void *ctx, void *data, size_t data_sz) {
   (void)ctx;
   (void)data_sz;
@@ -53,9 +55,10 @@ static int handle_event(void *ctx, void *data, size_t data_sz) {
       active_games++;
       journal_log(BPF_HIT, e->comm, e->pid, "launched", active_games);
     }
-  } else if (!e->is_exit && (is_game_engine_comm(e->comm) || scan_pid_steam_by_pid(e->pid))) {
-    /* Steam game detected via SteamAppId environ or common game engine thread names.
-     * Only check on exec events — for exit we rely on the active_games
+  } else if (!e->is_exit &&
+             (is_game_engine_comm(e->comm) || scan_pid_steam_by_pid(e->pid))) {
+    /* Steam game detected via SteamAppId environ or common game engine thread
+     * names. Only check on exec events — for exit we rely on the active_games
      * decrement path via the Steam-detected launch counter below. */
     active_games++;
     journal_log(BPF_HIT, e->comm, e->pid, "launched [Steam]", active_games);
@@ -68,7 +71,6 @@ static int handle_event(void *ctx, void *data, size_t data_sz) {
   }
   return 0;
 }
-
 
 static int on_gamemode_signal(sd_bus_message *m, void *userdata,
                               sd_bus_error *ret_error) {

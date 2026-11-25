@@ -1,14 +1,14 @@
 /* Error Handling Logic for the X3D Toggle Project
  * `error.c`
  * Handles all stdout, stderr and logging routing logic.
- * Also implements an error handling dispatch table for diagnostics. 
+ * Also implements an error handling dispatch table for diagnostics.
  */
 
-#include "xui.h"
-#include "cppc.h" // IWYU pragma: keep
 #include "error.h"
+#include "cppc.h" // IWYU pragma: keep
 #include "libc.h"
 #include "systemd.h"
+#include "xui.h"
 
 #ifndef VAR_LOGS
 #define VAR_LOGS "/var/log/x3d-toggle/logs"
@@ -71,25 +71,40 @@ static const msg_t registry_msg[] = {
             "Automated audit suite reported errors (Code: %d)"},
     [29] = {"Memory allocation failure", "Failed to allocate %zu bytes"},
     [30] = {"Critical Error: Configuration File Not Found",
-            "/etc/x3d-toggle.d user configuration file is missing. Run the installer "
+            "/etc/x3d-toggle.d user configuration file is missing. Run the "
+            "installer "
             "or regenerate it."},
     [31] = {"Scaffolding Component Failure", "Failed to generate: %s"},
-    [32] = {"Build Artifact Permission Overlap", "Permission denied on: %s. Run 'sudo make clean'."},
-    [33] = {"OBLITERATION ABORTED: Self-Destruction Guard Triggered", "Safety Check failed: You are currently working inside the directory you are trying to delete. Path: %s"},
-    [34] = {"Cgroup Resource Isolation Failed", "Ephemeral core-set migration rejected (Locked or restricted): %s"},
-    [35] = {"Affinity Migration Disruption", "Universal Protocol failed to migrate process affinity (Code: %d)"},
+    [32] = {"Build Artifact Permission Overlap",
+            "Permission denied on: %s. Run 'sudo make clean'."},
+    [33] = {"OBLITERATION ABORTED: Self-Destruction Guard Triggered",
+            "Safety Check failed: You are currently working inside the "
+            "directory you are trying to delete. Path: %s"},
+    [34] = {"Cgroup Resource Isolation Failed",
+            "Ephemeral core-set migration rejected (Locked or restricted): %s"},
+    [35] = {"Affinity Migration Disruption",
+            "Universal Protocol failed to migrate process affinity (Code: %d)"},
     [36] = {"GUI Execution Failure", "Dashboard error: %s"},
-    [37] = {"Direct execution restricted", "Please use the 'x3d-toggle' CLI or run via the installer."},
+    [37] = {"Direct execution restricted",
+            "Please use the 'x3d-toggle' CLI or run via the installer."},
     [39] = {"Path component too long", "Assembled path exceeds 4096 bytes: %s"},
-    [40] = {"IRQ Binding Failed", "Failed to write affinity mask for IRQ %d: %s"},
-    [41] = {"IRQ MSI Verification Failed", "Device %s is not using MSI; legacy APIC pin detected"},
+    [40] = {"IRQ Binding Failed",
+            "Failed to write affinity mask for IRQ %d: %s"},
+    [41] = {"IRQ MSI Verification Failed",
+            "Device %s is not using MSI; legacy APIC pin detected"},
     [42] = {"irqbalance Control Failed", "Failed to %s irqbalance service: %s"},
-    [43] = {"udev Rule Generation Failed", "Could not write 99-x3d-irq.rules: %s"},
-    [44] = {"IRQ Discovery Failed", "No IRQ vectors found for device class: %s"},
-    [45] = {"IRQ Teardown Incomplete", "Failed to restore affinity for IRQ %d; system may require reboot"},
-    [46] = {"IRQ Coalescing Error", "Failed to apply ethtool parameters to NIC: %s"},
-    [47] = {"IRQ Watch Error", "Daemon polling loop encountered an unexpected failure"},
-    [48] = {"Unsupported kernel feature", "Feature '%s' not supported by the current kernel."},
+    [43] = {"udev Rule Generation Failed",
+            "Could not write 99-x3d-irq.rules: %s"},
+    [44] = {"IRQ Discovery Failed",
+            "No IRQ vectors found for device class: %s"},
+    [45] = {"IRQ Teardown Incomplete",
+            "Failed to restore affinity for IRQ %d; system may require reboot"},
+    [46] = {"IRQ Coalescing Error",
+            "Failed to apply ethtool parameters to NIC: %s"},
+    [47] = {"IRQ Watch Error",
+            "Daemon polling loop encountered an unexpected failure"},
+    [48] = {"Unsupported kernel feature",
+            "Feature '%s' not supported by the current kernel."},
 };
 
 static const msg_t registry_status[] = {
@@ -111,31 +126,31 @@ static const msg_t registry_status[] = {
     [14] = {"IPC Server Ready",
             "IPC server bound to %s with strict 0660 permissions."},
     [15] = {"Process Watchlist Updated", "Removed '%s' from %s"},
-    [16] = {
-        "Dialog Already Active",
-        "Status monitor is already open. Close the existing window first."},
-    [17] = {"Developer Sync", "UI Framework and build artifacts successfully re-scaffolded."}};
-
-static int syslog_fd = -1;
+    [16] = {"Dialog Already Active",
+            "Status monitor is already open. Close the existing window first."},
+    [17] = {"Developer Sync",
+            "UI Framework and build artifacts successfully re-scaffolded."}};
 
 void journal_syslog(int prio, const char *summary, const char *ctx) {
-  if (syslog_fd < 0) {
-    syslog_fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
-  }
-  if (syslog_fd < 0) return;
+  /* Open per message so no descriptor outlives the call */
+  int syslog_fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+  if (syslog_fd < 0)
+    return;
 
   struct sockaddr_un addr = {0};
   addr.sun_family = AF_UNIX;
-  printf_sn(addr.sun_path, sizeof(addr.sun_path), "/run/systemd/journal/socket");
+  printf_sn(addr.sun_path, sizeof(addr.sun_path),
+            "/run/systemd/journal/socket");
 
   char buf[2048];
   int len = printf_sn(buf, sizeof(buf),
-    "PRIORITY=%d\n"
-    "SYSLOG_IDENTIFIER=x3d-toggle\n"
-    "MESSAGE=%s: %s\n",
-    prio, summary, ctx);
+                      "PRIORITY=%d\n"
+                      "SYSLOG_IDENTIFIER=x3d-toggle\n"
+                      "MESSAGE=%s: %s\n",
+                      prio, summary, ctx);
 
   sendto(syslog_fd, buf, len, 0, (struct sockaddr *)&addr, sizeof(addr));
+  close(syslog_fd);
 }
 
 void journal_file(const char *level, const char *summary, const char *ctx) {
@@ -144,8 +159,7 @@ void journal_file(const char *level, const char *summary, const char *ctx) {
   clock_gettime(CLOCK_REALTIME, &ts);
 
   if (log_path[0] == 0) {
-    printf_sn(log_path, sizeof(log_path), 
-              VAR_LOGS "/x3d-%zu.log", 
+    printf_sn(log_path, sizeof(log_path), VAR_LOGS "/x3d-%zu.log",
               (size_t)ts.tv_sec);
   }
 
@@ -153,15 +167,20 @@ void journal_file(const char *level, const char *summary, const char *ctx) {
   printf_sn(timestamp, sizeof(timestamp), "%zu", (size_t)ts.tv_sec);
 
   int pri = LOG_INFO;
-  if (strcmp(level, "ERR") == 0) pri = LOG_ERR;
-  else if (strcmp(level, "WRN") == 0) pri = LOG_WARNING;
-  else if (strcmp(level, "FTL") == 0) pri = LOG_CRIT;
-  else if (strcmp(level, "DBG") == 0) pri = LOG_INFO;
+  if (strcmp(level, "ERR") == 0)
+    pri = LOG_ERR;
+  else if (strcmp(level, "WRN") == 0)
+    pri = LOG_WARNING;
+  else if (strcmp(level, "FTL") == 0)
+    pri = LOG_CRIT;
+  else if (strcmp(level, "DBG") == 0)
+    pri = LOG_INFO;
 
   journal_syslog(pri, summary, ctx);
 
   char buf[2048];
-  int len = printf_sn(buf, sizeof(buf), "[%s] [%s] %s: %s\n", timestamp, level, summary, ctx);
+  int len = printf_sn(buf, sizeof(buf), "[%s] [%s] %s: %s\n", timestamp, level,
+                      summary, ctx);
 
   int fd = open(log_path, O_WRONLY | O_CREAT | O_APPEND, 0664);
   if (fd >= 0) {
@@ -177,11 +196,11 @@ static msg_t journal_get(error_code code) {
 
   if (val > 0 && val < status_max)
     return registry_status[val];
-  
+
   val = (val < 0) ? -val : val;
   if (val < msg_max)
     return registry_msg[val];
-    
+
   return (msg_t){"Unknown Condition", "Unknown code generated"};
 }
 
@@ -190,45 +209,43 @@ const char *journal_string(int code) {
 }
 
 const char *journal_strerror(int err) {
-  static const char *msgs[] = {
-    [0] = "Success",
-    [1] = "Operation not permitted",
-    [2] = "No such file or directory",
-    [3] = "No such process",
-    [4] = "Interrupted system call",
-    [5] = "I/O error",
-    [6] = "No such device or address",
-    [7] = "Argument list too long",
-    [8] = "Exec format error",
-    [9] = "Bad file number",
-    [10] = "No child processes",
-    [11] = "Try again",
-    [12] = "Out of memory",
-    [13] = "Permission denied",
-    [14] = "Bad address",
-    [15] = "Block device required",
-    [16] = "Device or resource busy",
-    [17] = "File exists",
-    [18] = "Cross-device link",
-    [19] = "No such device",
-    [20] = "Not a directory",
-    [21] = "Is a directory",
-    [22] = "Invalid argument",
-    [23] = "File table overflow",
-    [24] = "Too many open files",
-    [25] = "Inappropriate ioctl for device",
-    [26] = "Text file busy",
-    [27] = "File too large",
-    [28] = "No space left on device",
-    [29] = "Illegal seek",
-    [30] = "Read-only file system",
-    [31] = "Too many links",
-    [32] = "Broken pipe",
-    [33] = "Math argument out of domain",
-    [34] = "Math result not representable",
-    [35] = "Resource deadlock would occur",
-    [36] = "File name too long"
-  };
+  static const char *msgs[] = {[0] = "Success",
+                               [1] = "Operation not permitted",
+                               [2] = "No such file or directory",
+                               [3] = "No such process",
+                               [4] = "Interrupted system call",
+                               [5] = "I/O error",
+                               [6] = "No such device or address",
+                               [7] = "Argument list too long",
+                               [8] = "Exec format error",
+                               [9] = "Bad file number",
+                               [10] = "No child processes",
+                               [11] = "Try again",
+                               [12] = "Out of memory",
+                               [13] = "Permission denied",
+                               [14] = "Bad address",
+                               [15] = "Block device required",
+                               [16] = "Device or resource busy",
+                               [17] = "File exists",
+                               [18] = "Cross-device link",
+                               [19] = "No such device",
+                               [20] = "Not a directory",
+                               [21] = "Is a directory",
+                               [22] = "Invalid argument",
+                               [23] = "File table overflow",
+                               [24] = "Too many open files",
+                               [25] = "Inappropriate ioctl for device",
+                               [26] = "Text file busy",
+                               [27] = "File too large",
+                               [28] = "No space left on device",
+                               [29] = "Illegal seek",
+                               [30] = "Read-only file system",
+                               [31] = "Too many links",
+                               [32] = "Broken pipe",
+                               [33] = "Math argument out of domain",
+                               [34] = "Math result not representable",
+                               [35] = "Resource deadlock would occur",
+                               [36] = "File name too long"};
   if (err < 0)
     err = -err;
   if (err >= 0 && err < (int)(sizeof(msgs) / sizeof(msgs[0])))
@@ -245,8 +262,7 @@ void journal_error(error_code code, ...) {
   va_end(args);
 
   printf_step("2,${COLOR_RED}${XOUT} Error: ${COLOR_RESET}%s. [X3D-%d]",
-              msg.summary,
-              (int)code < 0 ? -(int)code : (int)code);
+              msg.summary, (int)code < 0 ? -(int)code : (int)code);
   printf_step("2,${COLOR_RED}Context: ${COLOR_RESET}%s", ctx);
 
   journal_file("ERR", msg.summary, ctx);
@@ -267,14 +283,14 @@ void journal_warn(error_code code, ...) {
 
   if (buffer_active) {
     char tmp[2048];
-    printf_sn(tmp, sizeof(tmp), "        ${COLOR_YELLOW}${WARN} [X3D-%d] %s: ${COLOR_RESET}%s\n",
-             (int)code < 0 ? -(int)code : (int)code, msg.summary, ctx);
+    printf_sn(tmp, sizeof(tmp),
+              "        ${COLOR_YELLOW}${WARN} [X3D-%d] %s: ${COLOR_RESET}%s\n",
+              (int)code < 0 ? -(int)code : (int)code, msg.summary, ctx);
     size_t len = strlen(buffer_deferred);
     printf_sn(buffer_deferred + len, sizeof(buffer_deferred) - len, "%s", tmp);
   } else {
     printf_step("2,${COLOR_YELLOW}${WARN} Warning: ${COLOR_RESET}%s. [X3D-%d]",
-                msg.summary,
-                (int)code < 0 ? -(int)code : (int)code);
+                msg.summary, (int)code < 0 ? -(int)code : (int)code);
     printf_step("2,${COLOR_YELLOW}Context: ${COLOR_RESET}%s", ctx);
   }
 
@@ -288,7 +304,7 @@ void journal_info(error_code code, ...) {
   va_list args;
   va_start(args, code);
   printf_vsn(ctx, sizeof(ctx), msg.details, args);
-   va_end(args);
+  va_end(args);
 
   printf_step("2,${COLOR_GREEN}${ALRIGHT} ${COLOR_RESET}%s", ctx);
 }
@@ -345,7 +361,8 @@ void journal_exit(int exit_code, const char *format, ...) {
   printf_vsn(ctx, sizeof(ctx), format, args);
   va_end(args);
 
-  const char *ftl_msg = "   ${COLOR_RED}${XOUT} FATAL: ${COLOR_RESET}Daemon termination forced. [FATAL]\n";
+  const char *ftl_msg = "   ${COLOR_RED}${XOUT} FATAL: ${COLOR_RESET}Daemon "
+                        "termination forced. [FATAL]\n";
   write(FILENO_STDERR, ftl_msg, strlen(ftl_msg));
 
   journal_file("FTL", "Daemon Termination", ctx);

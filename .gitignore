@@ -23,6 +23,7 @@ x3d
 
 *.log
 trace-*.log
+vgcore.*
 dev/logging/
 dev/auditing/
 

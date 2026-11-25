@@ -50,8 +50,8 @@ void diag_failsafe(int sig) {
 extern char **environ;
 
 int cli_diag_linter(int argc, char *argv[]) {
-  printf_step(
-      "${SEARCH} Initiating Project Audit: Launching automated linter suite...");
+  printf_step("${SEARCH} Initiating Project Audit: Launching automated linter "
+              "suite...");
 
   pid_t pid = fork();
   if (pid == 0) {
@@ -59,7 +59,8 @@ int cli_diag_linter(int argc, char *argv[]) {
     if (access("./scripts/tools/linter.sh", R_OK) == 0) {
       printf_sn(linter_path, sizeof(linter_path), "./scripts/tools/linter.sh");
     } else {
-      printf_sn(linter_path, sizeof(linter_path), "%s/scripts/tools/linter.sh", USR_LIBS);
+      printf_sn(linter_path, sizeof(linter_path), "%s/scripts/tools/linter.sh",
+                USR_LIBS);
     }
 
     char *mode_arg = (argc > 2) ? argv[2] : (char *)"all";
@@ -96,12 +97,14 @@ int cli_diag_debug(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
 
-  printf_step("${SEARCH} Launching MVC Observer: Initializing real-time daemon and eBPF event monitor...");
+  printf_step("${SEARCH} Launching MVC Observer: Initializing real-time daemon "
+              "and eBPF event monitor...");
 
   pid_t pid = fork();
   if (pid == 0) {
     char debug_path[BUFF_PATH];
-    printf_sn(debug_path, sizeof(debug_path), "%s/scripts/tools/debug.sh", USR_LIBS);
+    printf_sn(debug_path, sizeof(debug_path), "%s/scripts/tools/debug.sh",
+              USR_LIBS);
 
     char *args[] = {(char *)"/usr/bin/sh", debug_path, NULL};
     char *env[] = {NULL};
@@ -123,6 +126,7 @@ int cli_diag_debug(int argc, char *argv[]) {
   return ERR_IO;
 }
 
+/* cppcheck-suppress constParameter ; signature fixed by CLI dispatch table */
 int cli_diag_journal(int argc, char *argv[]) {
   if (argc < 3 || strcmp(argv[2], "-rotate") != 0) {
     journal_error(ERR_SYNTAX, "Usage: x3d-toggle journal-[type] -rotate");
@@ -144,7 +148,8 @@ int cli_diag_journal(int argc, char *argv[]) {
   pid_t pid = fork();
   if (pid == 0) {
     char rotate_path[BUFF_PATH];
-    printf_sn(rotate_path, sizeof(rotate_path), "%s/scripts/tools/rotate.sh", USR_LIBS);
+    printf_sn(rotate_path, sizeof(rotate_path), "%s/scripts/tools/rotate.sh",
+              USR_LIBS);
 
     char *args[] = {(char *)"/usr/bin/sh", rotate_path, (char *)flag, NULL};
     char *env[] = {(char *)"X3D_EXEC=1", NULL};
@@ -153,7 +158,8 @@ int cli_diag_journal(int argc, char *argv[]) {
   } else if (pid > 0) {
     int status;
     waitpid(pid, &status, 0);
-    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS : ERR_IO;
+    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS
+                                                           : ERR_IO;
   }
   return ERR_IO;
 }
@@ -161,12 +167,14 @@ int cli_diag_journal(int argc, char *argv[]) {
 int cli_diag_archive(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
-  printf_step("${PACKAGE} Finalizing diagnostics: Zipping all current session data...");
+  printf_step(
+      "${PACKAGE} Finalizing diagnostics: Zipping all current session data...");
 
   pid_t pid = fork();
   if (pid == 0) {
     char archive_path[BUFF_PATH];
-    printf_sn(archive_path, sizeof(archive_path), "%s/scripts/tools/archive.sh", USR_LIBS);
+    printf_sn(archive_path, sizeof(archive_path), "%s/scripts/tools/archive.sh",
+              USR_LIBS);
 
     char *args[] = {(char *)"/usr/bin/sh", archive_path, NULL};
     char *env[] = {(char *)"X3D_EXEC=1", NULL};
@@ -175,7 +183,8 @@ int cli_diag_archive(int argc, char *argv[]) {
   } else if (pid > 0) {
     int status;
     waitpid(pid, &status, 0);
-    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS : ERR_IO;
+    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS
+                                                           : ERR_IO;
   }
   return ERR_IO;
 }
@@ -184,7 +193,8 @@ int cli_diag_dump(int argc, char *argv[]) {
   pid_t pid = fork();
   if (pid == 0) {
     char dump_path[BUFF_PATH];
-    printf_sn(dump_path, sizeof(dump_path), "%s/scripts/tools/coredump.sh", USR_LIBS);
+    printf_sn(dump_path, sizeof(dump_path), "%s/scripts/tools/coredump.sh",
+              USR_LIBS);
 
     char *editor = (argc > 2) ? argv[2] : (char *)"none";
     char *args[] = {(char *)"/usr/bin/sh", dump_path, editor, NULL};
@@ -194,11 +204,13 @@ int cli_diag_dump(int argc, char *argv[]) {
   } else if (pid > 0) {
     int status;
     waitpid(pid, &status, 0);
-    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS : ERR_IO;
+    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS
+                                                           : ERR_IO;
   }
   return ERR_IO;
 }
 
+/* cppcheck-suppress constParameter ; signature fixed by CLI dispatch table */
 int cli_diag_rotate(int argc, char *argv[]) {
   (void)argc;
   const char *sub = argv[1];
@@ -214,7 +226,8 @@ int cli_diag_rotate(int argc, char *argv[]) {
   pid_t pid = fork();
   if (pid == 0) {
     char rotate_path[BUFF_PATH];
-    printf_sn(rotate_path, sizeof(rotate_path), "%s/scripts/tools/rotate.sh", USR_LIBS);
+    printf_sn(rotate_path, sizeof(rotate_path), "%s/scripts/tools/rotate.sh",
+              USR_LIBS);
 
     char *args[] = {(char *)"/usr/bin/sh", rotate_path, (char *)flag, NULL};
     char *env[] = {(char *)"X3D_EXEC=1", NULL};
@@ -223,7 +236,8 @@ int cli_diag_rotate(int argc, char *argv[]) {
   } else if (pid > 0) {
     int status;
     waitpid(pid, &status, 0);
-    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS : ERR_IO;
+    return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS
+                                                           : ERR_IO;
   }
   return ERR_IO;
 }

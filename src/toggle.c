@@ -11,6 +11,12 @@
 
 #define ALIAS_BUF_SIZE 64
 
+static void printf_section(const char *title, int first) {
+  if (!first)
+    printf_br();
+  printf_string("%s", title);
+}
+
 static void printf_help(void) {
   printf_br();
   printf_center("X3D Toggle - Advanced CLI (IPC Enabled)");
@@ -20,33 +26,41 @@ static void printf_help(void) {
   printf_br();
 
   for (int i = 0; cmd_table[i].name != NULL; i++) {
-    if (strstr(cmd_table[i].help, "Alias for"))
+    if (strstr(cmd_table[i].help, "Alias for") ||
+        strncmp(cmd_table[i].help, "Hidden:", 7) == 0 ||
+        strncmp(cmd_table[i].help, "Internal:", 9) == 0)
       continue;
-    if (i == 0) {
-      printf_string("Daemon Control:");
-    }
 
-    if (i == 5) {
-      printf_string("Topology & Thread Management:");
-    }
-
-    if (i == 12) {
-      printf_string("Configuration & Rulesets:");
-    }
-
-    if (i == 22) {
-      printf_string("Diagnostics:");
+    if (strcmp(cmd_table[i].name, "enable") == 0) {
+      printf_section("Daemon Control:", 1);
+    } else if (strcmp(cmd_table[i].name, "cache") == 0) {
+      printf_section("Topology & Modes:", 0);
+    } else if (strcmp(cmd_table[i].name, "interval") == 0) {
+      printf_section("Configuration & Rulesets:", 0);
+    } else if (strcmp(cmd_table[i].name, "dialog") == 0) {
+      printf_section("Monitoring & Diagnostics:", 0);
+    } else if (strcmp(cmd_table[i].name, "perf") == 0) {
+      printf_section("CPPC & Power Scaling:", 0);
+    } else if (strcmp(cmd_table[i].name, "sched-gaming") == 0) {
+      printf_section("Scheduler & IRQ Affinity:", 0);
+    } else if (strcmp(cmd_table[i].name, "advanced") == 0) {
+      printf_section("System & Desktop:", 0);
     }
 
     char alias_buf[ALIAS_BUF_SIZE] = "";
+    size_t alias_len = 0;
     for (int j = 0; cmd_table[j].name != NULL; j++) {
-      if (cmd_table[i].handler == cmd_table[j].handler && i != j) {
-        printf_sn(alias_buf, sizeof(alias_buf), "%s", cmd_table[j].name);
-        break;
+      if (i != j && cmd_table[i].handler == cmd_table[j].handler &&
+          strstr(cmd_table[j].help, "Alias for") != NULL) {
+        int written =
+            printf_sn(alias_buf + alias_len, sizeof(alias_buf) - alias_len,
+                      "%s%s", alias_len > 0 ? ", " : "", cmd_table[j].name);
+        if (written > 0 && alias_len + (size_t)written < sizeof(alias_buf))
+          alias_len += (size_t)written;
       }
     }
 
-    printf_string("  %-12s  %-12s  %s", cmd_table[i].name, alias_buf,
+    printf_string("  %-16s  %-12s  %s", cmd_table[i].name, alias_buf,
                   cmd_table[i].help);
   }
 

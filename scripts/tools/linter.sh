@@ -168,7 +168,7 @@ if [ "$RUN_CPPCHECK" -eq 1 ]; then
     printf_step "${SEARCH} Running cppcheck (C11/POSIX Scan) for bugs..."
     make -s framework >/dev/null 2>&1 || true
     # shellcheck disable=SC2086
-    cppcheck $CPPCHECK_FLAGS -Ibuild -Iinclude -D__asm__\(x\)= -ivmlinux.h -ibuild -isrc/libc.c -isrc/daemon/bpf/bpf.c src > "$JOURNAL_AUDIT/cppcheck.txt" 2>&1 || journal_write -audit "cppcheck" "$JOURNAL_AUDIT/cppcheck.txt" "$?"
+    cppcheck --inline-suppr --suppress=unmatchedSuppression $CPPCHECK_FLAGS -Ibuild -Iinclude -D__asm__\(x\)= -ibuild -isrc/libc.c -isrc/daemon/bpf/bpf.c src > "$JOURNAL_AUDIT/cppcheck.txt" 2>&1 || journal_write -audit "cppcheck" "$JOURNAL_AUDIT/cppcheck.txt" "$?"
 fi
 
 # ── 3. Valgrind ─────────────────────────────────────────────────
@@ -190,6 +190,7 @@ if [ "$RUN_VALGRIND" -eq 1 ]; then
             esac
         done < "$JOURNAL_AUDIT/valgrind.txt"
         if [ "$_fatal_error" -eq 1 ]; then
+            rm -f vgcore.*
             printf_step "2,${WARN} Notice: Valgrind startup failed (Missing glibc debuginfo / stripped ld.so)."
             printf_step "2,        This is a system environment issue, not a project memory leak."
         else

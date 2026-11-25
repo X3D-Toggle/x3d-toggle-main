@@ -474,9 +474,9 @@ int printf_vsn(char *buf, size_t size, const char *fmt, __builtin_va_list args) 
             const char *start = p;
             while (*p && *p != '}') p++;
             if (*p == '}') {
-                char sym_name[64];
                 size_t n = p - start;
                 if (n < 64) {
+                    char sym_name[64];
                     for (size_t k = 0; k < n; k++) sym_name[k] = start[k];
                     sym_name[n] = '\0';
                     const char *val = NULL;
@@ -591,7 +591,7 @@ void printf_string(const char *fmt, ...) {
     __builtin_va_end(args);
 
     int level = 1;
-    char *content = buf;
+    const char *content = buf;
     if (buf[0] >= '0' && buf[0] <= '9') {
         char *comma = strchr(buf, ',');
         if (comma && (comma - buf) < 5) {
@@ -623,7 +623,7 @@ void printf_step(const char *fmt, ...) {
     __builtin_va_end(args);
 
     int level = 1;
-    char *content = buf;
+    const char *content = buf;
     if (buf[0] >= '0' && buf[0] <= '9') {
         char *comma = strchr(buf, ',');
         if (comma && (comma - buf) < 5) {
@@ -641,7 +641,7 @@ void printf_step(const char *fmt, ...) {
     char prefix[64] = {0};
     for (int i = 0; i < spaces && i < 63; i++) prefix[i] = ' ';
 
-    char *line = content;
+    const char *line = content;
     char *next;
     while ((next = strchr(line, '\\n'))) {
         *next = '\\0';
@@ -666,7 +666,7 @@ void printf_step_no_nl(const char *fmt, ...) {
     __builtin_va_end(args);
 
     int level = 1;
-    char *content = buf;
+    const char *content = buf;
     if (buf[0] >= '0' && buf[0] <= '9') {
         char *comma = strchr(buf, ',');
         if (comma && (comma - buf) < 5) {
