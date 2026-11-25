@@ -4,10 +4,10 @@
  * Model-agnostic implementation for heterogeneous architectures.
  */
 
-#include "xui.h"
 #include "cli.h"
 #include "error.h"
 #include "libc.h"
+#include "xui.h"
 
 #define ALIAS_BUF_SIZE 64
 
@@ -37,7 +37,7 @@ static void printf_help(void) {
     if (i == 22) {
       printf_string("Diagnostics:");
     }
-    
+
     char alias_buf[ALIAS_BUF_SIZE] = "";
     for (int j = 0; cmd_table[j].name != NULL; j++) {
       if (cmd_table[i].handler == cmd_table[j].handler && i != j) {
@@ -46,7 +46,8 @@ static void printf_help(void) {
       }
     }
 
-    printf_string("  %-12s  %-12s  %s", cmd_table[i].name, alias_buf, cmd_table[i].help);
+    printf_string("  %-12s  %-12s  %s", cmd_table[i].name, alias_buf,
+                  cmd_table[i].help);
   }
 
   printf_br();

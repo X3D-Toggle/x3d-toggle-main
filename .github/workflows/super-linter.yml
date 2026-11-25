@@ -31,7 +31,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
           # Language Specifics
-          VALIDATE_CPP: true
+          # cpplint enforces C++ conventions, but this project is written in C.
+          VALIDATE_CPP: false
           VALIDATE_SH: true
           VALIDATE_CSS: true
           VALIDATE_YAML: true

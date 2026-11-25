@@ -8,9 +8,9 @@
  */
 
 #include "modes.h"
-#include "ccd.h"
 #include "../build/config.h"
 #include "../build/xui.h"
+#include "ccd.h"
 #include "cli.h"
 #include "error.h" // IWYU pragma: keep
 #include "ipc.h"
@@ -47,8 +47,8 @@ static const char *find_path(void) {
     char dbuf[2048];
     int nread;
     while ((nread = getdents64((unsigned int)dir_fd,
-                               (struct linux_dirent64 *)dbuf,
-                               sizeof(dbuf))) > 0) {
+                               (struct linux_dirent64 *)dbuf, sizeof(dbuf))) >
+           0) {
       for (int bpos = 0; bpos < nread;) {
         struct linux_dirent64 *d = (struct linux_dirent64 *)(dbuf + bpos);
         if (strncmp(d->d_name, "AMDI", 4) == 0) {
@@ -271,8 +271,7 @@ int cli_mode_auto(int argc, char *argv[]) {
   pid_t pid = fork();
   if (pid == 0) {
     char *args[] = {(char *)"/bin/sh",
-                    (char *)"/usr/lib/x3d-toggle/scripts/tools/reset.sh",
-                    NULL};
+                    (char *)"/usr/lib/x3d-toggle/scripts/tools/reset.sh", NULL};
     char *envp[] = {(char *)"X3D_EXEC=1", NULL};
     execve(args[0], args, envp);
     _exit(EXIT_FAILURE);
@@ -298,8 +297,7 @@ int cli_mode_reset(int argc, char *argv[]) {
       "${RELOAD} Initiating Hardware Re-probe: Restoring native heuristics...");
 
   if (socket_send("SET_MODE reset", NULL, 0) == ERR_SUCCESS) {
-    printf_step(
-        "${ALRIGHT} Hardware re-probe complete via daemon IPC.");
+    printf_step("${ALRIGHT} Hardware re-probe complete via daemon IPC.");
     return ERR_SUCCESS;
   }
 
@@ -332,7 +330,8 @@ int cli_mode_default(int argc, char *argv[]) {
       printf_step("${ALRIGHT} DEFAULT CONFIG restored. Daemon active.");
     }
   } else {
-    printf_step("${WARN} CONFIG UPDATED but daemon is offline. Restart to apply.");
+    printf_step(
+        "${WARN} CONFIG UPDATED but daemon is offline. Restart to apply.");
   }
   return 0;
 }
