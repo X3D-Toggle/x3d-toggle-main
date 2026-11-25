@@ -152,7 +152,7 @@ quick_setup() {
 
         # Daemon Autostart
         set_config "DAEMON_STATE" "default"
-        systemctl enable --now x3d-toggle.service
+        systemctl enable --now x3d-toggle.service || :
         sleep 2
         if systemctl is-active --quiet x3d-toggle.service; then
             printf_step "2,${ALRIGHT} Daemon activated and autostart enabled."
@@ -381,7 +381,7 @@ case "$opt_daemon" in
         ;;
     *)
         set_config "DAEMON_STATE" "default"
-        systemctl enable --now x3d-toggle.service
+        systemctl enable --now x3d-toggle.service || :
         sleep 2
         if systemctl is-active --quiet x3d-toggle.service; then
             x3d-toggle default

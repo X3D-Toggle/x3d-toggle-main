@@ -3,28 +3,30 @@
  * Parses and passes relevant indicators for topology and modes to frontend
  */
 
-#include "xui.h"
-#include "ccd.h"
-#include "modes.h"
-#include "ipc.h"
 #include "status.h"
+#include "ccd.h"
+#include "ipc.h"
 #include "libc.h"
+#include "modes.h"
+#include "xui.h"
 
 #ifndef CCD1_START
 #define CCD1_START 8
 #endif
 
-
 void stats(CPUStats *st) {
   int fd = open("/proc/stat", O_RDONLY);
-  if (fd < 0) return;
+  if (fd < 0)
+    return;
   char buf[256];
-  ssize_t n = read(fd, buf, sizeof(buf)-1);
+  ssize_t n = read(fd, buf, sizeof(buf) - 1);
   close(fd);
-  if (n <= 0) return;
+  if (n <= 0)
+    return;
   buf[n] = '\0';
   char *p = strchr(buf, ' ');
-  if (!p) return;
+  if (!p)
+    return;
   st->user = strtoull(p, &p, 10);
   st->nice = strtoull(p, &p, 10);
   st->system = strtoull(p, &p, 10);
@@ -37,13 +39,16 @@ void stats(CPUStats *st) {
 double status_cpu(const CPUStats *prev, const CPUStats *curr) {
   unsigned long long p_idle = prev->idle + prev->iowait;
   unsigned long long c_idle = curr->idle + curr->iowait;
-  unsigned long long p_non_idle = prev->user + prev->nice + prev->system + prev->irq + prev->softirq;
-  unsigned long long c_non_idle = curr->user + curr->nice + curr->system + curr->irq + curr->softirq;
+  unsigned long long p_non_idle =
+      prev->user + prev->nice + prev->system + prev->irq + prev->softirq;
+  unsigned long long c_non_idle =
+      curr->user + curr->nice + curr->system + curr->irq + curr->softirq;
   unsigned long long p_total = p_idle + p_non_idle;
   unsigned long long c_total = c_idle + c_non_idle;
   unsigned long long diff_total = c_total - p_total;
   unsigned long long diff_idle = c_idle - p_idle;
-  if (diff_total == 0) return 0.0;
+  if (diff_total == 0)
+    return 0.0;
   return (double)(diff_total - diff_idle) / (double)diff_total;
 }
 
@@ -80,7 +85,8 @@ static int daemon_active(void) {
 
   int res = socket_probe();
   if (res != 0) {
-    if (errno == 13 /* EACCES */) return 3;
+    if (errno == 13 /* EACCES */)
+      return 3;
     return 2;
   }
   return 0;
@@ -114,7 +120,8 @@ int daemon_status(Status *st) {
 
   // CCD1 Logic
   if (CCD_COUNT >= 2 && CCD1_START > 0) {
-    printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", CCD1_START);
+    printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online",
+              CCD1_START);
     int fd = open(path, O_RDONLY);
     if (fd >= 0) {
       char state_buf[BUFF_STATE] = "1";
@@ -132,15 +139,22 @@ int daemon_status(Status *st) {
   printf_sn(st->c_mode, sizeof(st->c_mode), "%s", c_mode_raw);
   status_upper(st->c_mode);
 
-  status_sysfs("/sys/devices/system/cpu/amd_pstate/status", st->d_buff, sizeof(st->d_buff));
-  status_sysfs("/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference", st->epp, sizeof(st->epp));
-  status_sysfs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor", st->gov, sizeof(st->gov));
+  status_sysfs("/sys/devices/system/cpu/amd_pstate/status", st->d_buff,
+               sizeof(st->d_buff));
+  status_sysfs(
+      "/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference",
+      st->epp, sizeof(st->epp));
+  status_sysfs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor", st->gov,
+               sizeof(st->gov));
   status_sysfs("/sys/devices/system/cpu/smt/control", st->smt, sizeof(st->smt));
-  status_sysfs("/sys/firmware/acpi/platform_profile", st->plat, sizeof(st->plat));
+  status_sysfs("/sys/firmware/acpi/platform_profile", st->plat,
+               sizeof(st->plat));
 
   char bst_raw[BUFF_RAW];
-  status_sysfs("/sys/devices/system/cpu/cpufreq/boost", bst_raw, sizeof(bst_raw));
-  printf_sn(st->st_buff, sizeof(st->st_buff), "%s", (strcmp(bst_raw, "1") == 0) ? "ENABLED" : "DISABLED");
+  status_sysfs("/sys/devices/system/cpu/cpufreq/boost", bst_raw,
+               sizeof(bst_raw));
+  printf_sn(st->st_buff, sizeof(st->st_buff), "%s",
+            (strcmp(bst_raw, "1") == 0) ? "ENABLED" : "DISABLED");
 
   status_upper(st->d_buff);
   status_upper(st->epp);
@@ -155,7 +169,8 @@ int daemon_status(Status *st) {
   int affinity_active = 0;
   char live_info[BUFF_INFO] = "";
 
-  if (daemon_state == 0 && socket_send("DAEMON_INFO", live_info, sizeof(live_info)) == 0) {
+  if (daemon_state == 0 &&
+      socket_send("DAEMON_INFO", live_info, sizeof(live_info)) == 0) {
     char *st_val = strstr(live_info, "STATE=");
     const char *ov_val = strstr(live_info, "OVERRIDE=");
     const char *ba_val = strstr(live_info, "BPF_ACTIVE=");
@@ -165,8 +180,10 @@ int daemon_status(Status *st) {
     if (st_val) {
       printf_sn(st->daemon_state, sizeof(st->daemon_state), "%s", st_val + 6);
       char *sc = strchr(st->daemon_state, ';');
-      if (!sc) sc = strchr(st->daemon_state, '|');
-      if (sc) *sc = '\0';
+      if (!sc)
+        sc = strchr(st->daemon_state, '|');
+      if (sc)
+        *sc = '\0';
     }
     if (ov_val)
       live_override = atoi(ov_val + 9);
@@ -174,7 +191,7 @@ int daemon_status(Status *st) {
       affinity_active = 1;
     if (ba_val)
       printf_sn(st->ebpf_status, sizeof(st->ebpf_status), "%s",
-              (atoi(ba_val + 11) ? "eBPF (Active)" : "Polling (Fallback)"));
+                (atoi(ba_val + 11) ? "eBPF (Active)" : "Polling (Fallback)"));
     if (ri)
       st->refresh_interval = atof(ri + 17);
     else
@@ -182,7 +199,8 @@ int daemon_status(Status *st) {
 
     status_upper(st->daemon_state);
     if (strcmp(st->daemon_state, "DEFAULT") != 0) {
-      printf_sn(st->ebpf_status, sizeof(st->ebpf_status), "INACTIVE (MANUAL OVERRIDE)");
+      printf_sn(st->ebpf_status, sizeof(st->ebpf_status),
+                "INACTIVE (MANUAL OVERRIDE)");
     }
   } else {
     int fd_conf = open(CONFIG_PATH, O_RDONLY);
@@ -198,7 +216,8 @@ int daemon_status(Status *st) {
           if (nxt)
             *nxt = '\0';
           if (strncmp(line, "DAEMON_STATE=", 13) == 0) {
-            printf_sn(st->daemon_state, sizeof(st->daemon_state), "%s", line + 13);
+            printf_sn(st->daemon_state, sizeof(st->daemon_state), "%s",
+                      line + 13);
             status_upper(st->daemon_state);
           }
           if (strncmp(line, "AFFINITY_MASK=", 14) == 0) {
@@ -211,15 +230,16 @@ int daemon_status(Status *st) {
             break;
         }
         if (strcmp(st->daemon_state, "DEFAULT") == 0) {
-          printf_sn(st->ebpf_status, sizeof(st->ebpf_status), "eBPF/POLLING (ACTIVE)");
+          printf_sn(st->ebpf_status, sizeof(st->ebpf_status),
+                    "eBPF/POLLING (ACTIVE)");
         } else {
-          printf_sn(st->ebpf_status, sizeof(st->ebpf_status), "INACTIVE (SUSPENDED)");
+          printf_sn(st->ebpf_status, sizeof(st->ebpf_status),
+                    "INACTIVE (SUSPENDED)");
         }
       }
       close(fd_conf);
     }
   }
-
 
   printf_sn(st->st_buff_ccd0, sizeof(st->st_buff_ccd0), "%s", ccd0_st);
   printf_sn(st->st_buff_ccd1, sizeof(st->st_buff_ccd1), "%s", ccd1_st);
@@ -268,7 +288,8 @@ int daemon_status(Status *st) {
     if (strcmp(st->daemon_state, "DEFAULT") == 0) {
       st->d_icon = CHICKEN;
       printf_sn(st->d_mode, sizeof(st->d_mode), "ACTIVE");
-    } else if (strcmp(st->daemon_state, "HARD_RESET") == 0 || strcmp(st->daemon_state, "AUTO") == 0) {
+    } else if (strcmp(st->daemon_state, "HARD_RESET") == 0 ||
+               strcmp(st->daemon_state, "AUTO") == 0) {
       st->d_icon = STOPSIGN;
       printf_sn(st->d_mode, sizeof(st->d_mode), "CPPC NATIVE");
     } else {
@@ -284,7 +305,8 @@ int daemon_status(Status *st) {
     st->d_icon = PADLOCK;
     printf_sn(st->ipc_status, sizeof(st->ipc_status), "ACCESS DENIED");
     printf_sn(st->d_mode, sizeof(st->d_mode), "PERMISSION ERROR");
-    printf_sn(st->ebpf_status, sizeof(st->ebpf_status), "INACTIVE (RE-AUTH REQ)");
+    printf_sn(st->ebpf_status, sizeof(st->ebpf_status),
+              "INACTIVE (RE-AUTH REQ)");
   } else {
     st->d_icon = STOPSIGN;
     printf_sn(st->ipc_status, sizeof(st->ipc_status), "SOCKET OFFLINE");

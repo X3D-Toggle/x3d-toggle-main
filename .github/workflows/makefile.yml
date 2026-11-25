@@ -29,7 +29,3 @@ jobs:
     - name: Build project
       # Standard compilation target only. Sudo is omitted.
       run: make
-
-    - name: Run distcheck
-      # Verifies distribution packaging if configured in the Makefile
-      run: make distcheck

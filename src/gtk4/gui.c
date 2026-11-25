@@ -170,11 +170,15 @@ static gboolean update_dashboard_cb(gpointer user_data) {
     if (st_val) {
       printf_sn(daemon_state, sizeof(daemon_state), "%s", st_val + 6);
       char *sc = strchr(daemon_state, ';');
-      if (!sc) sc = strchr(daemon_state, '|');
-      if (sc) *sc = '\0';
+      if (!sc)
+        sc = strchr(daemon_state, '|');
+      if (sc)
+        *sc = '\0';
     }
-    if (ov_val) override_val = atoi(ov_val + 9);
-    if (mk && strncmp(mk + 5, "none", 4) != 0) affinity_active = 1;
+    if (ov_val)
+      override_val = atoi(ov_val + 9);
+    if (mk && strncmp(mk + 5, "none", 4) != 0)
+      affinity_active = 1;
     if (ba_val) {
       printf_sn(ebpf_status, sizeof(ebpf_status), "%s",
                 (atoi(ba_val + 11) ? "HEALTHY" : "POLLING (FALLBACK)"));
@@ -184,7 +188,8 @@ static gboolean update_dashboard_cb(gpointer user_data) {
     if (strcmp(daemon_state, "DEFAULT") == 0) {
       printf_sn(daemon_state, sizeof(daemon_state), "ACTIVE");
       printf_sn(sched_mode, sizeof(sched_mode), "ACTIVE");
-    } else if (strcmp(daemon_state, "HARD_RESET") == 0 || strcmp(daemon_state, "AUTO") == 0) {
+    } else if (strcmp(daemon_state, "HARD_RESET") == 0 ||
+               strcmp(daemon_state, "AUTO") == 0) {
       printf_sn(daemon_state, sizeof(daemon_state), "CPPC NATIVE");
     } else {
       printf_sn(daemon_state, sizeof(daemon_state), "SUSPENDED");
@@ -195,14 +200,25 @@ static gboolean update_dashboard_cb(gpointer user_data) {
     const char *caps_val = strstr(info, "CAPS=");
     if (caps_val) {
       uint32_t caps = (uint32_t)strtoul(caps_val + 5, NULL, 16);
-      gboolean force = g_cfg_force_unsupported ? gtk_switch_get_active(g_cfg_force_unsupported) : FALSE;
+      gboolean force = g_cfg_force_unsupported
+                           ? gtk_switch_get_active(g_cfg_force_unsupported)
+                           : FALSE;
 
-      if (row_sched_bore) gtk_widget_set_visible(row_sched_bore, force || (caps & CAP_BORE));
-      if (row_sched_bit_shift) gtk_widget_set_visible(row_sched_bit_shift, force || (caps & CAP_BORE));
-      if (row_sched_burst_fork) gtk_widget_set_visible(row_sched_burst_fork, force || (caps & CAP_BORE));
-      if (row_split_lock) gtk_widget_set_visible(row_split_lock, force || (caps & CAP_SPLIT_LOCK));
-      if (row_nmi_watchdog) gtk_widget_set_visible(row_nmi_watchdog, force || (caps & CAP_NMI_WATCHDOG));
-      if (row_thp_mode) gtk_widget_set_visible(row_thp_mode, force || (caps & CAP_THP));
+      if (row_sched_bore)
+        gtk_widget_set_visible(row_sched_bore, force || (caps & CAP_BORE));
+      if (row_sched_bit_shift)
+        gtk_widget_set_visible(row_sched_bit_shift, force || (caps & CAP_BORE));
+      if (row_sched_burst_fork)
+        gtk_widget_set_visible(row_sched_burst_fork,
+                               force || (caps & CAP_BORE));
+      if (row_split_lock)
+        gtk_widget_set_visible(row_split_lock,
+                               force || (caps & CAP_SPLIT_LOCK));
+      if (row_nmi_watchdog)
+        gtk_widget_set_visible(row_nmi_watchdog,
+                               force || (caps & CAP_NMI_WATCHDOG));
+      if (row_thp_mode)
+        gtk_widget_set_visible(row_thp_mode, force || (caps & CAP_THP));
     }
   }
 
@@ -220,7 +236,8 @@ static gboolean update_dashboard_cb(gpointer user_data) {
   printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", 0);
   int fd = open(path, O_RDONLY);
   if (fd >= 0) {
-    if (read(fd, b0, sizeof(b0) - 1) > 0 && b0[0] == '0') strcpy(ccd0_st, "PARKED");
+    if (read(fd, b0, sizeof(b0) - 1) > 0 && b0[0] == '0')
+      strcpy(ccd0_st, "PARKED");
     close(fd);
   }
 #ifndef CCD1_START
@@ -230,11 +247,13 @@ static gboolean update_dashboard_cb(gpointer user_data) {
 #define CCD_COUNT 2
 #endif
   if (CCD_COUNT >= 2 && CCD1_START > 0) {
-    printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", CCD1_START);
+    printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online",
+              CCD1_START);
     b0[0] = '1';
     fd = open(path, O_RDONLY);
     if (fd >= 0) {
-      if (read(fd, b0, sizeof(b0) - 1) > 0 && b0[0] == '0') strcpy(ccd1_st, "PARKED");
+      if (read(fd, b0, sizeof(b0) - 1) > 0 && b0[0] == '0')
+        strcpy(ccd1_st, "PARKED");
       close(fd);
     }
   } else {
@@ -250,14 +269,20 @@ static gboolean update_dashboard_cb(gpointer user_data) {
   }
 
   char d_buff[64], epp[64], gov[64], smt[64], plat[64], bst_raw[64];
-  status_sysfs("/sys/devices/system/cpu/amd_pstate/status", d_buff, sizeof(d_buff));
-  status_sysfs("/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference", epp, sizeof(epp));
-  status_sysfs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor", gov, sizeof(gov));
+  status_sysfs("/sys/devices/system/cpu/amd_pstate/status", d_buff,
+               sizeof(d_buff));
+  status_sysfs(
+      "/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference", epp,
+      sizeof(epp));
+  status_sysfs("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor", gov,
+               sizeof(gov));
   status_sysfs("/sys/devices/system/cpu/smt/control", smt, sizeof(smt));
   status_sysfs("/sys/firmware/acpi/platform_profile", plat, sizeof(plat));
-  status_sysfs("/sys/devices/system/cpu/cpufreq/boost", bst_raw, sizeof(bst_raw));
+  status_sysfs("/sys/devices/system/cpu/cpufreq/boost", bst_raw,
+               sizeof(bst_raw));
   char boost_str[64];
-  printf_sn(boost_str, sizeof(boost_str), "%s", (strcmp(bst_raw, "1") == 0) ? "ENABLED" : "DISABLED");
+  printf_sn(boost_str, sizeof(boost_str), "%s",
+            (strcmp(bst_raw, "1") == 0) ? "ENABLED" : "DISABLED");
 
   status_upper(d_buff);
   status_upper(epp);
@@ -352,8 +377,10 @@ static void on_btn_launch_debug_clicked(GtkButton *btn, gpointer data) {
   char *args[] = {
       (char *)"/bin/sh", (char *)"-c",
       (char *)"kgx -e 'pkexec /usr/lib/x3d-toggle/scripts/tools/debug.sh' || "
-              "gnome-terminal -- pkexec /usr/lib/x3d-toggle/scripts/tools/debug.sh || "
-              "konsole -e pkexec /usr/lib/x3d-toggle/scripts/tools/debug.sh || xterm "
+              "gnome-terminal -- pkexec "
+              "/usr/lib/x3d-toggle/scripts/tools/debug.sh || "
+              "konsole -e pkexec /usr/lib/x3d-toggle/scripts/tools/debug.sh || "
+              "xterm "
               "-e pkexec /usr/lib/x3d-toggle/scripts/tools/debug.sh",
       NULL};
   char *env[] = {(char *)"X3D_EXEC=1", NULL};
@@ -380,8 +407,10 @@ static void on_btn_lint_clang_clicked(GtkButton *btn, gpointer data) {
   char *args[] = {
       (char *)"/bin/sh", (char *)"-c",
       (char *)"kgx -e '/usr/lib/x3d-toggle/scripts/tools/linter.sh clang' || "
-              "gnome-terminal -- /usr/lib/x3d-toggle/scripts/tools/linter.sh clang "
-              "|| konsole -e /usr/lib/x3d-toggle/scripts/tools/linter.sh clang || "
+              "gnome-terminal -- /usr/lib/x3d-toggle/scripts/tools/linter.sh "
+              "clang "
+              "|| konsole -e /usr/lib/x3d-toggle/scripts/tools/linter.sh clang "
+              "|| "
               "xterm -e /usr/lib/x3d-toggle/scripts/tools/linter.sh clang",
       NULL};
   char *env[] = {(char *)"X3D_EXEC=1", NULL};
@@ -394,8 +423,10 @@ static void on_btn_lint_cppcheck_clicked(GtkButton *btn, gpointer data) {
   char *args[] = {
       (char *)"/bin/sh", (char *)"-c",
       (char *)"kgx -e '/usr/lib/x3d-toggle/scripts/tools/linter.sh cppc' || "
-              "gnome-terminal -- /usr/lib/x3d-toggle/scripts/tools/linter.sh cppc "
-              "|| konsole -e /usr/lib/x3d-toggle/scripts/tools/linter.sh cppc || "
+              "gnome-terminal -- /usr/lib/x3d-toggle/scripts/tools/linter.sh "
+              "cppc "
+              "|| konsole -e /usr/lib/x3d-toggle/scripts/tools/linter.sh cppc "
+              "|| "
               "xterm -e /usr/lib/x3d-toggle/scripts/tools/linter.sh cppc",
       NULL};
   char *env[] = {(char *)"X3D_EXEC=1", NULL};
@@ -407,10 +438,13 @@ static void on_btn_lint_valgrind_clicked(GtkButton *btn, gpointer data) {
   (void)data;
   char *args[] = {
       (char *)"/bin/sh", (char *)"-c",
-      (char *)"kgx -e '/usr/lib/x3d-toggle/scripts/tools/linter.sh valgrind' || "
-              "gnome-terminal -- /usr/lib/x3d-toggle/scripts/tools/linter.sh valgrind "
-              "|| konsole -e /usr/lib/x3d-toggle/scripts/tools/linter.sh valgrind || "
-              "xterm -e /usr/lib/x3d-toggle/scripts/tools/linter.sh valgrind",
+      (char
+           *)"kgx -e '/usr/lib/x3d-toggle/scripts/tools/linter.sh valgrind' || "
+             "gnome-terminal -- /usr/lib/x3d-toggle/scripts/tools/linter.sh "
+             "valgrind "
+             "|| konsole -e /usr/lib/x3d-toggle/scripts/tools/linter.sh "
+             "valgrind || "
+             "xterm -e /usr/lib/x3d-toggle/scripts/tools/linter.sh valgrind",
       NULL};
   char *env[] = {(char *)"X3D_EXEC=1", NULL};
   gui_spawn(args, env);
@@ -463,7 +497,8 @@ static void on_mode_apply_clicked(GtkButton *btn, gpointer data) {
 
   /* 1. Execute Hardware Mode via CLI Dispatch */
   if (g_selected_mode) {
-    char *args[] = {(char *)"/usr/bin/x3d-toggle", (char *)g_selected_mode, NULL};
+    char *args[] = {(char *)"/usr/bin/x3d-toggle", (char *)g_selected_mode,
+                    NULL};
     gui_spawn(args, NULL);
   }
 
@@ -606,7 +641,8 @@ static void on_affinity_apply_clicked(GtkButton *btn, gpointer user_data) {
     return;
 
   guint level = g_cfg_affinity_level
-      ? gtk_drop_down_get_selected(g_cfg_affinity_level) : 2;
+                    ? gtk_drop_down_get_selected(g_cfg_affinity_level)
+                    : 2;
 
   char cache_mask[256] = {0};
   char freq_mask[256] = {0};
@@ -623,11 +659,11 @@ static void on_affinity_apply_clicked(GtkButton *btn, gpointer user_data) {
       int cp = 0, fp = 0;
       for (int i = 0; i < total_cores; i++) {
         if (i < ccd1_start)
-          cp += printf_sn(cache_mask + cp, sizeof(cache_mask) - cp,
-                          "%s%d", (cp > 0) ? "," : "", i);
+          cp += printf_sn(cache_mask + cp, sizeof(cache_mask) - cp, "%s%d",
+                          (cp > 0) ? "," : "", i);
         else
-          fp += printf_sn(freq_mask + fp, sizeof(freq_mask) - fp,
-                          "%s%d", (fp > 0) ? "," : "", i);
+          fp += printf_sn(freq_mask + fp, sizeof(freq_mask) - fp, "%s%d",
+                          (fp > 0) ? "," : "", i);
       }
     }
   } else {
@@ -709,10 +745,12 @@ static void on_nav_row_selected(GtkListBox *box, GtkListBoxRow *row,
 
 /* Sidebar row lookup by name (avoids fragile index arithmetic) */
 static GtkListBoxRow *find_sidebar_row(GtkListBox *lb, const char *name) {
-  if (!lb || !name) return NULL;
-  for (int i = 0; ; i++) {
+  if (!lb || !name)
+    return NULL;
+  for (int i = 0;; i++) {
     GtkListBoxRow *r = gtk_list_box_get_row_at_index(lb, i);
-    if (!r) break;
+    if (!r)
+      break;
     const char *row_name = gtk_widget_get_name(GTK_WIDGET(r));
     if (row_name && strcmp(row_name, name) == 0)
       return r;
@@ -780,7 +818,6 @@ static const char *config_get(const char *key) {
   return val;
 }
 
-
 /* ── Config: IPC send helper ──────────────────────────────────── */
 
 static void config_send(const char *key, const char *value) {
@@ -846,7 +883,8 @@ static void on_server_port_changed(GtkEditable *editable, gpointer data) {
   set_config_dirty(TRUE);
 }
 
-static void on_server_ssh_changed(GObject *obj, GParamSpec *pspec, gpointer data) {
+static void on_server_ssh_changed(GObject *obj, GParamSpec *pspec,
+                                  gpointer data) {
   (void)obj;
   (void)pspec;
   (void)data;
@@ -904,7 +942,6 @@ static void on_dev_enable_toggled(GObject *obj, GParamSpec *pspec,
     }
   }
 }
-
 
 /* ── Config: Bind all widgets ─────────────────────────────────── */
 
@@ -965,18 +1002,30 @@ static void on_rotation_cancel_clicked(GtkButton *btn, gpointer data) {
 static void on_irq_apply_clicked(GtkButton *btn, gpointer data) {
   (void)btn;
   (void)data;
-  
-  if (g_cfg_irq_enable) config_send("IRQ_ENABLE", gtk_switch_get_active(g_cfg_irq_enable) ? "1" : "0");
-  if (g_cfg_irq_gpu) config_send("IRQ_GPU", gtk_switch_get_active(g_cfg_irq_gpu) ? "1" : "0");
-  if (g_cfg_irq_nvme) config_send("IRQ_NVME", gtk_switch_get_active(g_cfg_irq_nvme) ? "1" : "0");
-  if (g_cfg_irq_usb) config_send("IRQ_USB", gtk_switch_get_active(g_cfg_irq_usb) ? "1" : "0");
-  if (g_cfg_irq_nic) config_send("IRQ_NIC", gtk_switch_get_active(g_cfg_irq_nic) ? "1" : "0");
-  if (g_cfg_irq_audio) config_send("IRQ_AUDIO", gtk_switch_get_active(g_cfg_irq_audio) ? "1" : "0");
-  if (g_cfg_irq_coalesce) config_send("IRQ_COALESCE", gtk_switch_get_active(g_cfg_irq_coalesce) ? "1" : "0");
-  if (g_cfg_irq_watch) config_send("IRQ_WATCH", gtk_switch_get_active(g_cfg_irq_watch) ? "1" : "0");
+
+  if (g_cfg_irq_enable)
+    config_send("IRQ_ENABLE",
+                gtk_switch_get_active(g_cfg_irq_enable) ? "1" : "0");
+  if (g_cfg_irq_gpu)
+    config_send("IRQ_GPU", gtk_switch_get_active(g_cfg_irq_gpu) ? "1" : "0");
+  if (g_cfg_irq_nvme)
+    config_send("IRQ_NVME", gtk_switch_get_active(g_cfg_irq_nvme) ? "1" : "0");
+  if (g_cfg_irq_usb)
+    config_send("IRQ_USB", gtk_switch_get_active(g_cfg_irq_usb) ? "1" : "0");
+  if (g_cfg_irq_nic)
+    config_send("IRQ_NIC", gtk_switch_get_active(g_cfg_irq_nic) ? "1" : "0");
+  if (g_cfg_irq_audio)
+    config_send("IRQ_AUDIO",
+                gtk_switch_get_active(g_cfg_irq_audio) ? "1" : "0");
+  if (g_cfg_irq_coalesce)
+    config_send("IRQ_COALESCE",
+                gtk_switch_get_active(g_cfg_irq_coalesce) ? "1" : "0");
+  if (g_cfg_irq_watch)
+    config_send("IRQ_WATCH",
+                gtk_switch_get_active(g_cfg_irq_watch) ? "1" : "0");
 
   set_config_dirty(FALSE);
-  
+
   /* Trigger background IPC call to apply bindings */
   char *args[] = {(char *)"/usr/bin/x3d-toggle", (char *)"irq-bind", NULL};
   gui_spawn(args, NULL);
@@ -1000,7 +1049,8 @@ static void on_adv_apply_clicked(GtkButton *btn, gpointer data) {
   }
   if (g_cfg_sched_bit_shift) {
     char buf[16];
-    printf_sn(buf, sizeof(buf), "%d", (int)gtk_spin_button_get_value(g_cfg_sched_bit_shift));
+    printf_sn(buf, sizeof(buf), "%d",
+              (int)gtk_spin_button_get_value(g_cfg_sched_bit_shift));
     config_send("SCHED_BIT_SHIFT", buf);
     advanced_send("kernel.sched_burst_penalty_offset", buf);
   }
@@ -1011,7 +1061,8 @@ static void on_adv_apply_clicked(GtkButton *btn, gpointer data) {
   }
   if (g_cfg_sched_slice_us) {
     char buf[16];
-    printf_sn(buf, sizeof(buf), "%d", (int)gtk_spin_button_get_value(g_cfg_sched_slice_us));
+    printf_sn(buf, sizeof(buf), "%d",
+              (int)gtk_spin_button_get_value(g_cfg_sched_slice_us));
     config_send("SCHED_SLICE_US", buf);
     advanced_send("kernel.sched_cfs_bandwidth_slice_us", buf);
   }
@@ -1043,17 +1094,29 @@ static void on_adv_cancel_clicked(GtkButton *btn, gpointer data) {
   (void)btn;
   (void)data;
   config_ignoring_changes = TRUE;
-  if (g_cfg_sched_bore) gtk_switch_set_active(g_cfg_sched_bore, atoi(config_get("SCHED_BORE")));
-  if (g_cfg_sched_bit_shift) gtk_spin_button_set_value(g_cfg_sched_bit_shift, atoi(config_get("SCHED_BIT_SHIFT")));
-  if (g_cfg_sched_burst_fork) gtk_switch_set_active(g_cfg_sched_burst_fork, atoi(config_get("SCHED_BURST_FORK")));
-  if (g_cfg_sched_slice_us) gtk_spin_button_set_value(g_cfg_sched_slice_us, atoi(config_get("SCHED_SLICE_US")));
-  if (g_cfg_vm_max_map) gtk_editable_set_text(g_cfg_vm_max_map, config_get("VM_MAX_MAP"));
-  if (g_cfg_split_lock_detect) gtk_switch_set_active(g_cfg_split_lock_detect, atoi(config_get("SPLIT_LOCK_DETECT")));
-  if (g_cfg_nmi_watchdog) gtk_switch_set_active(g_cfg_nmi_watchdog, atoi(config_get("NMI_WATCHDOG")));
+  if (g_cfg_sched_bore)
+    gtk_switch_set_active(g_cfg_sched_bore, atoi(config_get("SCHED_BORE")));
+  if (g_cfg_sched_bit_shift)
+    gtk_spin_button_set_value(g_cfg_sched_bit_shift,
+                              atoi(config_get("SCHED_BIT_SHIFT")));
+  if (g_cfg_sched_burst_fork)
+    gtk_switch_set_active(g_cfg_sched_burst_fork,
+                          atoi(config_get("SCHED_BURST_FORK")));
+  if (g_cfg_sched_slice_us)
+    gtk_spin_button_set_value(g_cfg_sched_slice_us,
+                              atoi(config_get("SCHED_SLICE_US")));
+  if (g_cfg_vm_max_map)
+    gtk_editable_set_text(g_cfg_vm_max_map, config_get("VM_MAX_MAP"));
+  if (g_cfg_split_lock_detect)
+    gtk_switch_set_active(g_cfg_split_lock_detect,
+                          atoi(config_get("SPLIT_LOCK_DETECT")));
+  if (g_cfg_nmi_watchdog)
+    gtk_switch_set_active(g_cfg_nmi_watchdog, atoi(config_get("NMI_WATCHDOG")));
   if (g_cfg_thp_mode) {
     const char *val = config_get("THP_MODE");
     const char *modes[] = {"always", "madvise", "never"};
-    gtk_drop_down_set_selected(g_cfg_thp_mode, find_dropdown_idx(modes, 3, val));
+    gtk_drop_down_set_selected(g_cfg_thp_mode,
+                               find_dropdown_idx(modes, 3, val));
   }
   config_ignoring_changes = FALSE;
 }
@@ -1063,21 +1126,27 @@ static void on_adv_cancel_clicked(GtkButton *btn, gpointer data) {
 static void on_net_apply_clicked(GtkButton *btn, gpointer data) {
   (void)btn;
   (void)data;
-  if (g_cfg_net_qdisc) config_send("NET_QDISC", gtk_editable_get_text(g_cfg_net_qdisc));
+  if (g_cfg_net_qdisc)
+    config_send("NET_QDISC", gtk_editable_get_text(g_cfg_net_qdisc));
   if (g_cfg_net_fastopen) {
     char buf[16];
-    printf_sn(buf, sizeof(buf), "%d", (int)gtk_spin_button_get_value(g_cfg_net_fastopen));
+    printf_sn(buf, sizeof(buf), "%d",
+              (int)gtk_spin_button_get_value(g_cfg_net_fastopen));
     config_send("NET_FASTOPEN", buf);
   }
   if (g_cfg_net_rp_filter) {
     char buf[16];
-    printf_sn(buf, sizeof(buf), "%d", (int)gtk_spin_button_get_value(g_cfg_net_rp_filter));
+    printf_sn(buf, sizeof(buf), "%d",
+              (int)gtk_spin_button_get_value(g_cfg_net_rp_filter));
     config_send("NET_RP_FILTER", buf);
   }
-  if (g_cfg_net_source_route) config_send("NET_SOURCE_ROUTE", gtk_switch_get_active(g_cfg_net_source_route) ? "1" : "0");
+  if (g_cfg_net_source_route)
+    config_send("NET_SOURCE_ROUTE",
+                gtk_switch_get_active(g_cfg_net_source_route) ? "1" : "0");
 
   /* Trigger Networking.sh to apply to /etc/sysctl.d/ */
-  char *args[] = {(char *)"/usr/bin/x3d-toggle", (char *)"advanced", (char *)"networking", (char *)"--apply", NULL};
+  char *args[] = {(char *)"/usr/bin/x3d-toggle", (char *)"advanced",
+                  (char *)"networking", (char *)"--apply", NULL};
   gui_spawn(args, NULL);
   btn_feedback(btn);
 }
@@ -1086,10 +1155,17 @@ static void on_net_cancel_clicked(GtkButton *btn, gpointer data) {
   (void)btn;
   (void)data;
   config_ignoring_changes = TRUE;
-  if (g_cfg_net_qdisc) gtk_editable_set_text(g_cfg_net_qdisc, config_get("NET_QDISC"));
-  if (g_cfg_net_fastopen) gtk_spin_button_set_value(g_cfg_net_fastopen, atoi(config_get("NET_FASTOPEN")));
-  if (g_cfg_net_rp_filter) gtk_spin_button_set_value(g_cfg_net_rp_filter, atoi(config_get("NET_RP_FILTER")));
-  if (g_cfg_net_source_route) gtk_switch_set_active(g_cfg_net_source_route, atoi(config_get("NET_SOURCE_ROUTE")));
+  if (g_cfg_net_qdisc)
+    gtk_editable_set_text(g_cfg_net_qdisc, config_get("NET_QDISC"));
+  if (g_cfg_net_fastopen)
+    gtk_spin_button_set_value(g_cfg_net_fastopen,
+                              atoi(config_get("NET_FASTOPEN")));
+  if (g_cfg_net_rp_filter)
+    gtk_spin_button_set_value(g_cfg_net_rp_filter,
+                              atoi(config_get("NET_RP_FILTER")));
+  if (g_cfg_net_source_route)
+    gtk_switch_set_active(g_cfg_net_source_route,
+                          atoi(config_get("NET_SOURCE_ROUTE")));
   config_ignoring_changes = FALSE;
 }
 
@@ -1110,13 +1186,14 @@ static void on_irq_status_clicked(GtkButton *btn, gpointer data) {
 static void on_cfg_apply_clicked(GtkButton *btn, gpointer user_data) {
   (void)btn;
   (void)user_data;
-  
+
   if (btn_cfg_apply)
     gtk_button_set_label(GTK_BUTTON(btn_cfg_apply), "Applying...");
 
   if (g_cfg_daemon_state)
-    config_send("DAEMON_STATE",
-                daemon_state_vals[gtk_drop_down_get_selected(g_cfg_daemon_state)]);
+    config_send(
+        "DAEMON_STATE",
+        daemon_state_vals[gtk_drop_down_get_selected(g_cfg_daemon_state)]);
   if (g_cfg_fallback_profile)
     config_send(
         "FALLBACK_PROFILE",
@@ -1173,28 +1250,32 @@ static void on_cfg_apply_clicked(GtkButton *btn, gpointer user_data) {
 
   /* Lint switches: deferred persistence */
   if (g_builder) {
-    struct { const char *id; const char *key; } lint_sw[] = {
-      {"cfg_lint_clang_diagnostic", "LINT_CLANG_DIAGNOSTIC"},
-      {"cfg_lint_clang_bugprone", "LINT_CLANG_BUGPRONE"},
-      {"cfg_lint_clang_modernize", "LINT_CLANG_MODERNIZE"},
-      {"cfg_lint_clang_readability", "LINT_CLANG_READABILITY"},
-      {"cfg_lint_clang_performance", "LINT_CLANG_PERFORMANCE"},
-      {"cfg_lint_clang_portability", "LINT_CLANG_PORTABILITY"},
-      {"cfg_lint_clang_analyzer", "LINT_CLANG_ANALYZER"},
-      {"cfg_lint_cppcheck_all", "LINT_CPPCHECK_ALL"},
-      {"cfg_lint_cppcheck_warning", "LINT_CPPCHECK_WARNING"},
-      {"cfg_lint_cppcheck_style", "LINT_CPPCHECK_STYLE"},
-      {"cfg_lint_cppcheck_performance", "LINT_CPPCHECK_PERFORMANCE"},
-      {"cfg_lint_cppcheck_portability", "LINT_CPPCHECK_PORTABILITY"},
-      {"cfg_lint_cppcheck_information", "LINT_CPPCHECK_INFORMATION"},
-      {"cfg_lint_cppcheck_unused", "LINT_CPPCHECK_UNUSED"},
-      {"cfg_lint_valgrind_origins", "LINT_VALGRIND_ORIGINS"},
-      {NULL, NULL}};
+    struct {
+      const char *id;
+      const char *key;
+    } lint_sw[] = {
+        {"cfg_lint_clang_diagnostic", "LINT_CLANG_DIAGNOSTIC"},
+        {"cfg_lint_clang_bugprone", "LINT_CLANG_BUGPRONE"},
+        {"cfg_lint_clang_modernize", "LINT_CLANG_MODERNIZE"},
+        {"cfg_lint_clang_readability", "LINT_CLANG_READABILITY"},
+        {"cfg_lint_clang_performance", "LINT_CLANG_PERFORMANCE"},
+        {"cfg_lint_clang_portability", "LINT_CLANG_PORTABILITY"},
+        {"cfg_lint_clang_analyzer", "LINT_CLANG_ANALYZER"},
+        {"cfg_lint_cppcheck_all", "LINT_CPPCHECK_ALL"},
+        {"cfg_lint_cppcheck_warning", "LINT_CPPCHECK_WARNING"},
+        {"cfg_lint_cppcheck_style", "LINT_CPPCHECK_STYLE"},
+        {"cfg_lint_cppcheck_performance", "LINT_CPPCHECK_PERFORMANCE"},
+        {"cfg_lint_cppcheck_portability", "LINT_CPPCHECK_PORTABILITY"},
+        {"cfg_lint_cppcheck_information", "LINT_CPPCHECK_INFORMATION"},
+        {"cfg_lint_cppcheck_unused", "LINT_CPPCHECK_UNUSED"},
+        {"cfg_lint_valgrind_origins", "LINT_VALGRIND_ORIGINS"},
+        {NULL, NULL}};
     for (int i = 0; lint_sw[i].id; i++) {
       GObject *lw = gtk_builder_get_object(g_builder, lint_sw[i].id);
       if (lw)
-        config_send(lint_sw[i].key,
-                    gtk_switch_get_active(GTK_SWITCH(lw)) ? "enabled" : "disabled");
+        config_send(lint_sw[i].key, gtk_switch_get_active(GTK_SWITCH(lw))
+                                        ? "enabled"
+                                        : "disabled");
     }
   }
 
@@ -1209,10 +1290,10 @@ static void on_cfg_cancel_clicked(GtkButton *btn, gpointer user_data) {
   config_ignoring_changes = TRUE;
 
   if (g_cfg_daemon_state)
-    gtk_drop_down_set_selected(
-        g_cfg_daemon_state,
-        find_dropdown_idx(daemon_state_vals, ARRAY_SIZE(daemon_state_vals),
-                          config_get("DAEMON_STATE")));
+    gtk_drop_down_set_selected(g_cfg_daemon_state,
+                               find_dropdown_idx(daemon_state_vals,
+                                                 ARRAY_SIZE(daemon_state_vals),
+                                                 config_get("DAEMON_STATE")));
   if (g_cfg_fallback_profile)
     gtk_drop_down_set_selected(
         g_cfg_fallback_profile,
@@ -1226,7 +1307,8 @@ static void on_cfg_cancel_clicked(GtkButton *btn, gpointer user_data) {
                         atof(config_get("LOAD_THRESHOLD")));
   if (g_cfg_detection_level)
     gtk_drop_down_set_selected(
-        g_cfg_detection_level, (guint)(atoi(config_get("DETECTION_LEVEL")) - 1));
+        g_cfg_detection_level,
+        (guint)(atoi(config_get("DETECTION_LEVEL")) - 1));
   if (g_cfg_ebpf_enable)
     gtk_switch_set_active(g_cfg_ebpf_enable,
                           atoi(config_get("EBPF_ENABLE")) != 0);
@@ -1234,7 +1316,8 @@ static void on_cfg_cancel_clicked(GtkButton *btn, gpointer user_data) {
     gtk_switch_set_active(g_cfg_debug_enable,
                           atoi(config_get("DEBUG_ENABLE")) != 0);
   if (g_cfg_dev_enable)
-    gtk_switch_set_active(g_cfg_dev_enable, atoi(config_get("DEV_ENABLE")) != 0);
+    gtk_switch_set_active(g_cfg_dev_enable,
+                          atoi(config_get("DEV_ENABLE")) != 0);
   if (g_cfg_advanced_enable)
     gtk_switch_set_active(g_cfg_advanced_enable,
                           atoi(config_get("ADVANCED_CONFIG_ENABLE")) != 0);
@@ -1350,7 +1433,8 @@ static void config_bind(GtkBuilder *builder) {
     val = config_get("ADVANCED_CONFIG_ENABLE");
     gboolean adv = atoi(val) != 0;
     gtk_switch_set_active(GTK_SWITCH(w), adv);
-    /* Use the real visibility-toggling handler, not the generic dirty-bit one */
+    /* Use the real visibility-toggling handler, not the generic dirty-bit one
+     */
     g_signal_connect(w, "notify::active",
                      G_CALLBACK(on_advanced_enable_toggled), NULL);
     gtk_widget_set_visible(row_advanced, adv);
@@ -1363,14 +1447,14 @@ static void config_bind(GtkBuilder *builder) {
     val = config_get("DEV_ENABLE");
     gboolean dev = atoi(val) != 0;
     gtk_switch_set_active(GTK_SWITCH(w), dev);
-    /* Use the real visibility-toggling handler, not the generic dirty-bit one */
+    /* Use the real visibility-toggling handler, not the generic dirty-bit one
+     */
     g_signal_connect(w, "notify::active", G_CALLBACK(on_dev_enable_toggled),
                      NULL);
     /* Set initial visibility */
     gtk_widget_set_visible(row_developer, dev);
     gtk_widget_set_visible(row_debug, dev);
   }
-
 
   /* Switch: DEBUG_ENABLE */
   w = gtk_builder_get_object(builder, "cfg_debug_enable");
@@ -1387,21 +1471,21 @@ static void config_bind(GtkBuilder *builder) {
     const char *id;
     const char *key;
     GtkSwitch **ptr;
-  } irq_switches[] = {
-      {"cfg_irq_enable", "IRQ_ENABLE", &g_cfg_irq_enable},
-      {"cfg_irq_gpu", "IRQ_GPU", &g_cfg_irq_gpu},
-      {"cfg_irq_nvme", "IRQ_NVME", &g_cfg_irq_nvme},
-      {"cfg_irq_usb", "IRQ_USB", &g_cfg_irq_usb},
-      {"cfg_irq_nic", "IRQ_NIC", &g_cfg_irq_nic},
-      {"cfg_irq_audio", "IRQ_AUDIO", &g_cfg_irq_audio},
-      {"cfg_irq_coalesce", "IRQ_COALESCE", &g_cfg_irq_coalesce},
-      {"cfg_irq_watch", "IRQ_WATCH", &g_cfg_irq_watch},
-      {NULL, NULL, NULL}};
+  } irq_switches[] = {{"cfg_irq_enable", "IRQ_ENABLE", &g_cfg_irq_enable},
+                      {"cfg_irq_gpu", "IRQ_GPU", &g_cfg_irq_gpu},
+                      {"cfg_irq_nvme", "IRQ_NVME", &g_cfg_irq_nvme},
+                      {"cfg_irq_usb", "IRQ_USB", &g_cfg_irq_usb},
+                      {"cfg_irq_nic", "IRQ_NIC", &g_cfg_irq_nic},
+                      {"cfg_irq_audio", "IRQ_AUDIO", &g_cfg_irq_audio},
+                      {"cfg_irq_coalesce", "IRQ_COALESCE", &g_cfg_irq_coalesce},
+                      {"cfg_irq_watch", "IRQ_WATCH", &g_cfg_irq_watch},
+                      {NULL, NULL, NULL}};
 
   for (int i = 0; irq_switches[i].id; i++) {
     w = gtk_builder_get_object(builder, irq_switches[i].id);
     if (w) {
-      if (irq_switches[i].ptr) *(irq_switches[i].ptr) = GTK_SWITCH(w);
+      if (irq_switches[i].ptr)
+        *(irq_switches[i].ptr) = GTK_SWITCH(w);
       val = config_get(irq_switches[i].key);
       gtk_switch_set_active(GTK_SWITCH(w), atoi(val) != 0);
       /* Use same generic handler since these are just config variables */
@@ -1473,11 +1557,13 @@ static void config_bind(GtkBuilder *builder) {
 
   w = gtk_builder_get_object(builder, "btn_lint_cppcheck_run");
   if (w)
-    g_signal_connect(w, "clicked", G_CALLBACK(on_btn_lint_cppcheck_clicked), NULL);
+    g_signal_connect(w, "clicked", G_CALLBACK(on_btn_lint_cppcheck_clicked),
+                     NULL);
 
   w = gtk_builder_get_object(builder, "btn_lint_valgrind_run");
   if (w)
-    g_signal_connect(w, "clicked", G_CALLBACK(on_btn_lint_valgrind_clicked), NULL);
+    g_signal_connect(w, "clicked", G_CALLBACK(on_btn_lint_valgrind_clicked),
+                     NULL);
 
   /* ── System Journal tab: Buttons & Settings ── */
   w = gtk_builder_get_object(builder, "btn_launch_debug");
@@ -1551,7 +1637,8 @@ static void config_bind(GtkBuilder *builder) {
   w = gtk_builder_get_object(builder, "cfg_server_ssh");
   if (w) {
     g_cfg_server_ssh = GTK_DROP_DOWN(w);
-    g_signal_connect(w, "notify::selected", G_CALLBACK(on_server_ssh_changed), NULL);
+    g_signal_connect(w, "notify::selected", G_CALLBACK(on_server_ssh_changed),
+                     NULL);
   }
   val = config_get("SERVER_SSH");
   if (val[0] && strcmp(val, "ERR") != 0 && g_cfg_server_ssh) {
@@ -1585,29 +1672,35 @@ static void config_bind(GtkBuilder *builder) {
   }
 
   /* Advanced Configuration Tab Bindings */
-  struct { const char *id; GtkSwitch **ptr; const char *key; } adv_switches[] = {
-    {"cfg_sched_bore", &g_cfg_sched_bore, "SCHED_BORE"},
-    {"cfg_sched_burst_fork", &g_cfg_sched_burst_fork, "SCHED_BURST_FORK"},
-    {"cfg_split_lock_detect", &g_cfg_split_lock_detect, "SPLIT_LOCK_DETECT"},
-    {"cfg_nmi_watchdog", &g_cfg_nmi_watchdog, "NMI_WATCHDOG"},
-    {NULL, NULL, NULL}
-  };
+  struct {
+    const char *id;
+    GtkSwitch **ptr;
+    const char *key;
+  } adv_switches[] = {
+      {"cfg_sched_bore", &g_cfg_sched_bore, "SCHED_BORE"},
+      {"cfg_sched_burst_fork", &g_cfg_sched_burst_fork, "SCHED_BURST_FORK"},
+      {"cfg_split_lock_detect", &g_cfg_split_lock_detect, "SPLIT_LOCK_DETECT"},
+      {"cfg_nmi_watchdog", &g_cfg_nmi_watchdog, "NMI_WATCHDOG"},
+      {NULL, NULL, NULL}};
   for (int i = 0; adv_switches[i].id; i++) {
     w = gtk_builder_get_object(builder, adv_switches[i].id);
     if (w) {
       *adv_switches[i].ptr = GTK_SWITCH(w);
-      gtk_switch_set_active(GTK_SWITCH(w), atoi(config_get(adv_switches[i].key)));
+      gtk_switch_set_active(GTK_SWITCH(w),
+                            atoi(config_get(adv_switches[i].key)));
     }
   }
   w = gtk_builder_get_object(builder, "cfg_sched_bit_shift");
   if (w) {
     g_cfg_sched_bit_shift = GTK_SPIN_BUTTON(w);
-    gtk_spin_button_set_value(g_cfg_sched_bit_shift, atoi(config_get("SCHED_BIT_SHIFT")));
+    gtk_spin_button_set_value(g_cfg_sched_bit_shift,
+                              atoi(config_get("SCHED_BIT_SHIFT")));
   }
   w = gtk_builder_get_object(builder, "cfg_sched_slice_us");
   if (w) {
     g_cfg_sched_slice_us = GTK_SPIN_BUTTON(w);
-    gtk_spin_button_set_value(g_cfg_sched_slice_us, atoi(config_get("SCHED_SLICE_US")));
+    gtk_spin_button_set_value(g_cfg_sched_slice_us,
+                              atoi(config_get("SCHED_SLICE_US")));
   }
   w = gtk_builder_get_object(builder, "cfg_vm_max_map");
   if (w) {
@@ -1618,12 +1711,15 @@ static void config_bind(GtkBuilder *builder) {
   if (w) {
     g_cfg_thp_mode = GTK_DROP_DOWN(w);
     const char *modes[] = {"always", "madvise", "never"};
-    gtk_drop_down_set_selected(g_cfg_thp_mode, find_dropdown_idx(modes, 3, config_get("THP_MODE")));
+    gtk_drop_down_set_selected(
+        g_cfg_thp_mode, find_dropdown_idx(modes, 3, config_get("THP_MODE")));
   }
   w = gtk_builder_get_object(builder, "btn_adv_apply");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_adv_apply_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_adv_apply_clicked), NULL);
   w = gtk_builder_get_object(builder, "btn_adv_cancel");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_adv_cancel_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_adv_cancel_clicked), NULL);
 
   /* Networking Tab Bindings */
   w = gtk_builder_get_object(builder, "cfg_net_qdisc");
@@ -1634,37 +1730,49 @@ static void config_bind(GtkBuilder *builder) {
   w = gtk_builder_get_object(builder, "cfg_net_fastopen");
   if (w) {
     g_cfg_net_fastopen = GTK_SPIN_BUTTON(w);
-    gtk_spin_button_set_value(g_cfg_net_fastopen, atoi(config_get("NET_FASTOPEN")));
+    gtk_spin_button_set_value(g_cfg_net_fastopen,
+                              atoi(config_get("NET_FASTOPEN")));
   }
   w = gtk_builder_get_object(builder, "cfg_net_rp_filter");
   if (w) {
     g_cfg_net_rp_filter = GTK_SPIN_BUTTON(w);
-    gtk_spin_button_set_value(g_cfg_net_rp_filter, atoi(config_get("NET_RP_FILTER")));
+    gtk_spin_button_set_value(g_cfg_net_rp_filter,
+                              atoi(config_get("NET_RP_FILTER")));
   }
   w = gtk_builder_get_object(builder, "cfg_net_source_route");
   if (w) {
     g_cfg_net_source_route = GTK_SWITCH(w);
-    gtk_switch_set_active(g_cfg_net_source_route, atoi(config_get("NET_SOURCE_ROUTE")));
+    gtk_switch_set_active(g_cfg_net_source_route,
+                          atoi(config_get("NET_SOURCE_ROUTE")));
   }
   w = gtk_builder_get_object(builder, "btn_net_apply");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_net_apply_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_net_apply_clicked), NULL);
   w = gtk_builder_get_object(builder, "btn_net_cancel");
-  if (w) g_signal_connect(w, "clicked", G_CALLBACK(on_net_cancel_clicked), NULL);
+  if (w)
+    g_signal_connect(w, "clicked", G_CALLBACK(on_net_cancel_clicked), NULL);
 
   /* Capability Rows */
-  row_sched_bore = GTK_WIDGET(gtk_builder_get_object(builder, "row_sched_bore"));
-  row_sched_bit_shift = GTK_WIDGET(gtk_builder_get_object(builder, "row_sched_bit_shift"));
-  row_sched_burst_fork = GTK_WIDGET(gtk_builder_get_object(builder, "row_sched_burst_fork"));
-  row_split_lock = GTK_WIDGET(gtk_builder_get_object(builder, "row_split_lock"));
-  row_nmi_watchdog = GTK_WIDGET(gtk_builder_get_object(builder, "row_nmi_watchdog"));
+  row_sched_bore =
+      GTK_WIDGET(gtk_builder_get_object(builder, "row_sched_bore"));
+  row_sched_bit_shift =
+      GTK_WIDGET(gtk_builder_get_object(builder, "row_sched_bit_shift"));
+  row_sched_burst_fork =
+      GTK_WIDGET(gtk_builder_get_object(builder, "row_sched_burst_fork"));
+  row_split_lock =
+      GTK_WIDGET(gtk_builder_get_object(builder, "row_split_lock"));
+  row_nmi_watchdog =
+      GTK_WIDGET(gtk_builder_get_object(builder, "row_nmi_watchdog"));
   row_thp_mode = GTK_WIDGET(gtk_builder_get_object(builder, "row_thp_mode"));
 
   /* UI Override Switch */
   w = gtk_builder_get_object(builder, "cfg_force_unsupported");
   if (w) {
     g_cfg_force_unsupported = GTK_SWITCH(w);
-    gtk_switch_set_active(g_cfg_force_unsupported, atoi(config_get("FORCE_UNSUPPORTED_DISPLAY")) != 0);
-    g_signal_connect(w, "notify::active", G_CALLBACK(on_cfg_switch_changed), (gpointer)"FORCE_UNSUPPORTED_DISPLAY");
+    gtk_switch_set_active(g_cfg_force_unsupported,
+                          atoi(config_get("FORCE_UNSUPPORTED_DISPLAY")) != 0);
+    g_signal_connect(w, "notify::active", G_CALLBACK(on_cfg_switch_changed),
+                     (gpointer) "FORCE_UNSUPPORTED_DISPLAY");
   }
 
   config_ignoring_changes = FALSE;

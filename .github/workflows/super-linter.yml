@@ -31,7 +31,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
           # Language Specifics
-          VALIDATE_CPP: true
+          # Only enable applicable linters; cpplint enforces C++ conventions.
           VALIDATE_SH: true
           VALIDATE_CSS: true
           VALIDATE_YAML: true

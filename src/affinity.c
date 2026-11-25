@@ -6,10 +6,10 @@
  * Handles migration between ephemeral core-sets for CCD alignment.
  */
 
-#include "libc.h"
-#include "error.h"
-#include "xui.h"
 #include "ccd.h"
+#include "error.h"
+#include "libc.h"
+#include "xui.h"
 
 #ifndef CGROUP_ROOT
 #define CGROUP_ROOT "/sys/fs/cgroup/x3d-toggle"
@@ -29,8 +29,10 @@ static int cgroup_write_raw(const char *rel_path, const char *val) {
 int affinity_get_topology(char *cache, char *freq, size_t size) {
   int ccd1_start = 0;
   int total_cores = 0;
-  if (ccd(cache, &ccd1_start, &total_cores) != ERR_SUCCESS) return -1;
-  if (ccd_freq_mask(freq, size) != ERR_SUCCESS) return -1;
+  if (ccd(cache, &ccd1_start, &total_cores) != ERR_SUCCESS)
+    return -1;
+  if (ccd_freq_mask(freq, size) != ERR_SUCCESS)
+    return -1;
   return 0;
 }
 int affinity_init(void) {
@@ -65,7 +67,8 @@ static int cgroup_write_pid(const char *partition, pid_t pid) {
   printf_sn(path, sizeof(path), "%s/%s/cgroup.procs", CGROUP_ROOT, partition);
 
   int fd = open(path, O_WRONLY);
-  if (fd < 0) return ERR_CGROUP;
+  if (fd < 0)
+    return ERR_CGROUP;
 
   char pid_str[16];
   int len = printf_sn(pid_str, sizeof(pid_str), "%d", pid);
@@ -76,14 +79,13 @@ static int cgroup_write_pid(const char *partition, pid_t pid) {
   return (n > 0) ? ERR_SUCCESS : ERR_CGROUP;
 }
 
-int affinity_default(pid_t pid) {
-  return cgroup_write_pid("", pid);
-}
+int affinity_default(pid_t pid) { return cgroup_write_pid("", pid); }
 
 int affinity_auto(pid_t pid) {
   const char path[] = "/sys/fs/cgroup/cgroup.procs";
   int fd = open(path, O_WRONLY);
-  if (fd < 0) return ERR_CGROUP;
+  if (fd < 0)
+    return ERR_CGROUP;
 
   char pid_str[16];
   int len = printf_sn(pid_str, sizeof(pid_str), "%d", pid);
@@ -93,13 +95,9 @@ int affinity_auto(pid_t pid) {
   return (n > 0) ? ERR_SUCCESS : ERR_CGROUP;
 }
 
-int affinity_dual(pid_t pid) {
-  return affinity_default(pid);
-}
+int affinity_dual(pid_t pid) { return affinity_default(pid); }
 
-int affinity_swap(pid_t pid) {
-  return cgroup_write_pid("frequency", pid);
-}
+int affinity_swap(pid_t pid) { return cgroup_write_pid("frequency", pid); }
 
 int affinity_partition(pid_t pid, int partition) {
   switch (partition) {
@@ -121,7 +119,8 @@ int affinity_set_masks(const char *cache, const char *freq) {
         ccd_freq_mask(freq_mask, sizeof(freq_mask)) == ERR_SUCCESS) {
       int r1 = cgroup_write_raw("cache/cpuset.cpus", cache_mask);
       int r2 = cgroup_write_raw("frequency/cpuset.cpus", freq_mask);
-      return (r1 == ERR_SUCCESS && r2 == ERR_SUCCESS) ? ERR_SUCCESS : ERR_CGROUP;
+      return (r1 == ERR_SUCCESS && r2 == ERR_SUCCESS) ? ERR_SUCCESS
+                                                      : ERR_CGROUP;
     }
     return ERR_CGROUP;
   }

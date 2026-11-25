@@ -4,11 +4,11 @@
  * utility commands
  */
 
-#include "../../include/libc.h"
-#include "../../build/xui.h"
 #include "../../include/misc.h"
+#include "../../build/xui.h"
 #include "../../include/cli.h"
 #include "../../include/error.h"
+#include "../../include/libc.h"
 
 #define _POSIX_C_SOURCE 202405L
 
@@ -69,7 +69,8 @@ const char *const insults[] = {
     "I wave my private parts at your aunties!",
     "He's not the Messiah, he's a very naughty boy!",
     "I wish to make a complaint.",
-    "When you're walking home tonight, and some homicidal maniac comes after you with a bunch of loganberries, don't come crying to me!",
+    ("When you're walking home tonight, and some homicidal maniac comes after "
+     "you with a bunch of loganberries, don't come crying to me!"),
     "This man, he doesn't know when he's beaten! He doesn't know when he's ",
     "winning, either. He has no... sort of... sensory apparatus...",
     "There's nothing wrong with you that an expensive operation can't prolong.",
@@ -88,9 +89,7 @@ const char *get_insult(void) {
   return insults[rand() % insults_count];
 }
 
-static void printf_misc(void) {
-  journal_error(ERR_CMD, get_insult());
-}
+static void printf_misc(void) { journal_error(ERR_CMD, get_insult()); }
 
 int cli_misc_insults(int argc, char *argv[]) {
   (void)argc;
@@ -126,7 +125,8 @@ int cli_misc_fallback(int argc, char *argv[]) {
   const char *paths[] = {"src/cli/cli.c", NULL};
   for (int idx = 0; paths[idx] != NULL; idx++) {
     fd = open(paths[idx], O_RDONLY);
-    if (fd >= 0) break;
+    if (fd >= 0)
+      break;
   }
 
   if (fd >= 0) {
@@ -137,18 +137,21 @@ int cli_misc_fallback(int argc, char *argv[]) {
       buf[n] = '\0';
       char pattern[128];
       printf_sn(pattern, sizeof(pattern), "{\"%s\"", cmd_str);
-      
+
       char *ln = buf;
       char *nxt;
       while (ln && *ln) {
         nxt = strchr(ln, '\n');
-        if (nxt) *nxt = '\0';
+        if (nxt)
+          *nxt = '\0';
         if (strstr(ln, "//") && strstr(ln, pattern)) {
           printf_upcoming(cmd_str);
           return 0;
         }
-        if (nxt) ln = nxt + 1;
-        else break;
+        if (nxt)
+          ln = nxt + 1;
+        else
+          break;
       }
     }
   }
@@ -211,15 +214,16 @@ int cli_gui_launch(int argc, char *argv[]) {
   (void)argv;
 
   if (!getenv("DISPLAY") && !getenv("WAYLAND_DISPLAY")) {
-    journal_error(ERR_GUI,
-                  "No graphical display detected (run 'x3d-toggle --help' for CLI commands)");
+    journal_error(ERR_GUI, "No graphical display detected (run 'x3d-toggle "
+                           "--help' for CLI commands)");
     return ERR_GUI;
   }
 
   char gui_path[512];
   if (resolve_gui_path(gui_path, sizeof(gui_path)) != 0) {
-    journal_error(ERR_GUI,
-                  "x3d-gui is not installed. Run 'sudo make setup' to install the desktop dashboard, or 'x3d-toggle --help' for CLI usage");
+    journal_error(
+        ERR_GUI, "x3d-gui is not installed. Run 'sudo make setup' to install "
+                 "the desktop dashboard, or 'x3d-toggle --help' for CLI usage");
     return ERR_GUI;
   }
 

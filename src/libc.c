@@ -76,9 +76,7 @@ int rand(void) {
 #define SYS_rmdir 84
 #define SYS_affinity 203
 
-char *strerror(int err) {
-  return (char *)journal_strerror(err);
-}
+char *strerror(int err) { return (char *)journal_strerror(err); }
 
 int open(const char *path, int flags, ...) {
   long ret;
@@ -219,8 +217,7 @@ int system(const char *cmd) {
     return 1;
   pid_t pid = fork();
   if (pid == 0) {
-    char *args[] = {(char *)"/bin/sh", (char *)"-c", (char *)cmd,
-                    (char *)0};
+    char *args[] = {(char *)"/bin/sh", (char *)"-c", (char *)cmd, (char *)0};
     execve(args[0], args, environ);
     _exit(127);
   }
@@ -373,8 +370,8 @@ int sigaction(int signum, const struct sigaction *act,
   __asm__ volatile("movq %[rt_sig], %%r10\n"
                    "syscall"
                    : "=a"(ret)
-                   : "a"(SYS_rt_sigaction), "D"(signum), "S"(act), "d"(oldact),
-                     [rt_sig] "g"(8L)
+                   : "a"(SYS_rt_sigaction), "D"(signum), "S"(act),
+                     "d"(oldact), [rt_sig] "g"(8L)
                    : "rcx", "r11", "r10", "memory");
   if (ret < 0 && ret > -4096) {
     errno = -(int)ret;
@@ -470,8 +467,8 @@ int accept4(int fd, struct sockaddr *addr, unsigned int *len, int fl) {
   __asm__ volatile("movq %[fl], %%r10\n"
                    "syscall"
                    : "=a"(ret)
-                   : "a"(SYS_accept4), "D"(fd), "S"(addr), "d"(len),
-                     [fl] "g"((long)fl)
+                   : "a"(SYS_accept4), "D"(fd), "S"(addr),
+                     "d"(len), [fl] "g"((long)fl)
                    : "rcx", "r11", "r10", "memory");
   if (ret < 0 && ret > -4096) {
     errno = -(int)ret;
@@ -503,8 +500,8 @@ ssize_t sendto(int fd, const void *buf, size_t len, int fl,
                    "movq %[addrlen], %%r9\n"
                    "syscall"
                    : "=a"(ret)
-                   : "a"(SYS_sendto), "D"(fd), "S"(buf), "d"(len),
-                     [fl] "g"((long)fl), [addr] "g"((long)addr),
+                   : "a"(SYS_sendto), "D"(fd), "S"(buf),
+                     "d"(len), [fl] "g"((long)fl), [addr] "g"((long)addr),
                      [addrlen] "g"((long)addrlen)
                    : "rcx", "r11", "r10", "r8", "r9", "memory");
   if (ret < 0 && ret > -4096) {
@@ -535,8 +532,8 @@ int select(int n, fd_set *rf, fd_set *wf, fd_set *ef, struct timeval *tv) {
                    "movq %[tv], %%r8\n"
                    "syscall"
                    : "=a"(ret)
-                   : "a"(SYS_select), "D"(n), "S"(rf), "d"(wf),
-                     [ef] "g"((long)ef), [tv] "g"((long)tv)
+                   : "a"(SYS_select), "D"(n), "S"(rf),
+                     "d"(wf), [ef] "g"((long)ef), [tv] "g"((long)tv)
                    : "rcx", "r11", "r10", "r8", "memory");
   if (ret < 0 && ret > -4096) {
     errno = -(int)ret;
@@ -547,8 +544,7 @@ int select(int n, fd_set *rf, fd_set *wf, fd_set *ef, struct timeval *tv) {
 
 int fcntl(int fd, int cmd, ...) {
   long ret, arg = 0;
-  if (cmd == F_SETFL || cmd == F_GETFL || cmd == F_SETFD ||
-      cmd == F_GETFD) {
+  if (cmd == F_SETFL || cmd == F_GETFL || cmd == F_SETFD || cmd == F_GETFD) {
     va_list args;
     va_start(args, cmd);
     arg = va_arg(args, long);
@@ -756,8 +752,8 @@ int toupper(int c) {
 }
 
 int isspace(int c) {
-  return (c == ' ' || c == '\t' || c == '\n' || c == '\r' ||
-          c == '\f' || c == '\v');
+  return (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' ||
+          c == '\v');
 }
 
 long strtol(const char *p, char **e, int b) {
@@ -765,37 +761,55 @@ long strtol(const char *p, char **e, int b) {
   int neg = 0;
   while (*p == ' ' || *p == '\t')
     p++;
-  if (*p == '-') { neg = 1; p++; }
-  else if (*p == '+') { p++; }
+  if (*p == '-') {
+    neg = 1;
+    p++;
+  } else if (*p == '+') {
+    p++;
+  }
   if (b == 0) {
-    if (*p == '0' && (*(p+1) == 'x' || *(p+1) == 'X')) { b = 16; p += 2; }
-    else if (*p == '0') { b = 8; p++; }
-    else b = 10;
-  } else if (b == 16 && *p == '0' && (*(p+1) == 'x' || *(p+1) == 'X')) {
+    if (*p == '0' && (*(p + 1) == 'x' || *(p + 1) == 'X')) {
+      b = 16;
+      p += 2;
+    } else if (*p == '0') {
+      b = 8;
+      p++;
+    } else
+      b = 10;
+  } else if (b == 16 && *p == '0' && (*(p + 1) == 'x' || *(p + 1) == 'X')) {
     p += 2;
   }
   const char *digits_start = p;
   int overflow = 0;
-  unsigned long limit = neg ? ((unsigned long)LONG_MAX + 1UL) : (unsigned long)LONG_MAX;
+  unsigned long limit =
+      neg ? ((unsigned long)LONG_MAX + 1UL) : (unsigned long)LONG_MAX;
   while (*p) {
     int v;
-    if (*p >= '0' && *p <= '9') v = *p - '0';
-    else if (*p >= 'a' && *p <= 'z') v = *p - 'a' + 10;
-    else if (*p >= 'A' && *p <= 'Z') v = *p - 'A' + 10;
-    else break;
-    if (v >= b) break;
+    if (*p >= '0' && *p <= '9')
+      v = *p - '0';
+    else if (*p >= 'a' && *p <= 'z')
+      v = *p - 'a' + 10;
+    else if (*p >= 'A' && *p <= 'Z')
+      v = *p - 'A' + 10;
+    else
+      break;
+    if (v >= b)
+      break;
     if (!overflow && (r > (limit - (unsigned long)v) / (unsigned long)b)) {
       overflow = 1;
     }
-    if (!overflow) r = (r * (unsigned long)b) + (unsigned long)v;
+    if (!overflow)
+      r = (r * (unsigned long)b) + (unsigned long)v;
     p++;
   }
-  if (p == digits_start) r = 0;
+  if (p == digits_start)
+    r = 0;
   if (overflow) {
     errno = ERANGE;
     return neg ? LONG_MIN : LONG_MAX;
   }
-  if (e) *e = (char *)p;
+  if (e)
+    *e = (char *)p;
   return neg ? -(long)r : (long)r;
 }
 
@@ -825,13 +839,16 @@ unsigned long long strtoull(const char *p, char **e, int b) {
 
 int sysctl_read(const char *path, char *buf, size_t size) {
   int fd = open(path, 0); /* O_RDONLY = 0 */
-  if (fd < 0) return -1;
+  if (fd < 0)
+    return -1;
   ssize_t n = read(fd, buf, size - 1);
   close(fd);
-  if (n < 0) return -1;
+  if (n < 0)
+    return -1;
   buf[n] = '\0';
   /* Trim trailing newline */
-  while (n > 0 && (buf[n - 1] == '\n' || buf[n - 1] == '\r' || buf[n - 1] == ' ')) {
+  while (n > 0 &&
+         (buf[n - 1] == '\n' || buf[n - 1] == '\r' || buf[n - 1] == ' ')) {
     buf[--n] = '\0';
   }
   return 0;
@@ -839,7 +856,8 @@ int sysctl_read(const char *path, char *buf, size_t size) {
 
 int sysctl_write(const char *path, const char *val) {
   int fd = open(path, 1); /* O_WRONLY = 1 */
-  if (fd < 0) return -1;
+  if (fd < 0)
+    return -1;
   size_t len = strlen(val);
   ssize_t n = write(fd, val, len);
   close(fd);
@@ -917,7 +935,6 @@ size_t strlcat_local(char *dst, const char *src, size_t size) {
   dst[dlen + copy] = '\0';
   return res;
 }
-
 
 extern void journal_syslog(int prio, const char *summary, const char *ctx);
 extern int printf_vsn(char *buf, size_t size, const char *fmt, va_list args);
