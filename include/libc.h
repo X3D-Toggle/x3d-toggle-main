@@ -211,9 +211,9 @@ ssize_t sendto(int fd, const void *buf, size_t n, int flags,
                const struct sockaddr *addr, unsigned int addrlen);
 ssize_t recv(int fd, void *buf, size_t n, int flags);
 int bind(int fd, const struct sockaddr *addr, unsigned int addrlen);
-int listen(int fd, int backlog);
-int accept(int fd, struct sockaddr *addr, unsigned int *addrlen);
-int accept4(int fd, struct sockaddr *addr, unsigned int *addrlen, int flags);
+int listen(int fd, int bl);
+int accept(int fd, struct sockaddr *addr, unsigned int *len);
+int accept4(int fd, struct sockaddr *addr, unsigned int *len, int fl);
 int unlink(const char *path);
 int chmod(const char *path, mode_t mode);
 int mkdir(const char *path, mode_t mode);
@@ -237,7 +237,7 @@ pid_t waitpid(pid_t pid, int *status, int options);
 void udelay(unsigned int usec);
 void _exit(int status);
 int nanosleep(const struct timespec *req, struct timespec *rem);
-int system(const char *command);
+int system(const char *cmd);
 int kill(pid_t pid, int sig);
 int access(const char *path, int mode);
 int fcntl(int fd, int cmd, ...);
@@ -250,8 +250,8 @@ int clock_gettime(int clk_id, struct timespec *tp);
 int sigaction(int signum, const struct sigaction *act,
               struct sigaction *oldact);
 int sigemptyset(sigset_t *set);
-int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
-           struct timeval *timeout);
+int select(int n, fd_set *rf, fd_set *wf, fd_set *ef,
+           struct timeval *tv);
 
 size_t strlen(const char *s);
 int strcmp(const char *s1, const char *s2);
@@ -261,7 +261,7 @@ char *strncpy(char *d, const char *s, size_t n);
 char *strcat(char *d, const char *s);
 char *strncat(char *d, const char *s, size_t n);
 char *strchr(const char *s, int c);
-char *strstr(const char *s1, const char *s2);
+char *strstr(const char *h, const char *n);
 size_t strcspn(const char *s, const char *reject);
 void *memset(void *s, int c, size_t n);
 void *memcpy(void *d, const void *s, size_t n);
@@ -269,8 +269,8 @@ int memcmp(const void *s1, const void *s2, size_t n);
 void *memmove(void *dest, const void *src, size_t n);
 void srand(unsigned int seed);
 int rand(void);
-int atoi(const char *s);
-double atof(const char *s);
+int atoi(const char *p);
+double atof(const char *p);
 long strtol(const char *p, char **e, int b);
 unsigned long long strtoull(const char *p, char **e, int b);
 int toupper(int c);
@@ -278,8 +278,8 @@ int isspace(int c);
 size_t strlcat_local(char *dst, const char *src, size_t size);
 
 char *getenv(const char *name);
-void openlog(const char *ident, int option, int facility);
-void syslog(int priority, const char *format, ...);
+void openlog(const char *id, int o, int f);
+void syslog(int prio, const char *fmt, ...);
 void closelog(void);
 void *malloc(size_t size);
 void *realloc(void *ptr, size_t size);

@@ -88,7 +88,7 @@ const char *get_insult(void) {
   return insults[rand() % insults_count];
 }
 
-void printf_misc(void) {
+static void printf_misc(void) {
   journal_error(ERR_CMD, get_insult());
 }
 
@@ -193,7 +193,7 @@ static int resolve_gui_path(char *out, size_t out_len) {
       if (dlen > 0 && dlen + 10 < out_len) {
         memcpy(out, start, dlen);
         out[dlen] = '/';
-        strcpy(out + dlen + 1, "x3d-gui");
+        memcpy(out + dlen + 1, "x3d-gui", 8);
         if (access(out, X_OK) == 0)
           return 0;
       }

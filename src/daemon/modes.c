@@ -159,18 +159,18 @@ int cli_set_core(int core_id, int online) {
   return (n > 0) ? ERR_SUCCESS : ERR_IO;
 }
 
-int cli_mode_apply(int mode) {
+int cli_mode_apply(int target_mode) {
   if (geteuid() != 0) {
     return 0;
   }
 
-  int aff_res = affinity_partition(0, mode);
+  int aff_res = affinity_partition(0, target_mode);
   if (aff_res != 0) {
     journal_error(ERR_AFFINITY, aff_res);
     return -1;
   }
 
-  sched_t target_sched = (mode == PART_CACHE) ? SCHED_GAMING : SCHED_BALANCED;
+  sched_t target_sched = (target_mode == PART_CACHE) ? SCHED_GAMING : SCHED_BALANCED;
 
   if (scheduler_set(target_sched) != 0) {
     journal_warn(ERR_HW);
@@ -179,16 +179,16 @@ int cli_mode_apply(int mode) {
   return 0;
 }
 
-static int ccd_change(const char *mode) {
+static int ccd_change(const char *target_mode) {
   char display_mode[BUFF_DISPLAY];
   const char *status_text = "profile";
 
-  if (strcmp(mode, "cache") == 0) {
+  if (strcmp(target_mode, "cache") == 0) {
     printf_sn(display_mode, sizeof(display_mode), "LATENCY-OPTIMIZED");
-  } else if (strcmp(mode, "frequency") == 0) {
+  } else if (strcmp(target_mode, "frequency") == 0) {
     printf_sn(display_mode, sizeof(display_mode), "THROUGHPUT-OPTIMIZED");
   } else {
-    printf_sn(display_mode, sizeof(display_mode), "%s", mode);
+    printf_sn(display_mode, sizeof(display_mode), "%s", target_mode);
     for (int i = 0; display_mode[i]; i++) {
       if (display_mode[i] >= 'a' && display_mode[i] <= 'z')
         display_mode[i] -= 32;
@@ -197,11 +197,11 @@ static int ccd_change(const char *mode) {
   display_mode[sizeof(display_mode) - 1] = '\0';
 
   int ipc_res = ERR_IPC;
-  if (strcmp(mode, "cache") == 0 || strcmp(mode, "frequency") == 0 ||
-      strcmp(mode, "dual") == 0 || strcmp(mode, "swap") == 0) {
+  if (strcmp(target_mode, "cache") == 0 || strcmp(target_mode, "frequency") == 0 ||
+      strcmp(target_mode, "dual") == 0 || strcmp(target_mode, "swap") == 0) {
     socket_send("SET_DAEMON manual", NULL, 0);
     char cmd[64];
-    printf_sn(cmd, sizeof(cmd), "SET_MODE %s", mode);
+    printf_sn(cmd, sizeof(cmd), "SET_MODE %s", target_mode);
     ipc_res = socket_send(cmd, NULL, 0);
   }
 
@@ -215,12 +215,12 @@ static int ccd_change(const char *mode) {
   }
 
   int hw_res = ERR_SUCCESS;
-  if (strcmp(mode, "dual") == 0) {
+  if (strcmp(target_mode, "dual") == 0) {
     hw_res = cli_set_dual();
-  } else if (strcmp(mode, "swap") == 0) {
+  } else if (strcmp(target_mode, "swap") == 0) {
     hw_res = cli_set_swap();
   } else {
-    hw_res = cli_set_mode(mode);
+    hw_res = cli_set_mode(target_mode);
   }
 
   if (hw_res != ERR_SUCCESS) {

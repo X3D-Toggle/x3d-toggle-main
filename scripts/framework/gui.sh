@@ -30,6 +30,7 @@ if ! glib-compile-resources --sourcedir=src/gtk4 \
     exit 1
 fi
 
+# shellcheck disable=SC2046
 if ! clang $(pkg-config --cflags gtk4 libadwaita-1) -Wall -O2 \
     -Ibuild -Iinclude -DGUI_BUILD -DLIBC_NO_BOOTSTRAP \
     src/gtk4/gui.c src/gtk4/x3d-gui-resources.c src/gtk4/stubs.c \

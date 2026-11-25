@@ -48,7 +48,7 @@ _l_cleanup() {
     read -r _unused
     return 0
 }
-trap _l_cleanup SIGINT SIGTERM
+trap _l_cleanup INT TERM
 
 printf_step "${SEARCH} Following Daemon Logs... (MVC Controller State)"
 journalctl -u x3d-toggle.service -f -n 20 &

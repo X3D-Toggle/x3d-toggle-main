@@ -337,7 +337,7 @@ static int restore_affinity(int irq) {
   return ERR_SUCCESS;
 }
 
-static void apply_list(irq_list_t *list, int core) {
+static void apply_list(const irq_list_t *list, int core) {
   for (int i = 0; i < list->count; i++) {
     apply_affinity(list->irqs[i], core);
   }
@@ -354,7 +354,7 @@ static void discover_nic_names(void) {
     char *nl = strchr(p, '\n');
     if (nl) *nl = '\0';
     for (int t = 0; t < 4; t++) {
-      char *found = strstr(p, tokens[t]);
+      const char *found = strstr(p, tokens[t]);
       if (found) {
         char candidate[32];
         int j = 0;
@@ -373,7 +373,8 @@ static void discover_nic_names(void) {
           }
         }
         if (!dup && candidate[0]) {
-          strcpy(g_nic_names[g_nic_count], candidate);
+          printf_sn(g_nic_names[g_nic_count], sizeof(g_nic_names[g_nic_count]),
+                    "%s", candidate);
           g_nic_count++;
         }
         break;
@@ -502,8 +503,8 @@ int irq_gen_udev(void) {
     return ERR_IRQ_UDEV;
   }
 
-  char header[] = "# X3D Toggle IRQ Affinity Rules (auto-generated)\n"
-                  "# Re-asserts IRQ affinity on device add/reset events\n\n";
+  const char header[] = "# X3D Toggle IRQ Affinity Rules (auto-generated)\n"
+                        "# Re-asserts IRQ affinity on device add/reset events\n\n";
   write(fd, header, strlen(header));
 
   char rule[256];
@@ -540,7 +541,7 @@ int irq_gen_udev(void) {
 }
 
 int irq_teardown(void) {
-  irq_list_t *lists[] = {
+  const irq_list_t *const lists[] = {
     &g_gpu_irqs, &g_nvme_irqs, &g_usb_irqs, &g_nic_irqs, &g_audio_irqs
   };
   for (int l = 0; l < 5; l++) {
@@ -564,8 +565,8 @@ int irq_teardown(void) {
 }
 
 int irq_status(void) {
-  char header[] = "\n  IRQ Affinity Status\n"
-                  "  ─────────────────────────────────────────\n";
+  const char header[] = "\n  IRQ Affinity Status\n"
+                        "  ─────────────────────────────────────────\n";
   write(FILENO_STDOUT, header, strlen(header));
 
   int msix = count_msix_vectors();
@@ -574,7 +575,7 @@ int irq_status(void) {
                       "  GPU MSI-X Vectors: %d\n\n", msix);
   write(FILENO_STDOUT, msix_line, len);
 
-  irq_list_t *lists[] = {
+  const irq_list_t *const lists[] = {
     &g_gpu_irqs, &g_nvme_irqs, &g_usb_irqs, &g_nic_irqs, &g_audio_irqs
   };
   const char *labels[] = {"GPU", "NVMe", "USB/xHCI", "NIC", "Audio"};
@@ -629,7 +630,7 @@ int irq_watch(void) {
   }
 
   while (1) {
-    irq_list_t *lists[] = {
+    const irq_list_t *const lists[] = {
       &g_gpu_irqs, &g_nvme_irqs, &g_usb_irqs, &g_nic_irqs, &g_audio_irqs
     };
     for (int l = 0; l < 5; l++) {
@@ -646,8 +647,7 @@ int irq_watch(void) {
     }
 
     if (g_cfg.thread_control) {
-      char *exemptions = g_cfg.thread_exempt;
-      char *ex = exemptions;
+      const char *ex = g_cfg.thread_exempt;
       char token[64];
       
       while (ex && *ex) {

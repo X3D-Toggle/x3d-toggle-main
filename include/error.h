@@ -27,63 +27,63 @@ typedef int error_code;
 #define STATE_ACTIVE      16
 #define SET_XUI_SYNC      17
 
-#define ERR_SUCCESS        0
-#define ERR_LOST          -1
-#define ERR_PERMISSION    -2
-#define ERR_IO            -3
-#define ERR_IPC           -4
-#define ERR_HW            -5
-#define ERR_SYNTAX        -6
-#define ERR_POLKIT        -7
-#define ERR_DAEMON        -8
-#define ERR_CMD           -9
+#define ERR_SUCCESS         0
+#define ERR_LOST          (-1)
+#define ERR_PERMISSION    (-2)
+#define ERR_IO            (-3)
+#define ERR_IPC           (-4)
+#define ERR_HW            (-5)
+#define ERR_SYNTAX        (-6)
+#define ERR_POLKIT        (-7)
+#define ERR_DAEMON        (-8)
+#define ERR_CMD           (-9)
 
-#define ERR_VIP          -10
-#define ERR_MISSING      -11
-#define ERR_PASSIVE      -12
-#define ERR_PROFILE      -13
-#define ERR_OFFLINE      -14
-#define ERR_ADD          -15
-#define ERR_REMOVE       -16
-#define ERR_STATUS       -17
-#define ERR_CPPC         -18
-#define ERR_EPP          -19
-#define ERR_GOV          -20
-#define ERR_USAGE        -21
-#define ERR_SOCKET       -22
-#define ERR_BIND         -23
-#define ERR_CHOWN        -24
-#define ERR_CHMOD        -25
-#define ERR_LISTEN       -26
-#define ERR_LOAD         -27
-#define ERR_LINTER       -28
-#define ERR_MEM          -29
-#define ERR_CONF         -30
-#define ERR_SCAFFOLD     -31
-#define ERR_PERM_BUILD   -32
-#define ERR_SAFETY       -33
-#define ERR_CGROUP       -34
-#define ERR_AFFINITY     -35
-#define ERR_GUI          -36
-#define ERR_EXEC         -37
-#define ERR_INVALID_ARGS -38
-#define ERR_LONG         -39
-#define ERR_IRQ_BIND     -40
-#define ERR_IRQ_NO_MSI   -41
-#define ERR_IRQ_BALANCER -42
-#define ERR_IRQ_UDEV     -43
-#define ERR_IRQ_DISCOVER -44
-#define ERR_IRQ_TEARDOWN -45
-#define ERR_IRQ_COALESCE -46
-#define ERR_IRQ_WATCH    -47
-#define ERR_UNSUPPORTED  -48
+#define ERR_VIP          (-10)
+#define ERR_MISSING      (-11)
+#define ERR_PASSIVE      (-12)
+#define ERR_PROFILE      (-13)
+#define ERR_OFFLINE      (-14)
+#define ERR_ADD          (-15)
+#define ERR_REMOVE       (-16)
+#define ERR_STATUS       (-17)
+#define ERR_CPPC         (-18)
+#define ERR_EPP          (-19)
+#define ERR_GOV          (-20)
+#define ERR_USAGE        (-21)
+#define ERR_SOCKET       (-22)
+#define ERR_BIND         (-23)
+#define ERR_CHOWN        (-24)
+#define ERR_CHMOD        (-25)
+#define ERR_LISTEN       (-26)
+#define ERR_LOAD         (-27)
+#define ERR_LINTER       (-28)
+#define ERR_MEM          (-29)
+#define ERR_CONF         (-30)
+#define ERR_SCAFFOLD     (-31)
+#define ERR_PERM_BUILD   (-32)
+#define ERR_SAFETY       (-33)
+#define ERR_CGROUP       (-34)
+#define ERR_AFFINITY     (-35)
+#define ERR_GUI          (-36)
+#define ERR_EXEC         (-37)
+#define ERR_INVALID_ARGS (-38)
+#define ERR_LONG         (-39)
+#define ERR_IRQ_BIND     (-40)
+#define ERR_IRQ_NO_MSI   (-41)
+#define ERR_IRQ_BALANCER (-42)
+#define ERR_IRQ_UDEV     (-43)
+#define ERR_IRQ_DISCOVER (-44)
+#define ERR_IRQ_TEARDOWN (-45)
+#define ERR_IRQ_COALESCE (-46)
+#define ERR_IRQ_WATCH    (-47)
+#define ERR_UNSUPPORTED  (-48)
 void journal_error(error_code code, ...);
 void journal_warn(error_code code, ...);
 void journal_info(error_code code, ...);
 void buffer_set(void);
 void buffer_flush(void);
 
-void journal_write(int priority, const char *format, ...);
+void journal_write(int prio, const char *format, ...);
 void journal_log(error_code code, ...);
 void journal_exit(int exit_code, const char *format, ...);
 
@@ -93,6 +93,6 @@ void journal_file(const char *level, const char *summary, const char *ctx);
 
 const char *journal_string(int code);
 const char *journal_strerror(int err);
-void journal_syslog(int priority, const char *summary, const char *ctx);
+void journal_syslog(int prio, const char *summary, const char *ctx);
 
 #endif // ERROR_H

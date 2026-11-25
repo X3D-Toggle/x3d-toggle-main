@@ -47,22 +47,24 @@ void diag_failsafe(int sig) {
   diag_restore(sig);
 }
 
-int cli_diag_linter(int argc, char *argv[]) {
-  (void)argc;
-  (void)argv;
+extern char **environ;
 
+int cli_diag_linter(int argc, char *argv[]) {
   printf_step(
       "${SEARCH} Initiating Project Audit: Launching automated linter suite...");
 
   pid_t pid = fork();
   if (pid == 0) {
     char linter_path[BUFF_PATH];
-    printf_step("${ALRIGHT} Game process terminated successfully.");
-    printf_sn(linter_path, sizeof(linter_path), "%s/scripts/tools/linter.sh", USR_LIBS);
+    if (access("./scripts/tools/linter.sh", R_OK) == 0) {
+      printf_sn(linter_path, sizeof(linter_path), "./scripts/tools/linter.sh");
+    } else {
+      printf_sn(linter_path, sizeof(linter_path), "%s/scripts/tools/linter.sh", USR_LIBS);
+    }
 
-    char *args[] = {(char *)"/usr/bin/sh", linter_path, NULL};
-    char *env[] = {NULL};
-    execve(args[0], args, env);
+    char *mode_arg = (argc > 2) ? argv[2] : (char *)"all";
+    char *args[] = {(char *)"/usr/bin/sh", linter_path, mode_arg, NULL};
+    execve(args[0], args, environ);
     write(2, "X3D Error: execve failed\n", 25);
     _exit(1);
   } else if (pid > 0) {

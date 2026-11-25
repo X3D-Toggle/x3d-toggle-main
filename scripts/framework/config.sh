@@ -40,10 +40,12 @@ get_conf_value() {
         set -f
         
         # Strip leading/trailing whitespace from the Key
+        # shellcheck disable=SC2086
         set -- $_key
         _clean_key="$1"
         
         # Strip leading/trailing whitespace from the Value
+        # shellcheck disable=SC2086
         set -- $_raw_val
         _clean_val="$1"
         
@@ -228,7 +230,7 @@ if [ "$1" = "--update" ]; then
     if [ -f "$_DAEMON_CONF" ]; then
         in_usr=0
         while IFS= read -r _l_line; do
-            _l_line="${_l_line%$(printf '\r')}"
+            _l_line="${_l_line%"$(printf '\r')"}"
             
             if [ "$_l_line" = "[GAMES_USR]" ]; then
                 in_usr=1
@@ -291,7 +293,7 @@ if [ "$1" = "--update" ]; then
         printf_br
         printf_step "[GAMES_SYS]"
         while IFS= read -r _l_game; do
-            _l_game="${_l_game%$(printf '\r')}"
+            _l_game="${_l_game%"$(printf '\r')"}"
             case "$_l_game" in
                 "#"*|"/*"*|"*/"*|"") continue ;;
             esac
@@ -321,7 +323,7 @@ fi
 printf_step "2,${GEAR} Writing synchronized Configuration ruleset: build/config.h..."
 
 {
-    printf "/* Configuration Interface Header for the X3D Toggle Project
+    printf "%s" "/* Configuration Interface Header for the X3D Toggle Project
 *
 * \`config.h\` - Header only
 *
@@ -515,7 +517,7 @@ printf_step "2,${GEAR} Writing synchronized configuration payload: build/daemon.
     printf_br
     printf_step "[GAMES_SYS]"
     while IFS= read -r _l_game; do
-        _l_game="${_l_game%$(printf '\r')}"
+        _l_game="${_l_game%"$(printf '\r')"}"
         case "$_l_game" in
             "#"*|"/*"*|"*/"*|"") continue ;;
         esac

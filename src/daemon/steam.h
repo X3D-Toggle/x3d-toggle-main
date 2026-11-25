@@ -61,12 +61,12 @@ static inline int scan_pid_steam(const char *pid_str) {
     if (!pid_str || pid_str[0] == '\0') return 0;
 
     char path[64], buf[4096];
-    char comm[32] = {0};
 
     /* First check comm directly for infra (abort) or game engine (fast-path) */
     printf_sn(path, sizeof(path), "/proc/%s/comm", pid_str);
     int cfd = open(path, O_RDONLY);
     if (cfd >= 0) {
+        char comm[32] = {0};
         ssize_t cn = read(cfd, comm, sizeof(comm) - 1);
         close(cfd);
         if (cn > 0) {

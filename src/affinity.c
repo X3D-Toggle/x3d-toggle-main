@@ -81,7 +81,7 @@ int affinity_default(pid_t pid) {
 }
 
 int affinity_auto(pid_t pid) {
-  char path[] = "/sys/fs/cgroup/cgroup.procs";
+  const char path[] = "/sys/fs/cgroup/cgroup.procs";
   int fd = open(path, O_WRONLY);
   if (fd < 0) return ERR_CGROUP;
 

@@ -100,14 +100,15 @@ void socket_handle(int server_fd) {
       const char *val = config_get(buf + 11);
       send(client_fd, val, strlen(val), MSG_NOSIGNAL);
     } else if (strncmp(buf, "TOGGLE", 6) == 0) {
-      char current[32], *target;
+      char current[32];
+      const char *target;
       mode(current, sizeof(current));
       target = (strcmp(current, "cache") == 0) ? "frequency" : "cache";
       active_override = (strcmp(target, "cache") == 0) ? 1 : 2;
       cli_set_mode(target);
       send(client_fd, "OK", 2, MSG_NOSIGNAL);
     } else if (strncmp(buf, "SET_MODE ", 9) == 0) {
-      char *val = buf + 9;
+      const char *val = buf + 9;
       int matched = 1;
       if (strstr(val, "auto") || strstr(val, "default") ||
           strstr(val, "reset")) {
@@ -154,7 +155,7 @@ void socket_handle(int server_fd) {
       send(client_fd, (ret == ERR_SUCCESS) ? "OK" : "ERR",
            (ret == ERR_SUCCESS) ? 2 : 3, MSG_NOSIGNAL);
     } else if (strncmp(buf, "SET_CPPC ", 9) == 0) {
-      char *val = buf + 9;
+      const char *val = buf + 9;
       char *endptr = NULL;
       long parsed;
       int ret = ERR_IO;
@@ -179,7 +180,7 @@ void socket_handle(int server_fd) {
       send(client_fd, (ret == ERR_SUCCESS) ? "OK" : "ERR",
            (ret == ERR_SUCCESS) ? 2 : 3, MSG_NOSIGNAL);
     } else if (strncmp(buf, "SET_PARK ", 9) == 0) {
-      char *target_str = buf + 9;
+      const char *target_str = buf + 9;
       int ret = ERR_SUCCESS;
       if (strcmp(target_str, "ccd1") == 0) {
 #if defined(CCD_COUNT) && CCD_COUNT >= 2
@@ -207,7 +208,7 @@ void socket_handle(int server_fd) {
       send(client_fd, (ret == ERR_SUCCESS) ? "OK" : "ERR",
            (ret == ERR_SUCCESS) ? 2 : 3, MSG_NOSIGNAL);
     } else if (strncmp(buf, "SET_UNPARK ", 11) == 0) {
-      char *target_str = buf + 11;
+      const char *target_str = buf + 11;
       int ret = ERR_SUCCESS;
       if (strcmp(target_str, "ccd1") == 0 || strcmp(target_str, "all") == 0) {
         ret = cli_set_dual();
@@ -400,7 +401,7 @@ void socket_handle(int server_fd) {
       printf_sn(list_buf, sizeof(list_buf), "GAMES_SYNCED");
       send(client_fd, list_buf, strlen(list_buf), MSG_NOSIGNAL);
     } else if (strncmp(buf, "ADVANCED_GET ", 13) == 0) {
-      char *key = buf + 13;
+      const char *key = buf + 13;
       char path[256] = {0};
       char val[128] = {0};
       int ret = -1;
@@ -495,21 +496,21 @@ void socket_handle(int server_fd) {
               ret = sysctl_write(path, val);
               if (ret == 0) {
                   /* Persist change to daemon.conf */
-                  char ckey[64];
-                  if (strcmp(key, "kernel.sched_bore") == 0) strcpy(ckey, "SCHED_BORE");
+                  char ckey[64] = {0};
+                  if (strcmp(key, "kernel.sched_bore") == 0) printf_sn(ckey, sizeof(ckey), "SCHED_BORE");
                   else if (strcmp(key, "kernel.sched_burst_penalty_offset") == 0 ||
-                           strcmp(key, "kernel.sched_bit_shift") == 0) strcpy(ckey, "SCHED_BIT_SHIFT");
+                           strcmp(key, "kernel.sched_bit_shift") == 0) printf_sn(ckey, sizeof(ckey), "SCHED_BIT_SHIFT");
                   else if (strcmp(key, "kernel.sched_burst_inherit_type") == 0 ||
-                           strcmp(key, "kernel.sched_burst_fork_at_init") == 0) strcpy(ckey, "SCHED_BURST_FORK");
-                  else if (strcmp(key, "kernel.sched_cfs_bandwidth_slice_us") == 0) strcpy(ckey, "SCHED_SLICE_US");
-                  else if (strcmp(key, "vm.max_map_count") == 0) strcpy(ckey, "VM_MAX_MAP");
-                  else if (strcmp(key, "kernel.split_lock_mitigate") == 0) strcpy(ckey, "SPLIT_LOCK_DETECT");
-                  else if (strcmp(key, "kernel.nmi_watchdog") == 0) strcpy(ckey, "NMI_WATCHDOG");
-                  else if (strcmp(key, "net.core.default_qdisc") == 0) strcpy(ckey, "NET_QDISC");
-                  else if (strcmp(key, "net.ipv4.tcp_fastopen") == 0) strcpy(ckey, "NET_FASTOPEN");
-                  else if (strcmp(key, "net.ipv4.conf.all.rp_filter") == 0) strcpy(ckey, "NET_RP_FILTER");
-                  else if (strcmp(key, "net.ipv4.conf.all.accept_source_route") == 0) strcpy(ckey, "NET_SOURCE_ROUTE");
-                  else if (strcmp(key, "target_thp_mode") == 0) strcpy(ckey, "THP_MODE");
+                           strcmp(key, "kernel.sched_burst_fork_at_init") == 0) printf_sn(ckey, sizeof(ckey), "SCHED_BURST_FORK");
+                  else if (strcmp(key, "kernel.sched_cfs_bandwidth_slice_us") == 0) printf_sn(ckey, sizeof(ckey), "SCHED_SLICE_US");
+                  else if (strcmp(key, "vm.max_map_count") == 0) printf_sn(ckey, sizeof(ckey), "VM_MAX_MAP");
+                  else if (strcmp(key, "kernel.split_lock_mitigate") == 0) printf_sn(ckey, sizeof(ckey), "SPLIT_LOCK_DETECT");
+                  else if (strcmp(key, "kernel.nmi_watchdog") == 0) printf_sn(ckey, sizeof(ckey), "NMI_WATCHDOG");
+                  else if (strcmp(key, "net.core.default_qdisc") == 0) printf_sn(ckey, sizeof(ckey), "NET_QDISC");
+                  else if (strcmp(key, "net.ipv4.tcp_fastopen") == 0) printf_sn(ckey, sizeof(ckey), "NET_FASTOPEN");
+                  else if (strcmp(key, "net.ipv4.conf.all.rp_filter") == 0) printf_sn(ckey, sizeof(ckey), "NET_RP_FILTER");
+                  else if (strcmp(key, "net.ipv4.conf.all.accept_source_route") == 0) printf_sn(ckey, sizeof(ckey), "NET_SOURCE_ROUTE");
+                  else if (strcmp(key, "target_thp_mode") == 0) printf_sn(ckey, sizeof(ckey), "THP_MODE");
                   
                   config_update(ckey, val);
               }

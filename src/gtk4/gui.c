@@ -163,9 +163,9 @@ static gboolean update_dashboard_cb(gpointer user_data) {
 
   if (socket_ok) {
     char *st_val = strstr(info, "STATE=");
-    char *ov_val = strstr(info, "OVERRIDE=");
-    char *ba_val = strstr(info, "BPF_ACTIVE=");
-    char *mk = strstr(info, "MASK=");
+    const char *ov_val = strstr(info, "OVERRIDE=");
+    const char *ba_val = strstr(info, "BPF_ACTIVE=");
+    const char *mk = strstr(info, "MASK=");
 
     if (st_val) {
       printf_sn(daemon_state, sizeof(daemon_state), "%s", st_val + 6);
@@ -192,7 +192,7 @@ static gboolean update_dashboard_cb(gpointer user_data) {
     }
 
     /* Capability Discovery Logic */
-    char *caps_val = strstr(info, "CAPS=");
+    const char *caps_val = strstr(info, "CAPS=");
     if (caps_val) {
       uint32_t caps = (uint32_t)strtoul(caps_val + 5, NULL, 16);
       gboolean force = g_cfg_force_unsupported ? gtk_switch_get_active(g_cfg_force_unsupported) : FALSE;
@@ -531,7 +531,7 @@ static int is_core_in_mask(int core, const char *mask) {
     char *comma = strchr(p, ',');
     if (comma)
       *comma = '\0';
-    char *hyphen = strchr(p, '-');
+    const char *hyphen = strchr(p, '-');
     if (hyphen) {
       int start = atoi(p);
       int end = atoi(hyphen + 1);
@@ -563,7 +563,7 @@ static void on_core_toggled(GtkToggleButton *btn, gpointer user_data) {
   }
 }
 
-void refresh_topology(void) {
+static void refresh_topology(void) {
   if (!g_grid_topology)
     return;
   char mask[128] = {0};
@@ -574,7 +574,7 @@ void refresh_topology(void) {
 
   /* Priority: Use user-defined persistence from daemon.conf if available */
   const char *saved_mask = config_get("AFFINITY_MASK");
-  if (saved_mask && saved_mask[0] && strcmp(saved_mask, "none") != 0) {
+  if (saved_mask[0] && strcmp(saved_mask, "none") != 0) {
     strncpy(mask, saved_mask, sizeof(mask) - 1);
   }
 
@@ -684,7 +684,7 @@ static void on_affinity_cancel_clicked(GtkButton *btn, gpointer user_data) {
   if (g_cfg_affinity_level) {
     const char *val = config_get("AFFINITY_LEVEL");
     gtk_drop_down_set_selected(g_cfg_affinity_level,
-                               (guint)atoi(val ? val : "0"));
+                               (guint)atoi(val[0] ? val : "0"));
   }
 
   refresh_topology();
@@ -790,12 +790,6 @@ static void config_send(const char *key, const char *value) {
 }
 
 /* ── Config: Widget change callbacks ──────────────────────────── */
-
-typedef struct {
-  const char *key;
-  const char **values; /* NULL for numeric */
-  int offset; /* index offset for numeric values (e.g., detection 1-based) */
-} CfgDropData;
 
 static void on_cfg_dropdown_changed(GObject *obj, GParamSpec *pspec,
                                     gpointer data) {
@@ -924,15 +918,6 @@ static const char *valgrind_kinds_vals[] = {"all", "definite", "indirect",
 static const char *journal_max_mb_vals[] = {"5", "10", "25", "50", "100"};
 static const char *server_ssh_vals[] = {"local", "remote", "enabled"};
 
-static CfgDropData dd_daemon_state = {"DAEMON_STATE", daemon_state_vals, 0};
-static CfgDropData dd_fallback = {"FALLBACK_PROFILE", fallback_vals, 0};
-static CfgDropData dd_detection = {"DETECTION_LEVEL", NULL, 1}; /* 1-based */
-static CfgDropData dd_affinity = {"AFFINITY_LEVEL", NULL, 0};
-static CfgDropData dd_valgrind_m = {"LINT_VALGRIND_MODE", valgrind_mode_vals,
-                                    0};
-static CfgDropData dd_valgrind_k = {"LINT_VALGRIND_KINDS", valgrind_kinds_vals,
-                                    0};
-
 static guint find_dropdown_idx(const char **values, int count,
                                const char *target) {
   for (int i = 0; i < count; i++)
@@ -965,7 +950,7 @@ static void on_rotation_cancel_clicked(GtkButton *btn, gpointer data) {
   (void)data;
   if (g_cfg_journal_keep) {
     const char *val = config_get("JOURNAL_KEEP");
-    if (val && val[0])
+    if (val[0])
       gtk_spin_button_set_value(g_cfg_journal_keep, atoi(val));
   }
   if (g_cfg_journal_max_mb) {
@@ -1256,13 +1241,13 @@ static void on_cfg_cancel_clicked(GtkButton *btn, gpointer user_data) {
 
   if (g_cfg_server_address) {
     const char *val = config_get("SERVER_ADDRESS");
-    if (val && val[0] && strcmp(val, "ERR") != 0) {
+    if (val[0] && strcmp(val, "ERR") != 0) {
       gtk_editable_set_text(g_cfg_server_address, val);
     }
   }
   if (g_cfg_server_port) {
     const char *val = config_get("SERVER_PORT");
-    if (val && val[0] && strcmp(val, "ERR") != 0) {
+    if (val[0] && strcmp(val, "ERR") != 0) {
       gtk_editable_set_text(g_cfg_server_port, val);
     }
   }
@@ -1294,7 +1279,7 @@ static void config_bind(GtkBuilder *builder) {
                                                  ARRAY_SIZE(daemon_state_vals),
                                                  val));
     g_signal_connect(w, "notify::selected", G_CALLBACK(on_cfg_dropdown_changed),
-                     &dd_daemon_state);
+                     NULL);
   }
 
   /* Dropdown: FALLBACK_PROFILE */
@@ -1306,7 +1291,7 @@ static void config_bind(GtkBuilder *builder) {
         GTK_DROP_DOWN(w),
         find_dropdown_idx(fallback_vals, ARRAY_SIZE(fallback_vals), val));
     g_signal_connect(w, "notify::selected", G_CALLBACK(on_cfg_dropdown_changed),
-                     &dd_fallback);
+                     NULL);
   }
 
   /* Scale: POLLING_INTERVAL */
@@ -1336,7 +1321,7 @@ static void config_bind(GtkBuilder *builder) {
     val = config_get("DETECTION_LEVEL");
     gtk_drop_down_set_selected(GTK_DROP_DOWN(w), (guint)(atoi(val) - 1));
     g_signal_connect(w, "notify::selected", G_CALLBACK(on_cfg_dropdown_changed),
-                     &dd_detection);
+                     NULL);
   }
 
   /* Switch: EBPF_ENABLE */
@@ -1355,7 +1340,7 @@ static void config_bind(GtkBuilder *builder) {
     val = config_get("AFFINITY_LEVEL");
     gtk_drop_down_set_selected(GTK_DROP_DOWN(w), (guint)atoi(val));
     g_signal_connect(w, "notify::selected", G_CALLBACK(on_cfg_dropdown_changed),
-                     &dd_affinity);
+                     NULL);
   }
 
   /* Switch: ADVANCED_CONFIG_ENABLE (controls advanced tab visibility) */
@@ -1466,7 +1451,7 @@ static void config_bind(GtkBuilder *builder) {
                                                  ARRAY_SIZE(valgrind_mode_vals),
                                                  val));
     g_signal_connect(w, "notify::selected", G_CALLBACK(on_cfg_dropdown_changed),
-                     &dd_valgrind_m);
+                     NULL);
   }
 
   /* Dropdown: VALGRIND_KINDS */
@@ -1478,7 +1463,7 @@ static void config_bind(GtkBuilder *builder) {
         find_dropdown_idx(valgrind_kinds_vals, ARRAY_SIZE(valgrind_kinds_vals),
                           val));
     g_signal_connect(w, "notify::selected", G_CALLBACK(on_cfg_dropdown_changed),
-                     &dd_valgrind_k);
+                     NULL);
   }
 
   /* Linter Run Buttons */
@@ -1520,7 +1505,7 @@ static void config_bind(GtkBuilder *builder) {
   if (w) {
     g_cfg_journal_keep = GTK_SPIN_BUTTON(w);
     val = config_get("JOURNAL_KEEP");
-    if (val && val[0])
+    if (val[0])
       gtk_spin_button_set_value(g_cfg_journal_keep, atoi(val));
   }
 
@@ -1556,11 +1541,11 @@ static void config_bind(GtkBuilder *builder) {
     g_signal_connect(w, "changed", G_CALLBACK(on_server_port_changed), NULL);
   }
   val = config_get("SERVER_ADDRESS");
-  if (val && val[0] && strcmp(val, "ERR") != 0 && g_cfg_server_address) {
+  if (val[0] && strcmp(val, "ERR") != 0 && g_cfg_server_address) {
     gtk_editable_set_text(g_cfg_server_address, val);
   }
   val = config_get("SERVER_PORT");
-  if (val && val[0] && strcmp(val, "ERR") != 0 && g_cfg_server_port) {
+  if (val[0] && strcmp(val, "ERR") != 0 && g_cfg_server_port) {
     gtk_editable_set_text(g_cfg_server_port, val);
   }
   w = gtk_builder_get_object(builder, "cfg_server_ssh");
@@ -1569,7 +1554,7 @@ static void config_bind(GtkBuilder *builder) {
     g_signal_connect(w, "notify::selected", G_CALLBACK(on_server_ssh_changed), NULL);
   }
   val = config_get("SERVER_SSH");
-  if (val && val[0] && strcmp(val, "ERR") != 0 && g_cfg_server_ssh) {
+  if (val[0] && strcmp(val, "ERR") != 0 && g_cfg_server_ssh) {
     gtk_drop_down_set_selected(
         g_cfg_server_ssh,
         find_dropdown_idx(server_ssh_vals, ARRAY_SIZE(server_ssh_vals), val));
@@ -1856,7 +1841,7 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
     g_cfg_affinity_level = GTK_DROP_DOWN(w);
     const char *val = config_get("AFFINITY_LEVEL");
     gtk_drop_down_set_selected(g_cfg_affinity_level,
-                               (guint)atoi(val ? val : "0"));
+                               (guint)atoi(val[0] ? val : "0"));
   }
 
   /* Bind Lifecycle Dropdown */

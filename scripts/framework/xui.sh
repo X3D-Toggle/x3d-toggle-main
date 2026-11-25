@@ -54,10 +54,11 @@ export ARROW_DOWN="⬇ DOWN"
 export ARROW_RIGHT="➡ RIGHT"
 export ARROW_LEFT="⬅ LEFT"
 
-export SEQ_UP=$(printf "\033[A")
-export SEQ_DOWN=$(printf "\033[B")
-export SEQ_RIGHT=$(printf "\033[C")
-export SEQ_LEFT=$(printf "\033[D")
+SEQ_UP="$(printf '\033[A')"
+SEQ_DOWN="$(printf '\033[B')"
+SEQ_RIGHT="$(printf '\033[C')"
+SEQ_LEFT="$(printf '\033[D')"
+export SEQ_UP SEQ_DOWN SEQ_RIGHT SEQ_LEFT
 
 export UP="${COLOR_GREEN}${ARROW_UP}${COLOR_RESET}"
 export DOWN="${COLOR_YELLOW}${ARROW_DOWN}${COLOR_RESET}"
@@ -154,8 +155,8 @@ printf_step() {
         while [ -n "$_l_expanded" ]; do
             case "$_l_expanded" in
                 *"$_l_newline"*)
-                    _l_line="${_l_expanded%%$_l_newline*}"
-                    _l_expanded="${_l_expanded#*$_l_newline}"
+                    _l_line="${_l_expanded%%"$_l_newline"*}"
+                    _l_expanded="${_l_expanded#*"$_l_newline"}"
                     ;;
                 *)
                     _l_line="$_l_expanded"
@@ -193,8 +194,8 @@ printf_step_no_nl() {
         while [ -n "$_l_expanded" ]; do
             case "$_l_expanded" in
                 *"$_l_newline"*)
-                    _l_line="${_l_expanded%%$_l_newline*}"
-                    _l_expanded="${_l_expanded#*$_l_newline}"
+                    _l_line="${_l_expanded%%"$_l_newline"*}"
+                    _l_expanded="${_l_expanded#*"$_l_newline"}"
                     printf "%b%s\n" "$_l_prefix" "$_l_line"
                     ;;
                 *)

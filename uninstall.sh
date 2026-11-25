@@ -92,8 +92,8 @@ fi
 # --- POST-UNINSTALL CLEANUP ---
 
 printf_step "${WIPE} Performing Atomic Cleanup (wiping build artifacts)..."
-rm -rf "$_l_dir_root/bin"/* 2>/dev/null
-rm -rf "$_l_dir_root/build"/* 2>/dev/null
+rm -rf "${_l_dir_root:?}/bin"/* 2>/dev/null
+rm -rf "${_l_dir_root:?}/build"/* 2>/dev/null
 
 if getent passwd x3d-toggle >/dev/null; then
     printf_step "${WIPE} Removing x3d-toggle service user..."
@@ -136,7 +136,7 @@ esac
 
 if [ -t 0 ]; then
     printf_br
-    printf_step_no_nl "${QUERY} Do you want to wipe the contents of `audits/` and `logs/`? [y/N] "
+    printf_step_no_nl "${QUERY} Do you want to wipe the contents of 'audits/' and 'logs/'? [y/N] "
     read -r WIPE_LOGS
 else
     WIPE_LOGS="n"

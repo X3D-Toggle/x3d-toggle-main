@@ -5,6 +5,7 @@
  */
 
 #include "libc.h"
+#include "ccd.h"
 #include "xui.h"
 #include "error.h"
 
@@ -42,9 +43,6 @@ int cli_stress_cpu(int argc, char *argv[]) {
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
-    int total_cores = 16; // Default fallback for Zen 4/5
-    // In a future update, we can parse /proc/stat here.
-
     if (interval > 0) {
         printf_step("${RELOAD} Mode: targeted CCD Migration (Interval: %ds)", interval);
         
@@ -81,9 +79,12 @@ int cli_stress_cpu(int argc, char *argv[]) {
     } else {
         printf_step("${STOPSIGN} Mode: Total CCD Saturation (100%% All Cores)");
         
-        pid_t workers[128];
-        int count = total_cores;
+        int count = 0;
+        if (ccd(NULL, NULL, &count) != ERR_SUCCESS || count < 1)
+            count = 16;
         if (count > 128) count = 128;
+
+        pid_t workers[128];
 
         for (int i = 0; i < count; i++) {
             workers[i] = fork();

@@ -21,9 +21,9 @@ elif [ -f "/usr/lib/x3d-toggle/scripts/framework/framework.sh" ]; then
     . "/usr/lib/x3d-toggle/scripts/framework/framework.sh"
 else
     echo "⚠️  Warning: framework.sh not found. Proceeding with standard terminal I/O."
-    XOUT="❌"; WARN="⚠️"; ALRIGHT="✔️"; QUERY="❓"; ROCKET="🚀"; GEAR="⚙️"; RELOAD="🔄"; STOPSIGN="🛑"; INFO="🌐"
-    printf_step() { echo "  > $*"; }
-    printf_step_no_nl() { echo -n "  > $*"; }
+    XOUT="❌"; WARN="⚠️"; ALRIGHT="✔️"; QUERY="❓"; ROCKET="🚀"; GEAR="⚙️"; RELOAD="🔄"; INFO="🌐"
+    printf_step() { printf "  > %s\n" "$*"; }
+    printf_step_no_nl() { printf "  > %s" "$*"; }
     printf_center() { echo "=== $* ==="; }
     printf_br() { echo ""; }
     printf_divider() { echo "----------------------------------------"; }

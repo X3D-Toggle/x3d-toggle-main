@@ -16,11 +16,10 @@ static int dialog_open(void) {
     char buf[4096];
     int nread;
     int found = 0;
-    struct linux_dirent64 *d;
 
     while ((nread = getdents64(fd, (struct linux_dirent64 *)buf, sizeof(buf))) > 0) {
         for (int bpos = 0; bpos < nread;) {
-            d = (struct linux_dirent64 *)(buf + bpos);
+            struct linux_dirent64 *d = (struct linux_dirent64 *)(buf + bpos);
             if (d->d_name[0] >= '0' && d->d_name[0] <= '9') {
                 char path[256], cmdline[256];
                 printf_sn(path, sizeof(path), "/proc/%s/cmdline", d->d_name);

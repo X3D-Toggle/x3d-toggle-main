@@ -13,13 +13,27 @@
 _l_dir_lib="$(cd "$(dirname "$0")/../framework" && pwd)"
 . "$_l_dir_lib/framework.sh"
 
-DIR_LOGS="$VAR_LOGS"
-DIR_AUDITS="$VAR_AUDITS"
+DIR_LOGS="${VAR_LOGS:-/var/log/x3d-toggle/logs}"
+DIR_AUDITS="${VAR_AUDITS:-/var/log/x3d-toggle/audits}"
 
 # Respect configuration values, with defaults
 KEEP=${JOURNAL_KEEP:-7}
 MAX_MB=${JOURNAL_MAX_MB:-10}
 MAX_BYTES=$((MAX_MB * 1024 * 1024))
+
+prune_archives() {
+    _dir="$1"
+    _base="$2"
+    set -- "$_dir/${_base}."*.gz
+    if [ -e "$1" ]; then
+        _count=$#
+        while [ "$_count" -gt "$KEEP" ]; do
+            rm -f -- "$1" || true
+            shift
+            _count=$((_count - 1))
+        done
+    fi
+}
 
 rotate_logs() {
     for logfile in "$DIR_LOGS"/*.log; do
@@ -33,17 +47,7 @@ rotate_logs() {
 
             base=$(basename -- "$logfile")
             dir=$(dirname -- "$logfile")
-            
-            # POSIX way to handle rotation limit
-            count=$(ls -1tr "$dir/${base}."*.gz 2>/dev/null | wc -l)
-            
-            if [ "$count" -gt "$KEEP" ]; then
-                diff=$((count - KEEP))
-                ls -1tr "$dir/${base}."*.gz 2>/dev/null | head -n "$diff" | while read -r arc; do
-                    [ -z "$arc" ] && continue
-                    rm -f -- "$arc" || true
-                done
-            fi
+            prune_archives "$dir" "$base"
         fi
     done
 }
@@ -60,16 +64,7 @@ rotate_audits() {
 
             base=$(basename -- "$auditfile")
             dir=$(dirname -- "$auditfile")
-            
-            count=$(ls -1tr "$dir/${base}."*.gz 2>/dev/null | wc -l)
-            
-            if [ "$count" -gt "$KEEP" ]; then
-                diff=$((count - KEEP))
-                ls -1tr "$dir/${base}."*.gz 2>/dev/null | head -n "$diff" | while read -r arc; do
-                    [ -z "$arc" ] && continue
-                    rm -f -- "$arc" || true
-                done
-            fi
+            prune_archives "$dir" "$base"
         fi
     done
 }

@@ -13,9 +13,9 @@
 _l_dir_lib="$(cd "$(dirname "$0")/../framework" && pwd)"
 . "$_l_dir_lib/framework.sh"
 
-DIR_LOGS="$VAR_LOGS"
-DIR_AUDITS="$VAR_AUDITS"
-DIR_DUMPS="$VAR_DUMPS"
+DIR_LOGS="${VAR_LOGS:-/var/log/x3d-toggle/logs}"
+DIR_AUDITS="${VAR_AUDITS:-/var/log/x3d-toggle/audits}"
+DIR_DUMPS="${VAR_DUMPS:-/var/log/x3d-toggle/coredumps}"
 
 printf_step "📦 Finalizing diagnostics: Zipping current session data..."
 

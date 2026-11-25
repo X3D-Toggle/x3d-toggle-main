@@ -13,7 +13,7 @@
 #define SYSFS_PATTERN1 "/sys/bus/platform/drivers/amd_x3d_vcache/*/amd_x3d_mode"
 #define SYSFS_PATTERN2 "/sys/devices/platform/AMDI*/amd_x3d_mode"
 
-void debug_sysfs(const char *pattern) {
+static void debug_sysfs(const char *pattern) {
     glob_t glob_result;
     int ret;
     char buf[PATH_MAX];

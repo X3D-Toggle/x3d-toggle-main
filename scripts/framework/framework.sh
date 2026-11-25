@@ -363,9 +363,7 @@ journal_write() {
         _l_code="${1:-$_j_flag}"
         shift
         
-        _l_raw_msg=$(journal_get "$_l_code")
-        
-        if [ $? -ne 0 ]; then
+        if ! _l_raw_msg=$(journal_get "$_l_code"); then
             printf_center "2,${XOUT} Critical Error: [X3D-$_l_code] ${XOUT}" \
                           "2,Diagnostic string not found in registry."
             exit 1
@@ -376,6 +374,7 @@ journal_write() {
         
         case "$_l_details" in
             *"%s"*|*"%d"*|*"%zu"*)
+                # shellcheck disable=SC2059
                 _l_details=$(printf "$_l_details" "$@") ;;
         esac
         
@@ -466,6 +465,7 @@ if [ "$X3D_FRAMEWORK" = "1" ] && [ "$(basename -- "$0")" = "framework.sh" ]; the
                         --gen-config-file)
                             shift; config_generate "$1" "$2"; exit 0 ;;
                         --gen-all)
+                            # shellcheck disable=SC2086
                             X3D_EXEC=1 X3D_FRAMEWORK=1 sh "$X3D_TOGGLE/scripts/framework/framework.sh" $UPDATE $VERIFY --gen-xui --gen-ccd --gen-ebpf --gen-config || exit 1; shift ;;
                         *)
                             journal_write -6 "$1"; exit 1 ;; # Syntax error

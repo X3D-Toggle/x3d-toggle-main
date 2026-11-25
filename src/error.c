@@ -118,7 +118,7 @@ static const msg_t registry_status[] = {
 
 static int syslog_fd = -1;
 
-void journal_syslog(int priority, const char *summary, const char *ctx) {
+void journal_syslog(int prio, const char *summary, const char *ctx) {
   if (syslog_fd < 0) {
     syslog_fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
   }
@@ -133,7 +133,7 @@ void journal_syslog(int priority, const char *summary, const char *ctx) {
     "PRIORITY=%d\n"
     "SYSLOG_IDENTIFIER=x3d-toggle\n"
     "MESSAGE=%s: %s\n",
-    priority, summary, ctx);
+    prio, summary, ctx);
 
   sendto(syslog_fd, buf, len, 0, (struct sockaddr *)&addr, sizeof(addr));
 }
@@ -309,15 +309,15 @@ void buffer_flush(void) {
   }
 }
 
-void journal_write(int priority, const char *format, ...) {
+void journal_write(int prio, const char *format, ...) {
   va_list args;
   va_start(args, format);
   char ctx[1024];
   printf_vsn(ctx, sizeof(ctx), format, args);
   va_end(args);
 
-  if (priority <= 4) {
-    journal_file((priority <= 3) ? "ERR" : "WRN", "System Event", ctx);
+  if (prio <= 4) {
+    journal_file((prio <= 3) ? "ERR" : "WRN", "System Event", ctx);
   }
 }
 

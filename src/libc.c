@@ -39,8 +39,8 @@ __asm__(".section .text\n"
 static unsigned int _next = 1;
 void srand(unsigned int seed) { _next = seed; }
 int rand(void) {
-  _next = _next * 1103515245 + 12345;
-  return (unsigned int)(_next / 65536) % 32768;
+  _next = (_next * 1103515245U) + 12345U;
+  return (int)((_next / 65536U) % 32768U);
 }
 
 #define SYS_read 0
@@ -209,8 +209,8 @@ int nanosleep(const struct timespec *req, struct timespec *rem) {
 
 void udelay(unsigned int usec) {
   struct timespec ts;
-  ts.tv_sec = usec / 1000000;
-  ts.tv_nsec = (usec % 1000000) * 1000;
+  ts.tv_sec = (time_t)(usec / 1000000U);
+  ts.tv_nsec = (long)(usec % 1000000U) * 1000L;
   nanosleep(&ts, NULL);
 }
 
@@ -608,8 +608,10 @@ char *strncpy(char *d, const char *s, size_t n) {
   if (!d || !s || !n)
     return d;
   char *r = d;
-  while (n && (*d++ = *s++))
+  while (n && *s) {
+    *d++ = *s++;
     n--;
+  }
   while (n--)
     *d++ = 0;
   return r;
@@ -630,7 +632,8 @@ char *strncat(char *d, const char *s, size_t n) {
   char *r = d;
   while (*d)
     d++;
-  while (n-- && (*d++ = *s++)) {
+  while (n-- && *s) {
+    *d++ = *s++;
   }
   *d = 0;
   return r;
@@ -718,7 +721,7 @@ int atoi(const char *p) {
     p++;
   }
   while (*p >= '0' && *p <= '9')
-    n = n * 10 + (*p++ - '0');
+    n = (n * 10) + (*p++ - '0');
   return neg ? -n : n;
 }
 double atof(const char *p) {
@@ -733,7 +736,7 @@ double atof(const char *p) {
   while (*p) {
     if (*p >= '0' && *p <= '9') {
       if (state == 0)
-        res = res * 10.0 + (*p - '0');
+        res = (res * 10.0) + (*p - '0');
       else {
         frac *= 0.1;
         res += (*p - '0') * frac;
@@ -784,7 +787,7 @@ long strtol(const char *p, char **e, int b) {
     if (!overflow && (r > (limit - (unsigned long)v) / (unsigned long)b)) {
       overflow = 1;
     }
-    if (!overflow) r = r * (unsigned long)b + (unsigned long)v;
+    if (!overflow) r = (r * (unsigned long)b) + (unsigned long)v;
     p++;
   }
   if (p == digits_start) r = 0;
@@ -812,7 +815,7 @@ unsigned long long strtoull(const char *p, char **e, int b) {
       break;
     if (v >= b)
       break;
-    r = r * b + v;
+    r = (r * (unsigned long long)b) + (unsigned long long)v;
     p++;
   }
   if (e)
@@ -881,7 +884,8 @@ int execvp(const char *file, char *const argv[]) {
       p++;
 
     size_t dlen = p - start;
-    if (dlen + strlen(file) + 2 > sizeof(buf)) {
+    size_t flen = strlen(file);
+    if (dlen + flen + 2 > sizeof(buf)) {
       journal_error(ERR_LONG, file);
       if (*p == ':')
         p++;
@@ -890,7 +894,7 @@ int execvp(const char *file, char *const argv[]) {
 
     memcpy(buf, start, dlen);
     buf[dlen] = '/';
-    strcpy(buf + dlen + 1, file);
+    memcpy(buf + dlen + 1, file, flen + 1);
 
     execve(buf, argv, environ);
 
@@ -915,7 +919,7 @@ size_t strlcat_local(char *dst, const char *src, size_t size) {
 }
 
 
-extern void journal_syslog(int priority, const char *summary, const char *ctx);
+extern void journal_syslog(int prio, const char *summary, const char *ctx);
 extern int printf_vsn(char *buf, size_t size, const char *fmt, va_list args);
 
 void openlog(const char *id, int o, int f) {
@@ -925,7 +929,7 @@ void openlog(const char *id, int o, int f) {
 }
 void closelog(void) {}
 
-void syslog(int priority, const char *fmt, ...) {
+void syslog(int prio, const char *fmt, ...) {
   if (!fmt)
     return;
   char body[1024];
@@ -934,5 +938,5 @@ void syslog(int priority, const char *fmt, ...) {
   printf_vsn(body, sizeof(body), fmt, args);
   va_end(args);
 
-  journal_syslog(priority, "System Event", body);
+  journal_syslog(prio, "System Event", body);
 }

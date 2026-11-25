@@ -38,7 +38,7 @@ typedef struct {
 int daemon_status(Status *st);
 const char *diag_ebpf(void);
 void stats(CPUStats *stats);
-double status_cpu(CPUStats *prev, CPUStats *curr);
+double status_cpu(const CPUStats *prev, const CPUStats *curr);
 
 int cli_status_dialog(int argc, char *argv[]);
 int cli_status_monitor(int argc, char *argv[]);

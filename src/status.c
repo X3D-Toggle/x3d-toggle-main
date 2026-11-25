@@ -34,7 +34,7 @@ void stats(CPUStats *st) {
   st->softirq = strtoull(p, &p, 10);
 }
 
-double status_cpu(CPUStats *prev, CPUStats *curr) {
+double status_cpu(const CPUStats *prev, const CPUStats *curr) {
   unsigned long long p_idle = prev->idle + prev->iowait;
   unsigned long long c_idle = curr->idle + curr->iowait;
   unsigned long long p_non_idle = prev->user + prev->nice + prev->system + prev->irq + prev->softirq;
@@ -67,7 +67,7 @@ static void status_sysfs(const char *path, char *out, size_t max_len) {
 
 static void status_upper(char *str) {
   for (int idx = 0; str[idx]; idx++) {
-    str[idx] = toupper((unsigned char)str[idx]);
+    str[idx] = (char)toupper((unsigned char)str[idx]);
   }
 }
 
@@ -102,9 +102,9 @@ int daemon_status(Status *st) {
 
   // CCD0 Recognition (Mimicking Discovery Logic)
   printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", 0);
-  char b0[BUFF_STATE] = "1";
   int fd0 = open(path, O_RDONLY);
   if (fd0 >= 0) {
+    char b0[BUFF_STATE] = "1";
     if (read(fd0, b0, sizeof(b0) - 1) > 0) {
       if (b0[0] == '0')
         ccd0_st = "PARKED";
@@ -115,9 +115,9 @@ int daemon_status(Status *st) {
   // CCD1 Logic
   if (CCD_COUNT >= 2 && CCD1_START > 0) {
     printf_sn(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", CCD1_START);
-    char state_buf[BUFF_STATE] = "1";
     int fd = open(path, O_RDONLY);
     if (fd >= 0) {
+      char state_buf[BUFF_STATE] = "1";
       if (read(fd, state_buf, sizeof(state_buf) - 1) > 0) {
         if (state_buf[0] == '0') {
           ccd1_st = "PARKED";
@@ -157,10 +157,10 @@ int daemon_status(Status *st) {
 
   if (daemon_state == 0 && socket_send("DAEMON_INFO", live_info, sizeof(live_info)) == 0) {
     char *st_val = strstr(live_info, "STATE=");
-    char *ov_val = strstr(live_info, "OVERRIDE=");
-    char *ba_val = strstr(live_info, "BPF_ACTIVE=");
-    char *ri = strstr(live_info, "REFRESH_INTERVAL=");
-    char *mk = strstr(live_info, "MASK=");
+    const char *ov_val = strstr(live_info, "OVERRIDE=");
+    const char *ba_val = strstr(live_info, "BPF_ACTIVE=");
+    const char *ri = strstr(live_info, "REFRESH_INTERVAL=");
+    const char *mk = strstr(live_info, "MASK=");
 
     if (st_val) {
       printf_sn(st->daemon_state, sizeof(st->daemon_state), "%s", st_val + 6);
