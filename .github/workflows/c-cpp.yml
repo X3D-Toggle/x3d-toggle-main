@@ -20,7 +20,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libbpf-dev libsystemd-dev libgtk-4-dev libadwaita-1-dev clang make pkg-config linux-tools-common linux-tools-$(uname -r) linux-cloud-tools-$(uname -r)
+        sudo apt-get install -y libbpf-dev libsystemd-dev libgtk-4-dev libadwaita-1-dev clang make pkg-config linux-tools-generic bpftool
 
     - name: Generate vmlinux.h
       run: |
@@ -32,5 +32,4 @@ jobs:
 
     - name: Automated Setup (Full)
       run: |
-        export X3D_SETUP_MODE=full
-        sudo -E ./setup.sh
+        sudo env X3D_SETUP_MODE=full ./setup.sh
