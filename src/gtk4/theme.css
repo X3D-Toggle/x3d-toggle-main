@@ -12,6 +12,14 @@ headerbar {
   color: #f0f0f0;
 }
 
+/* Headerbar window controls (close / maximize / minimize): borderless */
+windowcontrols button,
+windowcontrols button:hover {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
 .navigation-sidebar {
   background-color: #0e0e0e;
   border-right: 1px solid #2a2a2a;
@@ -42,7 +50,7 @@ headerbar {
   border-bottom: 2px solid #e8611a;
   border-radius: 12px;
   padding: 0;
-  margin: 12px;
+  margin: 0;
   min-height: 160px;
 }
 
@@ -58,7 +66,7 @@ headerbar {
   border: 1px solid #2a2a2a;
   border-radius: 12px;
   padding: 16px;
-  margin: 6px;
+  margin: 0;
 }
 
 .x3d-card-title {
@@ -70,6 +78,7 @@ headerbar {
 
 .x3d-accent { color: #e8611a; font-weight: 700; }
 .x3d-dim { color: #888888; margin-left: 8px; }
+.x3d-gpu-subtitle { color: #888888; font-size: 12px; }
 .x3d-value { color: #4dd0e1; font-weight: 600; font-family: monospace; }
 .x3d-status-online { color: #4ade80; font-weight: 700; }
 .x3d-status-offline { color: #f87171; font-weight: 700; }
@@ -129,4 +138,10 @@ entry:focus { border-color: #e8611a; }
 /* Indent subtitles in action rows */
 row .subtitle {
   margin-left: 8px;
+}
+
+.x3d-extras-frame {
+  background-color: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
 }

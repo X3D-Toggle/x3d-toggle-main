@@ -8,6 +8,7 @@
 #include "irq.h"
 #include "ccd.h"
 #include "error.h"
+#include "ipc.h"
 #include "libc.h"
 #include "xui.h"
 
@@ -603,6 +604,27 @@ int irq_teardown(void) {
 }
 
 int irq_status(void) {
+  load_config();
+  if (g_gpu_irqs.count == 0) {
+    discover_irqs("amdgpu", &g_gpu_irqs);
+    if (g_gpu_irqs.count == 0)
+      discover_irqs("nouveau", &g_gpu_irqs);
+  }
+  if (g_nvme_irqs.count == 0)
+    discover_irqs("nvme", &g_nvme_irqs);
+  if (g_usb_irqs.count == 0)
+    discover_irqs("xhci_hcd", &g_usb_irqs);
+  if (g_nic_irqs.count == 0) {
+    discover_irqs("eth", &g_nic_irqs);
+    if (g_nic_irqs.count == 0)
+      discover_irqs("enp", &g_nic_irqs);
+  }
+  if (g_audio_irqs.count == 0) {
+    discover_irqs("snd_hda", &g_audio_irqs);
+    if (g_audio_irqs.count == 0)
+      discover_irqs("snd-hda", &g_audio_irqs);
+  }
+
   const char header[] = "\n  IRQ Affinity Status\n"
                         "  ─────────────────────────────────────────\n";
   write(FILENO_STDOUT, header, strlen(header));
@@ -719,6 +741,15 @@ int irq_watch(void) {
 int cli_irq_bind(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
+#ifdef CLI_BUILD
+  if (geteuid() != 0) {
+    char resp[32] = {0};
+    if (socket_send("IRQ_BIND", resp, sizeof(resp)) == ERR_SUCCESS &&
+        strcmp(resp, "OK") == 0) {
+      return ERR_SUCCESS;
+    }
+  }
+#endif
   int rc = irq_init();
   if (rc != ERR_SUCCESS)
     return rc;
@@ -728,12 +759,25 @@ int cli_irq_bind(int argc, char *argv[]) {
   rc = irq_bind_peripherals();
   if (rc != ERR_SUCCESS)
     return rc;
-  return irq_gen_udev();
+  if (access("/etc/udev/rules.d", W_OK) == 0) {
+    return irq_gen_udev();
+  }
+  return ERR_SUCCESS;
 }
 
 int cli_irq_reset(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
+#ifdef CLI_BUILD
+  if (geteuid() != 0) {
+    char resp[32] = {0};
+    if (socket_send("IRQ_RESET", resp, sizeof(resp)) == ERR_SUCCESS &&
+        strcmp(resp, "OK") == 0) {
+      return ERR_SUCCESS;
+    }
+  }
+#endif
+  load_config();
   return irq_teardown();
 }
 

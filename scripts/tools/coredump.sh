@@ -16,6 +16,15 @@ _l_dir_lib="$(cd "$(dirname "$0")/../framework" && pwd)"
 
 EDITOR_CHOICE="$1"
 
+# Pause only inside the transient terminal window opened by the GUI.
+pause_if_gui_term() {
+    if [ "${X3D_GUI_TERM:-0}" = "1" ] && [ -t 0 ]; then
+        printf_br
+        printf "    Press [ENTER] to close window..."
+        read -r _unused
+    fi
+}
+
 if ! command -v coredumpctl >/dev/null 2>&1; then
     printf_step "❌ Error: coredumpctl not found. systemd-coredump is structurally required."
     exit 1
@@ -29,9 +38,7 @@ _DUMP_BIN="$JOURNAL_DUMPS/latest.core"
 
 if ! coredumpctl info x3d-daemon > "$_DUMP_INFO" 2>/dev/null; then
     printf_step "✅ No recent crashes detected for 'x3d-daemon'."
-    printf_br
-    printf "    Press [ENTER] to close window..."
-    read -r _unused
+    pause_if_gui_term
     exit 0
 fi
 coredumpctl dump x3d-daemon -o "$_DUMP_BIN" >/dev/null 2>&1
@@ -43,9 +50,7 @@ if [ -z "$EDITOR_CHOICE" ] || [ "$EDITOR_CHOICE" = "none" ] || [ "$EDITOR_CHOICE
     while IFS= read -r _l_line || [ -n "$_l_line" ]; do
         echo "$_l_line"
     done < "$_DUMP_INFO"
-    printf_br
-    printf "    Press [ENTER] to close window..."
-    read -r _unused
+    pause_if_gui_term
 else
     printf_step "✨ Launching IDE / Editor: $EDITOR_CHOICE"
     case "$EDITOR_CHOICE" in

@@ -12,8 +12,8 @@ A portable, high-performance utility for managing CCD priority on the AMD Ryzen 
 
 This utility provides a native GTK4 desktop dashboard and automation backend for the `amd_x3d_vcache` and `amd-pstate` kernel drivers. It allows for real-time switching of CPU scheduler bias, SMT-aware L3 cgroup isolation, BORE/EEVDF tuning, and IRQ affinity steering across the AMD Ryzen X3D lineup:
 * **Asymmetric Dual-CCD X3D:** Ryzen 9 9950X3D, 9900X3D, 7950X3D, 7900X3D
-* **Symmetric Dual 3D V-Cache:** Ryzen 9 9950X3D2 (192 MB Dual V-Cache — CCD isolation, CPPC EPP, BORE, eBPF, and IRQ steering)
-* **Single-CCD X3D:** Ryzen 7 9850X3D, 9800X3D, 7800X3D (unified V-Cache with CPPC EPP, BORE, eBPF, and IRQ steering)
+* **Symmetric Dual 3D V-Cache:** Ryzen 9 9950X3D2 (192 MB Dual V-Cache)
+* **Single-CCD X3D:** Ryzen 7 9850X3D, 9800X3D, 7800X3D (unified V-Cache)
 
 * The Problem: CPPC Latency & Asymmetry
   Current CPPC drivers often fail to switch states deterministically, leading to micro-stutters.

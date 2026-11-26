@@ -1,0 +1,363 @@
+/* X3D Toggle — Imperial Theme (Rihannsu Shiar Dark & Gold)
+ * Adapted from Measures of Accountability (moa-preview.css):
+ *   --deep-bg:          #0B0D0A
+ *   --imperial-green:   #142410
+ *   --antique-gold:     #C0A36A
+ *   --parchment:        #D8D5CA
+ *   --antique-metallic: #5F5541
+ *   --imperial-bronze:  #906824
+ *   --terminal-emerald: #4ADE80
+ */
+
+window.background,
+.main-content,
+navigation-view,
+scrolledwindow,
+viewport {
+  background-color: #0B0D0A;
+  color: #D8D5CA;
+  font-family: "Inter", sans-serif;
+}
+
+selection {
+  background-color: #906824;
+  color: #D8D5CA;
+}
+
+headerbar {
+  background: linear-gradient(180deg, #142410 0%, #0B0D0A 100%);
+  border-bottom: 2px solid #906824;
+  color: #C0A36A;
+}
+
+headerbar label {
+  font-family: "Cinzel", serif;
+  letter-spacing: 1px;
+}
+
+.navigation-sidebar {
+  background-color: #0B0D0A;
+  border-right: 1px solid rgba(144, 104, 36, 0.45);
+}
+
+.navigation-sidebar row {
+  color: #D8D5CA;
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+  margin: 2px 6px;
+  padding: 10px 14px;
+  min-height: 32px;
+}
+
+.navigation-sidebar row:selected {
+  background: linear-gradient(90deg, rgba(20, 36, 16, 0.92) 0%, rgba(144, 104, 36, 0.20) 100%);
+  border-left: 3px solid #C0A36A;
+  color: #C0A36A;
+}
+
+.navigation-sidebar row:selected label {
+  color: #C0A36A;
+  font-weight: 700;
+}
+
+.navigation-sidebar row:hover:not(:selected) {
+  background-color: rgba(20, 36, 16, 0.55);
+}
+
+.x3d-hero {
+  background-image: url('resource:///org/x3d-toggle/gui/x3d-toggle.jpg'), linear-gradient(180deg, #000000 0%, #000000 45%, #0B0D0A 74%, #142410 100%);
+  background-size: contain, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  border-top: 3px solid #C0A36A;
+  border-left: 1px solid rgba(144, 104, 36, 0.55);
+  border-right: 1px solid rgba(144, 104, 36, 0.55);
+  border-bottom: 2px solid #906824;
+  border-radius: 6px;
+  padding: 0;
+  margin: 0;
+  min-height: 160px;
+}
+
+.x3d-hero-title {
+  font-family: "Cinzel", serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #C0A36A;
+  padding: 0 24px 16px 0;
+}
+
+.x3d-card {
+  background-color: #0E130D;
+  background-image: linear-gradient(145deg, rgba(20, 36, 16, 0.78) 0%, rgba(11, 13, 10, 0.95) 68%, rgba(20, 36, 16, 0.62) 100%);
+  border-top: 3px solid #C0A36A;
+  border-left: 1px solid rgba(144, 104, 36, 0.55);
+  border-right: 1px solid rgba(144, 104, 36, 0.55);
+  border-bottom: 1px solid rgba(144, 104, 36, 0.40);
+  border-radius: 6px;
+  padding: 16px;
+  margin: 0;
+}
+
+.x3d-card-title {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #C0A36A;
+  letter-spacing: 1.5px;
+}
+
+.x3d-accent {
+  color: #C0A36A;
+  font-weight: 700;
+}
+
+.x3d-dim {
+  color: #9E9580;
+  margin-left: 8px;
+}
+
+.x3d-gpu-subtitle {
+  color: #9E9580;
+  font-size: 12px;
+}
+
+.x3d-value {
+  color: #4ADE80;
+  font-weight: 600;
+  font-family: "Share Tech Mono", monospace;
+}
+
+.x3d-status-online { color: #4ADE80; font-weight: 700; }
+.x3d-status-offline { color: #F87171; font-weight: 700; }
+.x3d-status-warning { color: #C0A36A; font-weight: 700; }
+
+.x3d-dev-title {
+  color: #4ADE80;
+}
+
+/* Adwaita Preferences Groups & Action Rows */
+preferencesgroup > box > label.heading {
+  font-family: "Cinzel", serif;
+  color: #C0A36A;
+  letter-spacing: 1px;
+}
+
+list.boxed-list {
+  background-color: #0E130D;
+  background-image: linear-gradient(145deg, rgba(20, 36, 16, 0.65) 0%, #0B0D0A 100%);
+  border: 1px solid rgba(144, 104, 36, 0.50);
+  border-top: 2px solid #C0A36A;
+  border-radius: 6px;
+}
+
+list.boxed-list > row {
+  background-color: transparent;
+  color: #D8D5CA;
+  border-bottom: 1px solid rgba(95, 85, 65, 0.35);
+}
+
+list.boxed-list > row:last-child {
+  border-bottom: none;
+}
+
+list.boxed-list > row:hover {
+  background-color: rgba(20, 36, 16, 0.45);
+}
+
+row .title {
+  color: #D8D5CA;
+}
+
+row .subtitle {
+  color: #9E9580;
+  margin-left: 8px;
+}
+
+/* Buttons */
+button {
+  background-color: #142410;
+  background-image: none;
+  color: #D8D5CA;
+  border: 1px solid rgba(144, 104, 36, 0.55);
+  border-radius: 4px;
+}
+
+button:hover {
+  border-color: #C0A36A;
+  color: #C0A36A;
+}
+
+/* Headerbar window controls (close / maximize / minimize): borderless */
+windowcontrols button,
+windowcontrols button:hover {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+button.x3d-primary {
+  background: linear-gradient(135deg, #906824, #C0A36A);
+  color: #0B0D0A;
+  font-weight: 700;
+  border: 1px solid #C0A36A;
+  border-radius: 4px;
+  padding: 8px 20px;
+  min-height: 36px;
+}
+
+button.x3d-primary:hover {
+  background: linear-gradient(135deg, #C0A36A, #906824);
+  color: #0B0D0A;
+}
+
+button.x3d-destructive {
+  background: linear-gradient(135deg, #5c1616, #991b1b);
+  color: #D8D5CA;
+  font-weight: 700;
+  border: 1px solid #EF4444;
+  border-radius: 4px;
+}
+
+button.x3d-destructive:hover {
+  background: linear-gradient(135deg, #991b1b, #5c1616);
+}
+
+/* Hardware Mode Cards */
+.x3d-mode-card {
+  background-color: #0E130D;
+  background-image: linear-gradient(145deg, rgba(20, 36, 16, 0.72) 0%, #0B0D0A 100%);
+  border: 1px solid rgba(95, 85, 65, 0.65);
+  border-left: 4px solid #906824;
+  border-radius: 4px;
+  padding: 16px;
+  margin: 4px;
+  transition: all 200ms ease;
+  box-shadow: none;
+}
+
+.x3d-mode-card:hover {
+  border-color: #C0A36A;
+  border-left-color: #C0A36A;
+  background-color: #142410;
+}
+
+.x3d-mode-card.selected {
+  border-color: #C0A36A;
+  border-left: 4px solid #4ADE80;
+  background-color: rgba(20, 36, 16, 0.90);
+  box-shadow: 0 0 10px rgba(192, 163, 106, 0.25);
+}
+
+/* Controls: Dropdowns, Popovers, Entries, Switches, Scales */
+dropdown > button,
+spinbutton {
+  background-color: #142410;
+  color: #C0A36A;
+  border: 1px solid rgba(144, 104, 36, 0.55);
+  border-radius: 4px;
+}
+
+dropdown > button:hover {
+  border-color: #C0A36A;
+}
+
+popover > contents {
+  background-color: #0E130D;
+  color: #D8D5CA;
+  border: 1px solid #906824;
+  border-top: 2px solid #C0A36A;
+  border-radius: 4px;
+}
+
+popover modelbutton:hover,
+popover listview > row:hover,
+popover listview > row:selected {
+  background-color: #142410;
+  color: #C0A36A;
+}
+
+entry {
+  background-color: #0B0D0A;
+  color: #D8D5CA;
+  border: 1px solid rgba(95, 85, 65, 0.65);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+entry:focus {
+  border-color: #C0A36A;
+}
+
+switch {
+  background-color: #1a2118;
+  border: 1px solid rgba(95, 85, 65, 0.65);
+}
+
+switch:checked {
+  background-color: #906824;
+  border-color: #C0A36A;
+}
+
+levelbar trough {
+  background-color: #142410;
+  border-radius: 4px;
+  min-height: 12px;
+}
+
+levelbar trough block.filled {
+  background: linear-gradient(90deg, #5F5541, #906824, #C0A36A);
+  border-radius: 4px;
+}
+
+scale trough {
+  background-color: #142410;
+  border-radius: 4px;
+  min-height: 8px;
+}
+
+scale trough highlight {
+  background: linear-gradient(90deg, #5F5541, #906824, #C0A36A);
+  border-radius: 4px;
+}
+
+scale slider {
+  background-color: #C0A36A;
+  border: 1px solid #906824;
+  border-radius: 50%;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+/* Extras Document Viewer (parchment prose inside terminal dispatch frame) */
+textview,
+textview text {
+  background-color: #0B0D0A;
+  color: #D8D5CA;
+  font-family: "Share Tech Mono", monospace;
+}
+
+.x3d-extras-frame {
+  background-color: #0B0D0A;
+  border: 1px solid rgba(95, 85, 65, 0.55);
+  border-left: 3px solid #906824;
+  border-radius: 4px;
+}
+
+/* Scrollbars (matching moa-preview.css) */
+scrollbar trough {
+  background-color: #0B0D0A;
+  border-left: 1px solid rgba(144, 104, 36, 0.25);
+}
+
+scrollbar slider {
+  background: linear-gradient(180deg, #5F5541, #906824);
+  border-radius: 4px;
+  min-width: 6px;
+  min-height: 6px;
+}
+
+scrollbar slider:hover {
+  background: #C0A36A;
+}

@@ -68,7 +68,7 @@
                             <property name="child">
                               <object class="GtkBox">
                                 <property name="orientation">vertical</property>
-                                <property name="spacing">12</property>
+                                <property name="spacing">16</property>
                                 
                                 <child>
                                   <object class="GtkBox">
@@ -85,9 +85,10 @@
                                 <!-- Live Data Cards -->
                                 <child>
                                   <object class="GtkGrid">
-                                    <property name="row-spacing">12</property>
-                                    <property name="column-spacing">12</property>
+                                    <property name="row-spacing">16</property>
+                                    <property name="column-spacing">16</property>
                                     <property name="column-homogeneous">true</property>
+                                    <property name="row-homogeneous">true</property>
                                     <property name="vexpand">false</property>
                                     <property name="hexpand">true</property>
                                     
@@ -95,8 +96,10 @@
                                     <child>
                                       <object class="GtkBox">
                                         <property name="orientation">vertical</property>
+                                        <property name="spacing">6</property>
+                                        <property name="hexpand">true</property>
                                         <property name="vexpand">false</property>
-                                        <property name="valign">start</property>
+                                        <property name="valign">fill</property>
                                         <style><class name="x3d-card"/></style>
                                         <layout>
                                           <property name="column">0</property>
@@ -107,6 +110,7 @@
                                             <property name="label">DAEMON / CORE STATUS</property>
                                             <style><class name="x3d-card-title"/></style>
                                             <property name="halign">start</property>
+                                            <property name="valign">start</property>
                                           </object>
                                         </child>
                                         <child>
@@ -114,6 +118,7 @@
                                             <property name="label">Connecting to daemon...</property>
                                             <style><class name="x3d-value"/></style>
                                             <property name="halign">start</property>
+                                            <property name="valign">start</property>
                                           </object>
                                         </child>
                                       </object>
@@ -123,8 +128,10 @@
                                     <child>
                                       <object class="GtkBox">
                                         <property name="orientation">vertical</property>
+                                        <property name="spacing">6</property>
+                                        <property name="hexpand">true</property>
                                         <property name="vexpand">false</property>
-                                        <property name="valign">start</property>
+                                        <property name="valign">fill</property>
                                         <style><class name="x3d-card"/></style>
                                         <layout>
                                           <property name="column">1</property>
@@ -135,6 +142,7 @@
                                             <property name="label">HARDWARE TOPOLOGY</property>
                                             <style><class name="x3d-card-title"/></style>
                                             <property name="halign">start</property>
+                                            <property name="valign">start</property>
                                           </object>
                                         </child>
                                         <child>
@@ -142,6 +150,7 @@
                                             <property name="label">Connecting to daemon...</property>
                                             <style><class name="x3d-value"/></style>
                                             <property name="halign">start</property>
+                                            <property name="valign">start</property>
                                           </object>
                                         </child>
                                       </object>
@@ -151,9 +160,10 @@
                                     <child>
                                       <object class="GtkBox">
                                         <property name="orientation">vertical</property>
+                                        <property name="spacing">6</property>
+                                        <property name="hexpand">true</property>
                                         <property name="vexpand">false</property>
-                                        <property name="valign">start</property>
-
+                                        <property name="valign">fill</property>
                                         <style><class name="x3d-card"/></style>
                                         <layout>
                                           <property name="column">0</property>
@@ -164,6 +174,7 @@
                                             <property name="label">SYSTEM PROFILE</property>
                                             <style><class name="x3d-card-title"/></style>
                                             <property name="halign">start</property>
+                                            <property name="valign">start</property>
                                           </object>
                                         </child>
                                         <child>
@@ -171,6 +182,7 @@
                                             <property name="label">Connecting to daemon...</property>
                                             <style><class name="x3d-value"/></style>
                                             <property name="halign">start</property>
+                                            <property name="valign">start</property>
                                           </object>
                                         </child>
                                       </object>
@@ -183,17 +195,17 @@
                           </object>
                         </child>
 
-                        <!-- Hardware Modes Page -->
+                        <!-- CPU Hardware Modes Page -->
                         <child>
                           <object class="GtkStackPage">
-                            <property name="name">modes</property>
+                            <property name="name">cpu</property>
                             <property name="child">
                               <object class="GtkBox">
                                 <property name="orientation">vertical</property>
                                 <property name="spacing">12</property>
                                 <child>
                                   <object class="GtkLabel">
-                                    <property name="label">Hardware Modes</property>
+                                    <property name="label">CPU Hardware Modes</property>
                                     <style><class name="x3d-hero-title"/></style>
                                     <property name="halign">start</property>
                                   </object>
@@ -328,14 +340,197 @@
                                         <property name="label">Cancel</property>
                                       </object>
                                     </child>
+                                      <child>
+                                        <object class="GtkButton" id="btn_mode_apply">
+                                          <property name="label">Apply</property>
+                                          <style><class name="x3d-primary"/></style>
+                                        </object>
+                                      </child>
+                                    </object>
+                                  </child>
+                                </object>
+                              </property>
+                            </object>
+                          </child>
+
+                        <!-- GPU Page -->
+                        <child>
+                          <object class="GtkStackPage">
+                            <property name="name">gpu</property>
+                            <property name="child">
+                              <object class="GtkBox" id="gpu_page_box">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">16</property>
+
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="label">GPU Interface</property>
+                                    <style><class name="x3d-hero-title"/></style>
+                                    <property name="halign">start</property>
+                                  </object>
+                                </child>
+
+                                <!-- Section 1: GPU DASHBOARD -->
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">12</property>
+                                    <property name="hexpand">true</property>
+                                    <style><class name="x3d-card"/></style>
+
                                     <child>
-                                      <object class="GtkButton" id="btn_mode_apply">
-                                        <property name="label">Apply</property>
-                                        <style><class name="x3d-primary"/></style>
+                                      <object class="GtkBox">
+                                        <property name="orientation">horizontal</property>
+                                        <property name="spacing">12</property>
+                                        <property name="hexpand">true</property>
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="orientation">vertical</property>
+                                            <property name="spacing">2</property>
+                                            <property name="hexpand">true</property>
+                                            <property name="valign">center</property>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="label">GPU DASHBOARD</property>
+                                                <style><class name="x3d-card-title"/></style>
+                                                <property name="halign">start</property>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkLabel" id="lbl_gpu_device_meta">
+                                                <property name="label"></property>
+                                                <property name="visible">false</property>
+                                                <style><class name="x3d-gpu-subtitle"/></style>
+                                                <property name="halign">start</property>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkDropDown" id="gpu_selector_dropdown">
+                                            <property name="valign">center</property>
+                                            <property name="halign">end</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+
+                                    <child>
+                                      <object class="GtkLabel" id="lbl_gpu_telemetry">
+                                        <property name="label">Scanning AMD GPUs...</property>
+                                        <style><class name="x3d-value"/></style>
+                                        <property name="halign">start</property>
+                                        <property name="valign">start</property>
                                       </object>
                                     </child>
                                   </object>
                                 </child>
+
+                                <!-- Section 2: GPU CONTROL -->
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">12</property>
+                                    <property name="hexpand">true</property>
+                                    <style><class name="x3d-card"/></style>
+
+                                    <child>
+                                      <object class="GtkLabel">
+                                        <property name="label">GPU CONTROL</property>
+                                        <style><class name="x3d-card-title"/></style>
+                                        <property name="halign">start</property>
+                                      </object>
+                                    </child>
+
+                                    <!-- LACT Launcher Row -->
+                                    <child>
+                                      <object class="GtkBox" id="row_gpu_lact">
+                                        <property name="orientation">horizontal</property>
+                                        <property name="spacing">12</property>
+                                        <property name="hexpand">true</property>
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="orientation">vertical</property>
+                                            <property name="spacing">2</property>
+                                            <property name="hexpand">true</property>
+                                            <property name="valign">center</property>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="label">LACT</property>
+                                                <style><class name="x3d-accent"/></style>
+                                                <property name="halign">start</property>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="label">AMD GPU clocks, voltages, power limits, and fan curves</property>
+                                                <style><class name="x3d-gpu-subtitle"/></style>
+                                                <property name="halign">start</property>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton" id="btn_launch_lact">
+                                            <property name="label">Launch LACT</property>
+                                            <property name="valign">center</property>
+                                            <style><class name="x3d-primary"/></style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+
+                                    <!-- CoreCtrl Launcher Row -->
+                                    <child>
+                                      <object class="GtkBox" id="row_gpu_corectrl">
+                                        <property name="orientation">horizontal</property>
+                                        <property name="spacing">12</property>
+                                        <property name="hexpand">true</property>
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="orientation">vertical</property>
+                                            <property name="spacing">2</property>
+                                            <property name="hexpand">true</property>
+                                            <property name="valign">center</property>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="label">CoreCtrl</property>
+                                                <style><class name="x3d-accent"/></style>
+                                                <property name="halign">start</property>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="label">Application-specific GPU and hardware performance profiles</property>
+                                                <style><class name="x3d-gpu-subtitle"/></style>
+                                                <property name="halign">start</property>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton" id="btn_launch_corectrl">
+                                            <property name="label">Launch CoreCtrl</property>
+                                            <property name="valign">center</property>
+                                            <style><class name="x3d-primary"/></style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+
+                                    <!-- Empty-state fallback when neither utility is installed -->
+                                    <child>
+                                      <object class="GtkLabel" id="lbl_gpu_control_empty">
+                                        <property name="label">No supported GPU control utility detected (LACT, CoreCtrl)</property>
+                                        <property name="halign">start</property>
+                                        <property name="visible">false</property>
+                                        <style><class name="x3d-gpu-subtitle"/></style>
+                                      </object>
+                                    </child>
+
+                                  </object>
+                                </child>
+
                               </object>
                             </property>
                           </object>
@@ -1063,32 +1258,67 @@
                             <property name="child">
                               <object class="GtkBox">
                                 <property name="orientation">vertical</property>
-                                <property name="spacing">12</property>
+                                <property name="spacing">16</property>
                                 <child><object class="GtkLabel"><property name="label">Extras</property><style><class name="x3d-hero-title"/></style><property name="halign">start</property></object></child>
+
                                 <child>
-                                  <object class="GtkBox">
-                                    <property name="orientation">horizontal</property>
-                                    <property name="spacing">12</property>
+                                  <object class="AdwPreferencesGroup">
+                                    <property name="title">Appearance</property>
                                     <child>
-                                      <object class="GtkDropDown" id="dropdown_extras">
-                                        <property name="model">
-                                          <object class="GtkStringList">
-                                            <items>
-                                              <item>README.md</item>
-                                              <item>ARCHITECTURE.md</item>
-                                              <item>x3d-toggle.1.md (Man Page)</item>
-                                              <item>misc.c (Great Book of Insults)</item>
-                                            </items>
+                                      <object class="AdwActionRow">
+                                        <property name="title">Interface Theme</property>
+                                        <property name="subtitle">Select visual stylesheet for the X3D Toggle dashboard</property>
+                                        <child type="suffix">
+                                          <object class="GtkDropDown" id="dropdown_theme">
+                                            <property name="valign">center</property>
+                                            <property name="model">
+                                              <object class="GtkStringList">
+                                                <items>
+                                                  <item>Default (X3D Obsidian)</item>
+                                                  <item>Imperial (Shiar Dark &amp; Gold)</item>
+                                                </items>
+                                              </object>
+                                            </property>
                                           </object>
-                                        </property>
+                                        </child>
                                       </object>
                                     </child>
                                   </object>
                                 </child>
+
+                                <child>
+                                  <object class="AdwPreferencesGroup">
+                                    <property name="title">Documentation &amp; Lore</property>
+                                    <child>
+                                      <object class="AdwActionRow">
+                                        <property name="title">Document Viewer</property>
+                                        <property name="subtitle">Browse bundled manuals, architecture notes, and easter eggs</property>
+                                        <child type="suffix">
+                                          <object class="GtkDropDown" id="dropdown_extras">
+                                            <property name="valign">center</property>
+                                            <property name="model">
+                                              <object class="GtkStringList">
+                                                <items>
+                                                  <item>README.md</item>
+                                                  <item>ARCHITECTURE.md</item>
+                                                  <item>x3d-toggle.1.md (Man Page)</item>
+                                                  <item>misc.c (Great Book of Insults)</item>
+                                                </items>
+                                              </object>
+                                            </property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
                                 <child>
                                   <object class="GtkScrolledWindow">
                                     <property name="vexpand">true</property>
                                     <property name="hexpand">true</property>
+                                    <property name="min-content-height">280</property>
+                                    <style><class name="x3d-extras-frame"/></style>
                                     <property name="child">
                                       <object class="GtkTextView" id="txt_extras_view">
                                         <property name="editable">false</property>

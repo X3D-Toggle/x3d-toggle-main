@@ -364,15 +364,35 @@ int kill(pid_t pid, int sig) {
   return (int)ret;
 }
 
+/* Signal return trampoline: the kernel refuses to deliver a signal to a
+ * handler registered without SA_RESTORER on x86-64 (it forces SIGSEGV). */
+void __restore_rt(void);
+__asm__(".section .text\n"
+        ".align 16\n"
+        ".type __restore_rt, @function\n"
+        "__restore_rt:\n"
+        "   mov $15, %rax\n" /* SYS_rt_sigreturn */
+        "   syscall\n");
+
 int sigaction(int signum, const struct sigaction *act,
               struct sigaction *oldact) {
   long ret;
-  __asm__ volatile("movq %[rt_sig], %%r10\n"
-                   "syscall"
+  struct sigaction kact;
+  const struct sigaction *kp = act;
+  if (act) {
+    kact = *act;
+    if (!(kact.sa_flags & SA_RESTORER)) {
+      kact.sa_flags |= SA_RESTORER;
+      kact.sa_restorer = __restore_rt;
+    }
+    kp = &kact;
+  }
+  register long r10 __asm__("r10") = 8L; /* sizeof(kernel sigset_t) */
+  __asm__ volatile("syscall"
                    : "=a"(ret)
-                   : "a"(SYS_rt_sigaction), "D"(signum), "S"(act),
-                     "d"(oldact), [rt_sig] "g"(8L)
-                   : "rcx", "r11", "r10", "memory");
+                   : "a"(SYS_rt_sigaction), "D"(signum), "S"(kp), "d"(oldact),
+                     "r"(r10)
+                   : "rcx", "r11", "memory");
   if (ret < 0 && ret > -4096) {
     errno = -(int)ret;
     return -1;
@@ -464,12 +484,11 @@ int accept(int fd, struct sockaddr *addr, unsigned int *len) {
 
 int accept4(int fd, struct sockaddr *addr, unsigned int *len, int fl) {
   long ret;
-  __asm__ volatile("movq %[fl], %%r10\n"
-                   "syscall"
+  register long r10 __asm__("r10") = (long)fl;
+  __asm__ volatile("syscall"
                    : "=a"(ret)
-                   : "a"(SYS_accept4), "D"(fd), "S"(addr),
-                     "d"(len), [fl] "g"((long)fl)
-                   : "rcx", "r11", "r10", "memory");
+                   : "a"(SYS_accept4), "D"(fd), "S"(addr), "d"(len), "r"(r10)
+                   : "rcx", "r11", "memory");
   if (ret < 0 && ret > -4096) {
     errno = -(int)ret;
     return -1;
@@ -495,15 +514,14 @@ ssize_t send(int fd, const void *buf, size_t len, int fl) {
 ssize_t sendto(int fd, const void *buf, size_t len, int fl,
                const struct sockaddr *addr, unsigned int addrlen) {
   long ret;
-  __asm__ volatile("movq %[fl], %%r10\n"
-                   "movq %[addr], %%r8\n"
-                   "movq %[addrlen], %%r9\n"
-                   "syscall"
+  register long r10 __asm__("r10") = (long)fl;
+  register long r8 __asm__("r8") = (long)addr;
+  register long r9 __asm__("r9") = (long)addrlen;
+  __asm__ volatile("syscall"
                    : "=a"(ret)
-                   : "a"(SYS_sendto), "D"(fd), "S"(buf),
-                     "d"(len), [fl] "g"((long)fl), [addr] "g"((long)addr),
-                     [addrlen] "g"((long)addrlen)
-                   : "rcx", "r11", "r10", "r8", "r9", "memory");
+                   : "a"(SYS_sendto), "D"(fd), "S"(buf), "d"(len), "r"(r10),
+                     "r"(r8), "r"(r9)
+                   : "rcx", "r11", "memory");
   if (ret < 0 && ret > -4096) {
     errno = -(int)ret;
     return -1;
@@ -528,13 +546,13 @@ ssize_t recv(int fd, void *buf, size_t len, int fl) {
 
 int select(int n, fd_set *rf, fd_set *wf, fd_set *ef, struct timeval *tv) {
   long ret;
-  __asm__ volatile("movq %[ef], %%r10\n"
-                   "movq %[tv], %%r8\n"
-                   "syscall"
+  register long r10 __asm__("r10") = (long)ef;
+  register long r8 __asm__("r8") = (long)tv;
+  __asm__ volatile("syscall"
                    : "=a"(ret)
-                   : "a"(SYS_select), "D"(n), "S"(rf),
-                     "d"(wf), [ef] "g"((long)ef), [tv] "g"((long)tv)
-                   : "rcx", "r11", "r10", "r8", "memory");
+                   : "a"(SYS_select), "D"(n), "S"(rf), "d"(wf), "r"(r10),
+                     "r"(r8)
+                   : "rcx", "r11", "memory");
   if (ret < 0 && ret > -4096) {
     errno = -(int)ret;
     return -1;

@@ -190,6 +190,12 @@ int cli_diag_archive(int argc, char *argv[]) {
 }
 
 int cli_diag_dump(int argc, char *argv[]) {
+  /* As systemd ExecStopPost, only analyze coredumps if the service actually
+   * crashed; otherwise stale historical dumps are reprinted on every stop. */
+  const char *svc_res = getenv("SERVICE_RESULT");
+  if (svc_res && svc_res[0] && strcmp(svc_res, "core-dump") != 0)
+    return ERR_SUCCESS;
+
   pid_t pid = fork();
   if (pid == 0) {
     char dump_path[BUFF_PATH];

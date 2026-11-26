@@ -124,6 +124,7 @@ extern int errno;
 #define SIGFPE 8
 
 #define SA_RESTART 0x10000000
+#define SA_RESTORER 0x04000000
 
 #define WIFEXITED(s) (((s) & 0x7f) == 0)
 #define WIFSIGNALED(s) (((s) & 0x7f) != 0 && ((s) & 0x7f) != 0x7f)

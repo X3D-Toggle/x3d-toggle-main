@@ -15,13 +15,19 @@ if [ -z "$X3D_XUI_LOADED" ]; then
     exit 1
 fi
 
-if ! command -v pkg-config >/dev/null 2>&1 || ! pkg-config --exists gtk4 libadwaita-1; then
+if ! command -v pkg-config >/dev/null 2>&1 || ! pkg-config --exists gtk4 libadwaita-1 gio-unix-2.0; then
     printf_step "2,${XOUT} Error: GTK4 Development Libraries Missing" \
                 "2,Please install 'gtk4' and 'libadwaita-1' development headers."
     exit 1
 fi
 
+if [ -n "${X3D_TOGGLE:-}" ] && [ -f "$X3D_TOGGLE/src/gtk4/gui.c" ]; then
+    cd "$X3D_TOGGLE" || exit 1
+fi
+
 printf_step "2,${HAMMER} Compiling and Installing GTK4 Frontend"
+
+mkdir -p bin
 
 if ! glib-compile-resources --sourcedir=src/gtk4 \
     --generate-source --target=src/gtk4/x3d-gui-resources.c \
@@ -31,25 +37,29 @@ if ! glib-compile-resources --sourcedir=src/gtk4 \
 fi
 
 # shellcheck disable=SC2046
-if ! clang $(pkg-config --cflags gtk4 libadwaita-1) -Wall -O2 \
+if ! clang $(pkg-config --cflags gtk4 libadwaita-1 gio-unix-2.0) -Wall -Wextra -O2 \
     -Ibuild -Iinclude -DGUI_BUILD -DLIBC_NO_BOOTSTRAP \
     src/gtk4/gui.c src/gtk4/x3d-gui-resources.c src/gtk4/stubs.c \
     src/libc.c src/worker.c build/xui.c build/ccd.c src/error.c src/cli/misc.c \
-    -o x3d-gui \
-    $(pkg-config --libs gtk4 libadwaita-1); then
+    -o bin/x3d-gui \
+    $(pkg-config --libs gtk4 libadwaita-1 gio-unix-2.0); then
     printf_step "2,${XOUT} Error: Compilation Failed"
     rm -f src/gtk4/x3d-gui-resources.c
     exit 1
 fi
 
-if [ "$(id -u)" -eq 0 ]; then
-    install -m755 x3d-gui /usr/bin/x3d-gui
-else
-    printf_step "2,${WARN} Warning: Root privileges required for installation."
-    printf_step "2,Run with sudo to finalize installation."
+rm -f src/gtk4/x3d-gui-resources.c
+
+if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+    chown "$SUDO_USER:$(id -gn "$SUDO_USER")" bin/x3d-gui 2>/dev/null || true
 fi
 
-rm -f x3d-gui src/gtk4/x3d-gui-resources.c
+if [ "$(id -u)" -eq 0 ]; then
+    install -Dm755 bin/x3d-gui "${DESTDIR:-}${USR_BIN:-/usr/bin}/x3d-gui"
+else
+    printf_step "2,${WARN} Warning: Root privileges required for installation (built locally at bin/x3d-gui)."
+    printf_step "2,Run with sudo to finalize installation."
+fi
 
 patch_desktop() {
     _file="$1"
@@ -82,7 +92,11 @@ if [ -n "$ACTUAL_USER" ]; then
     fi
 fi
 
-printf_step "2,${ALRIGHT} GTK4 GUI installed successfully"
+if [ "$(id -u)" -eq 0 ]; then
+    printf_step "2,${ALRIGHT} GTK4 GUI installed successfully"
+else
+    printf_step "2,${ALRIGHT} GTK4 GUI built locally (bin/x3d-gui)"
+fi
 exit 0
 
 ## end of GUI.SH

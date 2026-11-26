@@ -262,6 +262,7 @@ int cli_config_generate(int argc, char *argv[]) {
 }
 
 void config_load(DaemonConfig *cfg) {
+  memset(cfg, 0, sizeof(*cfg));
   config_probe_capabilities(cfg);
   cfg->polling_interval = CONFIG_POLLING_INTERVAL;
   cfg->refresh_interval = CONFIG_REFRESH_INTERVAL;
@@ -280,6 +281,31 @@ void config_load(DaemonConfig *cfg) {
   printf_sn(cfg->server_address, 127, "%s", CONFIG_SERVER_ADDRESS);
   cfg->server_port = CONFIG_SERVER_PORT;
   printf_sn(cfg->server_ssh, 31, "%s", CONFIG_SERVER_SSH);
+
+  /* Baseline defaults for Advanced, Networking, IRQ, and Journal */
+  cfg->sched_bore = 1;
+  cfg->sched_bit_shift = 24;
+  cfg->sched_burst_fork = 2;
+  cfg->sched_slice_us = 3000;
+  cfg->vm_max_map = 2147483642;
+  cfg->split_lock_detect = 0;
+  cfg->nmi_watchdog = 0;
+  printf_sn(cfg->thp_mode, 15, "madvise");
+  printf_sn(cfg->net_qdisc, 31, "fq_codel");
+  cfg->net_fastopen = 3;
+  cfg->net_rp_filter = 1;
+  cfg->net_source_route = 0;
+  cfg->irq_enable = 1;
+  cfg->irq_gpu = 1;
+  cfg->irq_nvme = 1;
+  cfg->irq_usb = 1;
+  cfg->irq_nic = 1;
+  cfg->irq_audio = 1;
+  cfg->irq_coalesce = 0;
+  cfg->irq_watch = 0;
+  cfg->journal_keep = 7;
+  cfg->journal_max_mb = 10;
+
   printf_sn(cfg->lint_clang_diagnostic, 15, "enabled");
   printf_sn(cfg->lint_clang_bugprone, 15, "enabled");
   printf_sn(cfg->lint_clang_modernize, 15, "enabled");
@@ -299,20 +325,33 @@ void config_load(DaemonConfig *cfg) {
   printf_sn(cfg->lint_valgrind_origins, 15, "enabled");
 
   int fd = open(DAEMON_CONF_PATH, O_RDONLY);
-  if (fd < 0) {
-  }
-
   if (fd >= 0) {
-    char buf[4096];
-    ssize_t n = read(fd, buf, sizeof(buf) - 1);
-    if (n > 0) {
-      buf[n] = '\0';
+    char buf[16384];
+    size_t total = 0;
+    while (total < sizeof(buf) - 1) {
+      ssize_t n = read(fd, buf + total, sizeof(buf) - 1 - total);
+      if (n <= 0)
+        break;
+      total += (size_t)n;
+    }
+    close(fd);
+    if (total > 0) {
+      buf[total] = '\0';
       char *ln = buf;
       char *nxt;
       while (ln && *ln) {
         nxt = strchr(ln, '\n');
         if (nxt)
           *nxt = '\0';
+        while (*ln == ' ' || *ln == '\t')
+          ln++;
+        size_t llen = strlen(ln);
+        while (llen > 0 && (ln[llen - 1] == '\r' || ln[llen - 1] == ' ' ||
+                            ln[llen - 1] == '\t')) {
+          ln[--llen] = '\0';
+        }
+        if (ln[0] == '[')
+          break;
         if (ln[0] != '#' && ln[0] != '\0') {
           char *val = strchr(ln, '=');
           if (val) {
@@ -345,6 +384,8 @@ void config_load(DaemonConfig *cfg) {
               cfg->server_port = atoi(val);
             else if (strcmp(ln, "SERVER_SSH") == 0)
               printf_sn(cfg->server_ssh, 31, "%s", val);
+            else if (strcmp(ln, "AFFINITY_LEVEL") == 0)
+              cfg->affinity_level = atoi(val);
             else if (strcmp(ln, "AFFINITY_MASK") == 0)
               printf_sn(cfg->affinity_mask, 63, "%s", val);
             else if (strcmp(ln, "AFFINITY_FREQ_MASK") == 0)
@@ -440,7 +481,6 @@ void config_load(DaemonConfig *cfg) {
         ln = nxt ? nxt + 1 : (void *)0;
       }
     }
-    close(fd);
   }
 }
 
@@ -575,40 +615,70 @@ void config_update(const char *key, const char *val) {
   if (fd < 0)
     return;
 
-  char buf[8192];
-  ssize_t n = read(fd, buf, sizeof(buf) - 1);
+  char buf[16384];
+  size_t total = 0;
+  while (total < sizeof(buf) - 1) {
+    ssize_t n = read(fd, buf + total, sizeof(buf) - 1 - total);
+    if (n <= 0)
+      break;
+    total += (size_t)n;
+  }
   close(fd);
-  if (n <= 0)
+  if (total == 0)
     return;
-  buf[n] = '\0';
+  buf[total] = '\0';
 
-  char out[8192] = "";
+  char out[16384] = "";
   char *line = buf;
   char *next;
   int found = 0;
+  int in_section = 0;
+  size_t klen = strlen(key);
+
   while (line && *line) {
     next = strchr(line, '\n');
     if (next)
       *next = '\0';
 
-    if (strncmp(line, key, strlen(key)) == 0 && line[strlen(key)] == '=') {
-      strlcat_local(out, key, 8192);
-      strlcat_local(out, "=", 8192);
-      strlcat_local(out, val, 8192);
-      strlcat_local(out, "\n", 8192);
-      found = 1;
+    const char *trimmed = line;
+    while (*trimmed == ' ' || *trimmed == '\t')
+      trimmed++;
+
+    if (!in_section && trimmed[0] == '[') {
+      in_section = 1;
+      if (!found) {
+        strlcat_local(out, key, sizeof(out));
+        strlcat_local(out, "=", sizeof(out));
+        strlcat_local(out, val, sizeof(out));
+        strlcat_local(out, "\n\n", sizeof(out));
+        found = 1;
+      }
+    }
+
+    if (!in_section && strncmp(trimmed, key, klen) == 0 &&
+        trimmed[klen] == '=') {
+      if (!found) {
+        strlcat_local(out, key, sizeof(out));
+        strlcat_local(out, "=", sizeof(out));
+        strlcat_local(out, val, sizeof(out));
+        strlcat_local(out, "\n", sizeof(out));
+        found = 1;
+      }
+    } else if (in_section && strncmp(trimmed, key, klen) == 0 &&
+               trimmed[klen] == '=') {
+      /* Strip any previously mis-appended config key from [GAMES_*] sections */
     } else {
-      strlcat_local(out, line, 8192);
-      strlcat_local(out, "\n", 8192);
+      strlcat_local(out, in_section ? line : trimmed, sizeof(out));
+      strlcat_local(out, "\n", sizeof(out));
     }
     line = next ? next + 1 : (void *)0;
   }
 
   if (!found) {
-    strlcat_local(out, key, 8192);
-    strlcat_local(out, "=", 8192);
-    strlcat_local(out, val, 8192);
-    strlcat_local(out, "\n", 8192);
+    strlcat_local(out, key, sizeof(out));
+    strlcat_local(out, "=", sizeof(out));
+    strlcat_local(out, val, sizeof(out));
+    strlcat_local(out, "\n", sizeof(out));
   }
 
   int out_fd = open(DAEMON_CONF_PATH, O_WRONLY | O_TRUNC);

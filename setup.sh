@@ -75,7 +75,7 @@ set_config() {
     _found=0
     while IFS= read -r _l_line || [ -n "$_l_line" ]; do
         case "$_l_line" in
-            "${_key}="*) 
+            "${_key}="*)
                 echo "${_key}=${_val}"
                 _found=1
                 ;;
@@ -92,6 +92,58 @@ set_config() {
         command -v logger >/dev/null 2>&1 && logger -t x3d-toggle-setup "$_err_msg" || true
         printf_step "${XOUT} Error: Failed to write to $CONF_FILE"
     fi
+
+    # Keep /etc/x3d-toggle.d/daemon.conf synchronized with settings.conf
+    _daemon_conf="/etc/x3d-toggle.d/daemon.conf"
+    if [ -f "$_daemon_conf" ]; then
+        _d_tmp="${_daemon_conf}.tmp"
+        _d_found=0
+        _d_in_sec=0
+        while IFS= read -r _d_line || [ -n "$_d_line" ]; do
+            case "$_d_line" in
+                "["*|"    ["*)
+                    if [ "$_d_in_sec" -eq 0 ] && [ "$_d_found" -eq 0 ]; then
+                        printf "%s=%s\n\n" "$_key" "$_val"
+                        _d_found=1
+                    fi
+                    _d_in_sec=1
+                    printf "%s\n" "${_d_line#    }"
+                    ;;
+                "${_key}="*|"    ${_key}="*)
+                    if [ "$_d_in_sec" -eq 0 ] && [ "$_d_found" -eq 0 ]; then
+                        printf "%s=%s\n" "$_key" "$_val"
+                        _d_found=1
+                    fi
+                    ;;
+                *)
+                    printf "%s\n" "${_d_line#    }"
+                    ;;
+            esac
+        done < "$_daemon_conf" > "$_d_tmp"
+        if [ "$_d_found" -eq 0 ]; then
+            printf "%s=%s\n" "$_key" "$_val" >> "$_d_tmp"
+        fi
+        mv -f "$_d_tmp" "$_daemon_conf"
+    fi
+}
+
+resolve_actual_user() {
+    ACTUAL_USER="${SUDO_USER:-}"
+    if [ -z "$ACTUAL_USER" ] || [ "$ACTUAL_USER" = "root" ]; then
+        LOGNAME_USER="$(logname 2>/dev/null || true)"
+        if [ -n "$LOGNAME_USER" ] && [ "$LOGNAME_USER" != "root" ] && id "$LOGNAME_USER" >/dev/null 2>&1; then
+            ACTUAL_USER="$LOGNAME_USER"
+        fi
+    fi
+    if [ -z "$ACTUAL_USER" ] || [ "$ACTUAL_USER" = "root" ]; then
+        ACTUAL_USER="$(awk -F: -v min_uid="$MIN_REGULAR_UID" '($3 >= min_uid) && ($1 != "nobody") && ($7 !~ /(nologin|false)$/) { print $1; exit }' /etc/passwd)"
+    fi
+    if [ -n "$ACTUAL_USER" ] && id "$ACTUAL_USER" >/dev/null 2>&1; then
+        ACTUAL_GROUP="$(id -gn "$ACTUAL_USER")"
+    else
+        ACTUAL_USER=""
+        ACTUAL_GROUP=""
+    fi
 }
 
 quick_setup() {
@@ -103,32 +155,38 @@ quick_setup() {
         "l") _m_text="DEV-MINIMAL (Minimal + Dev)"; _dev=1; _int=0 ;;
     esac
     printf_step "${GEAR} Running Quick Setup: $_m_text"
-    
+
     set_config "EBPF_ENABLE" "1"
     set_config "DETECTION_LEVEL" "2"
     set_config "POLLING_INTERVAL" "3"
     set_config "LOAD_THRESHOLD" "50"
     set_config "AFFINITY_LEVEL" "0"
     set_config "FALLBACK_PROFILE" "default"
+    set_config "ADVANCED_CONFIG_ENABLE" "$_dev"
     set_config "DEV_ENABLE" "$_dev"
     set_config "DEBUG_ENABLE" "$_dev"
 
-    ACTUAL_USER="${SUDO_USER:-$USER}"
+    resolve_actual_user
     if [ "$_int" = "1" ]; then
         # Desktop Integration
-        _d_dir="/home/$ACTUAL_USER/Desktop"
-        if [ -d "$_d_dir" ] && [ -f "/usr/share/applications/x3d-toggle.desktop" ]; then
-            cp "/usr/share/applications/x3d-toggle.desktop" "$_d_dir/"
-            chown "$ACTUAL_USER":"$ACTUAL_USER" "$_d_dir/x3d-toggle.desktop"
-            chmod 755 "$_d_dir/x3d-toggle.desktop"
-            if command -v gio >/dev/null 2>&1; then
-                sudo -u "$ACTUAL_USER" gio set "$_d_dir/x3d-toggle.desktop" metadata::trusted true 2>/dev/null || true
+        if [ -n "$ACTUAL_USER" ]; then
+            _d_dir="/home/$ACTUAL_USER/Desktop"
+            if [ -d "$_d_dir" ] && [ -f "/usr/share/applications/x3d-toggle.desktop" ]; then
+                cp "/usr/share/applications/x3d-toggle.desktop" "$_d_dir/"
+                chown "$ACTUAL_USER:$ACTUAL_GROUP" "$_d_dir/x3d-toggle.desktop"
+                chmod 755 "$_d_dir/x3d-toggle.desktop"
+                if command -v gio >/dev/null 2>&1; then
+                    sudo -u "$ACTUAL_USER" gio set "$_d_dir/x3d-toggle.desktop" metadata::trusted true 2>/dev/null || true
+                fi
+                printf_step "2,${ALRIGHT} Desktop icon created."
             fi
-            printf_step "2,${ALRIGHT} Desktop icon created."
         fi
 
         # GTK4 GUI
-        if [ -f "./scripts/framework/gui.sh" ]; then
+        if [ "${X3D_GUI_BUILT:-0}" = "1" ] && [ -x "/usr/bin/x3d-gui" ]; then
+            GUI_INSTALLED=1
+            printf_step "2,${ALRIGHT} GTK4 GUI already compiled and installed."
+        elif [ -f "./scripts/framework/gui.sh" ]; then
             if X3D_EXEC=1 sh ./scripts/framework/gui.sh; then
                 GUI_INSTALLED=1
             else
@@ -150,9 +208,10 @@ quick_setup() {
             printf_step "2,${ALRIGHT} User '$ACTUAL_USER' added to 'x3d-toggle' group."
         fi
 
-        # Daemon Autostart
+        # Daemon Autostart (restart so freshly written daemon.conf is loaded)
         set_config "DAEMON_STATE" "default"
-        systemctl enable --now x3d-toggle.service || :
+        systemctl enable x3d-toggle.service || :
+        systemctl restart x3d-toggle.service || :
         sleep 2
         if systemctl is-active --quiet x3d-toggle.service; then
             printf_step "2,${ALRIGHT} Daemon activated and autostart enabled."
@@ -282,8 +341,13 @@ printf_step "[6] Advanced / Developer Options"
 printf_step_no_nl "${QUERY} Enable Developer Mode (Extended diagnostics/stress tests)? [y/N] "
 read -r opt_dev
 case "$opt_dev" in
-    [Yy]*) set_config "DEV_ENABLE" "1" ;;
-    *)     set_config "DEV_ENABLE" "0" ;;
+    [Yy]*)
+        set_config "ADVANCED_CONFIG_ENABLE" "1"
+        set_config "DEV_ENABLE" "1"
+        ;;
+    *)
+        set_config "DEV_ENABLE" "0"
+        ;;
 esac
 
 printf_step_no_nl "${QUERY} Enable Debug Logging? [y/N] "

@@ -12,6 +12,19 @@
 ROOT_REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT_REPO/scripts/framework/framework.sh"
 
+# pkexec scrubs the environment, so the GUI terminal passes --gui-term instead.
+for _arg in "$@"; do
+    [ "$_arg" = "--gui-term" ] && X3D_GUI_TERM=1
+done
+
+# Pause only inside the transient terminal window opened by the GUI.
+pause_if_gui_term() {
+    if [ "${X3D_GUI_TERM:-0}" = "1" ] && [ -t 0 ]; then
+        printf "    Press [ENTER] to close window..."
+        read -r _unused
+    fi
+}
+
 DIR_AUDITS="$VAR_AUDITS"
 
 DAEMON_PID=$(pidof x3d-daemon)
@@ -34,8 +47,7 @@ printf_divider
 if [ "$(id -u)" -ne 0 ]; then
     printf_step "${XOUT} Error: Root privileges required for kernel trace access."
     printf_br
-    printf "    Press [ENTER] to close window..."
-    read -r _unused
+    pause_if_gui_term
     exit 1
 fi
 
@@ -44,8 +56,7 @@ _l_cleanup() {
     printf_br
     printf_step "${ALRIGHT} Observer stopped. Log preserved at: $X3D_TRACE_FILE"
     printf_divider
-    printf "    Press [ENTER] to close window..."
-    read -r _unused
+    pause_if_gui_term
     return 0
 }
 trap _l_cleanup INT TERM

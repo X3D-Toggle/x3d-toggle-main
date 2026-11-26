@@ -132,7 +132,7 @@ DEST_PIXMAPS    = $(DESTDIR)$(USR_PIXMAPS)
 
 SRCS_WRAPPER    = $(SRC)/run.c $(SRC)/status.c $(SRCS_CORE)
 
-.PHONY: all clean uninstall purge prep build install framework setup
+.PHONY: all clean uninstall purge prep build install framework setup deploy gui
 
 all: build
 
@@ -143,7 +143,7 @@ ifndef SKIP_FRAMEWORK
 endif
 	touch $(TARGET_FRAMEWORK)
 
-$(DIR_BUILD)/bpf.o: $(SRC_BPF)/bpf.c | prep
+$(DIR_BUILD)/bpf.o: $(SRC_BPF)/bpf.c $(TARGET_FRAMEWORK) | prep
 	$(CC) $(CFLAGS) $(USER_CFLAGS) -target bpf -c $< -o $@
 
 $(TARGET_UI) $(TARGET_CCD) $(TARGET_CONFIG): $(TARGET_FRAMEWORK)
@@ -163,6 +163,9 @@ $(TARGET_WRAPPER): $(SRCS_WRAPPER) $(TARGET_UI) $(TARGET_CCD) $(TARGET_FRAMEWORK
 
 prep:
 	mkdir -p bin $(DIR_BUILD)
+
+gui: build
+	X3D_EXEC=1 sh ./scripts/framework/gui.sh
 
 install: build
 	install -dm755 $(DEST_BIN)
@@ -193,6 +196,8 @@ install: build
 	install -m644 config/networking.conf $(DEST_ETC)/networking.conf
 	install -m644 config/advanced.conf $(DEST_ETC)/advanced.conf
 	install -m644 $(DIR_BUILD)/daemon.conf $(DEST_ETC)/daemon.conf
+	printf "%s\n" "$(CURDIR)" > $(DEST_ETC)/source_root
+	chmod 644 $(DEST_ETC)/source_root
 
 	install -dm775 $(DEST_LOGS)
 	install -dm775 $(DEST_AUDITS)
@@ -222,23 +227,30 @@ install: build
 	install -m755 scripts/framework/*.sh $(DEST_FRAMEWORK)/
 	install -dm755 $(DEST_PIXMAPS)
 	install -m644 assets/x3d-toggle.jpg $(DEST_PIXMAPS)/x3d-toggle.jpg
+	install -m644 assets/x3d-toggle.png $(DEST_PIXMAPS)/x3d-toggle.png
+	install -dm755 $(DESTDIR)$(USR_SHARE)/icons/hicolor/scalable/apps
+	install -m644 assets/x3d-toggle.svg $(DESTDIR)$(USR_SHARE)/icons/hicolor/scalable/apps/x3d-toggle.svg
+
+	install -dm755 $(DESTDIR)$(USR_ASSETS)
+	install -m644 assets/* $(DESTDIR)$(USR_ASSETS)/
+
+	install -dm755 $(DESTDIR)$(USR_MAN1)
+	install -m644 docs/x3d-toggle.1 $(DESTDIR)$(USR_MAN1)/x3d-toggle.1
 
 	install -dm755 $(DEST_APPS)
 	install -m644 packaging/x3d-toggle.desktop $(DEST_APPS)/x3d-toggle.desktop
 
-	@command -v udevadm >/dev/null 2>&1 || { echo "Error: 'udevadm' not found; cannot reload udev rules." >&2; exit 1; }
-	@udevadm control --reload-rules && udevadm trigger || { echo "Error: failed to reload/trigger udev rules." >&2; exit 1; }
-	@command -v systemd-sysusers >/dev/null 2>&1 || { echo "Error: 'systemd-sysusers' not found; cannot create system users/groups." >&2; exit 1; }
-	@systemd-sysusers || { echo "Error: systemd-sysusers failed." >&2; exit 1; }
-	@command -v systemd-tmpfiles >/dev/null 2>&1 || { echo "Error: 'systemd-tmpfiles' not found; cannot create tmpfiles entries." >&2; exit 1; }
-	@systemd-tmpfiles --create $(DEST_TMPFILES)/x3d_toggle-tmpfiles.conf || { echo "Error: systemd-tmpfiles --create failed for $(DEST_TMPFILES)/x3d_toggle-tmpfiles.conf." >&2; exit 1; }
-
-	@chown :x3d-toggle $(DEST_LOGS)
-	@chown :x3d-toggle $(DEST_AUDITS)
-	@chmod 775 $(DEST_LOGS)
-	@chmod 775 $(DEST_AUDITS)
-
-	systemctl daemon-reload
+	@if [ -z "$(DESTDIR)" ]; then \
+		command -v udevadm >/dev/null 2>&1 || { echo "Error: 'udevadm' not found; cannot reload udev rules." >&2; exit 1; }; \
+		udevadm control --reload-rules && udevadm trigger || { echo "Error: failed to reload/trigger udev rules." >&2; exit 1; }; \
+		command -v systemd-sysusers >/dev/null 2>&1 || { echo "Error: 'systemd-sysusers' not found; cannot create system users/groups." >&2; exit 1; }; \
+		systemd-sysusers || { echo "Error: systemd-sysusers failed." >&2; exit 1; }; \
+		command -v systemd-tmpfiles >/dev/null 2>&1 || { echo "Error: 'systemd-tmpfiles' not found; cannot create tmpfiles entries." >&2; exit 1; }; \
+		systemd-tmpfiles --create $(DEST_TMPFILES)/x3d_toggle-tmpfiles.conf || { echo "Error: systemd-tmpfiles --create failed for $(DEST_TMPFILES)/x3d_toggle-tmpfiles.conf." >&2; exit 1; }; \
+		chown :x3d-toggle $(DEST_LOGS) $(DEST_AUDITS); \
+		chmod 775 $(DEST_LOGS) $(DEST_AUDITS); \
+		systemctl daemon-reload; \
+	fi
 	@echo ""
 	@echo "============================================================================"
 	@echo ""
@@ -257,7 +269,9 @@ clean:
 	fi
 
 uninstall:
-	-systemctl stop x3d-toggle.service
+	-systemctl disable --now x3d-toggle.service 2>/dev/null || true
+	-systemctl stop x3d-toggle.service 2>/dev/null || true
+	-systemctl reset-failed x3d-toggle.service 2>/dev/null || true
 	-killall -q -9 x3d-daemon
 	-killall -q -9 x3d-gui
 	-killall -q -9 bin/x3d-gui
@@ -288,6 +302,10 @@ uninstall:
 	rm -f $(DESTDIR)$(ETC)/sysctl.d/99-x3d-networking.conf
 	rm -f $(DEST_POLKIT)/x3d-toggle.rules
 	rm -f $(DEST_PIXMAPS)/x3d-toggle.jpg
+	rm -f $(DEST_PIXMAPS)/x3d-toggle.png
+	rm -f $(DESTDIR)$(USR_SHARE)/icons/hicolor/scalable/apps/x3d-toggle.svg
+	rm -f $(DESTDIR)$(USR_MAN1)/x3d-toggle.1
+	rm -rf $(DESTDIR)$(USR_ASSETS)
 	rm -f $(DEST_APPS)/x3d-toggle.desktop
 
 	# Local User Cleanup

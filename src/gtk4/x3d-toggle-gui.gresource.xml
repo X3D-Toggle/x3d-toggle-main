@@ -2,6 +2,7 @@
 <gresources>
   <gresource prefix="/org/x3d-toggle/gui">
     <file>theme.css</file>
+    <file>theme-imperial.css</file>
     <file>x3d-toggle.ui</file>
     <file alias="x3d-toggle.jpg">../../assets/x3d-toggle.jpg</file>
     <file alias="README.md">../../README.md</file>

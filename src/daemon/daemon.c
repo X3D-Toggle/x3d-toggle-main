@@ -26,13 +26,40 @@ DaemonConfig cfg;
 gamelist gl;
 bool bpf_active = false;
 volatile int wrapper_lock = 0;
+/* Set by the IPC handlers after a config/state change that should be
+ * re-evaluated immediately instead of waiting for the next poll interval. */
+volatile int poll_now = 0;
+
+#ifndef CLOCK_MONOTONIC
+#define CLOCK_MONOTONIC 1
+#endif
 
 #ifndef CLI_BUILD
+/* Handle every queued IPC client (e.g. a burst of SET_CONFIG from Apply)
+ * without triggering a polling pass per connection. */
+static void ipc_drain(int server_fd) {
+  for (int n = 0; n < 16; n++) {
+    fd_set rfds;
+    struct timeval zero = {0, 0};
+    FD_ZERO(&rfds);
+    FD_SET(server_fd, &rfds);
+    if (select(server_fd + 1, &rfds, NULL, NULL, &zero) <= 0 ||
+        !FD_ISSET(server_fd, &rfds))
+      break;
+    socket_handle(server_fd);
+  }
+}
+
+static long elapsed_ms(const struct timespec *from, const struct timespec *to) {
+  return (long)(to->tv_sec - from->tv_sec) * 1000L +
+         (to->tv_nsec - from->tv_nsec) / 1000000L;
+}
+
 int daemon(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
   CPUStats p_stat = {0}, c_stat = {0};
-  char current[32], target[32];
+  char current[32] = {0}, target[32] = {0};
   int server_fd;
 
   init_signals();
@@ -70,25 +97,40 @@ int daemon(int argc, char *argv[]) {
 
   fd_set readfds;
   struct timeval tv;
+  struct timespec last_poll, now;
+  clock_gettime(CLOCK_MONOTONIC, &last_poll);
 
   while (active_keep) {
     FD_ZERO(&readfds);
     if (server_fd >= 0)
       FD_SET(server_fd, &readfds);
 
-    tv.tv_sec = (time_t)cfg.polling_interval;
-    tv.tv_usec = 0;
+    /* Sleep only until the next poll is due; IPC wakeups must not reset it */
+    long interval_ms =
+        (long)((cfg.polling_interval > 0) ? cfg.polling_interval : 3) * 1000L;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    long rem_ms = interval_ms - elapsed_ms(&last_poll, &now);
+    if (rem_ms < 0)
+      rem_ms = 0;
+    tv.tv_sec = (time_t)(rem_ms / 1000L);
+    tv.tv_usec = (rem_ms % 1000L) * 1000L;
 
     int sel = select(server_fd + 1, &readfds, NULL, NULL, &tv);
 
     if (sel > 0 && FD_ISSET(server_fd, &readfds)) {
       socket_handle(server_fd);
+      ipc_drain(server_fd);
     }
 
     if (!active_keep)
       break;
 
-    polling_run(&p_stat, &c_stat, current, target);
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    if (sel == 0 || poll_now || elapsed_ms(&last_poll, &now) >= interval_ms) {
+      poll_now = 0;
+      polling_run(&p_stat, &c_stat, current, target);
+      last_poll = now;
+    }
 
     if (reload_flag) {
       reload_flag = 0;

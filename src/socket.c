@@ -24,6 +24,7 @@ extern volatile int active_override;
 extern DaemonConfig cfg;
 extern bool bpf_active;
 extern volatile int wrapper_pid;
+extern volatile int poll_now;
 
 int socket_setup(void) {
   int fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -306,6 +307,7 @@ void socket_handle(int server_fd) {
         if (active_override != 0 &&
             (strcmp(val, "auto") == 0 || strcmp(val, "default") == 0))
           active_override = 0;
+        poll_now = 1;
         send(client_fd, "OK", 2, MSG_NOSIGNAL);
       } else
         send(client_fd, "ERR", 3, MSG_NOSIGNAL);
@@ -314,89 +316,31 @@ void socket_handle(int server_fd) {
       char *v = strchr(kv, ' ');
       if (v) {
         *v = '\0';
-        config_update(kv, ++v);
-        if (strcmp(kv, "DETECTION_LEVEL") == 0)
-          cfg.detection_level = atoi(v);
-        else if (strcmp(kv, "POLLING_INTERVAL") == 0)
-          cfg.polling_interval = atoi(v);
-        else if (strcmp(kv, "LOAD_THRESHOLD") == 0)
-          cfg.load_threshold = atof(v);
-        else if (strcmp(kv, "SERVER_ADDRESS") == 0)
-          printf_sn(cfg.server_address, sizeof(cfg.server_address), "%s", v);
-        else if (strcmp(kv, "EBPF_ENABLE") == 0) {
-          cfg.ebpf_enable = atoi(v);
+        v++;
+        config_update(kv, v);
+        config_load(&cfg);
+        if (strcmp(kv, "EBPF_ENABLE") == 0) {
           if (cfg.ebpf_enable && !bpf_active)
             bpf_active = bpf_init();
           else if (!cfg.ebpf_enable && bpf_active) {
             bpf_cleanup();
             bpf_active = false;
           }
-        } else if (strcmp(kv, "AFFINITY_MASK") == 0) {
-          printf_sn(cfg.affinity_mask, sizeof(cfg.affinity_mask), "%s", v);
-        } else if (strcmp(kv, "AFFINITY_FREQ_MASK") == 0) {
-          printf_sn(cfg.affinity_freq_mask, sizeof(cfg.affinity_freq_mask),
-                    "%s", v);
-        } else if (strcmp(kv, "DEV_ENABLE") == 0) {
-          cfg.dev_enable = atoi(v);
-        } else if (strcmp(kv, "DEBUG_ENABLE") == 0) {
-          cfg.debug_enable = atoi(v);
-        } else if (strcmp(kv, "AFFINITY_LEVEL") == 0) {
-          cfg.affinity_level = atoi(v);
-        } else if (strcmp(kv, "REFRESH_INTERVAL") == 0) {
-          cfg.refresh_interval = atof(v);
-        } else if (strcmp(kv, "FALLBACK_PROFILE") == 0) {
-          printf_sn(cfg.fallback_profile, sizeof(cfg.fallback_profile), "%s",
-                    v);
+        } else if (strcmp(kv, "DAEMON_STATE") == 0) {
+          if (active_override != 0 &&
+              (strcmp(v, "auto") == 0 || strcmp(v, "default") == 0)) {
+            active_override = 0;
+          }
         }
-        /* Advanced Tunables */
-        else if (strcmp(kv, "SCHED_BORE") == 0)
-          cfg.sched_bore = atoi(v);
-        else if (strcmp(kv, "SCHED_BIT_SHIFT") == 0)
-          cfg.sched_bit_shift = atoi(v);
-        else if (strcmp(kv, "SCHED_BURST_FORK") == 0)
-          cfg.sched_burst_fork = atoi(v);
-        else if (strcmp(kv, "SCHED_SLICE_US") == 0)
-          cfg.sched_slice_us = atoi(v);
-        else if (strcmp(kv, "VM_MAX_MAP") == 0)
-          cfg.vm_max_map = atoi(v);
-        else if (strcmp(kv, "SPLIT_LOCK_DETECT") == 0)
-          cfg.split_lock_detect = atoi(v);
-        else if (strcmp(kv, "NMI_WATCHDOG") == 0)
-          cfg.nmi_watchdog = atoi(v);
-        else if (strcmp(kv, "THP_MODE") == 0)
-          printf_sn(cfg.thp_mode, sizeof(cfg.thp_mode), "%s", v);
-        /* Networking */
-        else if (strcmp(kv, "NET_QDISC") == 0)
-          printf_sn(cfg.net_qdisc, sizeof(cfg.net_qdisc), "%s", v);
-        else if (strcmp(kv, "NET_FASTOPEN") == 0)
-          cfg.net_fastopen = atoi(v);
-        else if (strcmp(kv, "NET_RP_FILTER") == 0)
-          cfg.net_rp_filter = atoi(v);
-        else if (strcmp(kv, "NET_SOURCE_ROUTE") == 0)
-          cfg.net_source_route = atoi(v);
-        /* IRQ Subsystem */
-        else if (strcmp(kv, "IRQ_ENABLE") == 0)
-          cfg.irq_enable = atoi(v);
-        else if (strcmp(kv, "IRQ_GPU") == 0)
-          cfg.irq_gpu = atoi(v);
-        else if (strcmp(kv, "IRQ_NVME") == 0)
-          cfg.irq_nvme = atoi(v);
-        else if (strcmp(kv, "IRQ_USB") == 0)
-          cfg.irq_usb = atoi(v);
-        else if (strcmp(kv, "IRQ_NIC") == 0)
-          cfg.irq_nic = atoi(v);
-        else if (strcmp(kv, "IRQ_AUDIO") == 0)
-          cfg.irq_audio = atoi(v);
-        else if (strcmp(kv, "IRQ_COALESCE") == 0)
-          cfg.irq_coalesce = atoi(v);
-        else if (strcmp(kv, "IRQ_WATCH") == 0)
-          cfg.irq_watch = atoi(v);
-        /* Developer */
-        else if (strcmp(kv, "ADVANCED_CONFIG_ENABLE") == 0)
-          cfg.advanced_config_enable = atoi(v);
-        else if (strcmp(kv, "FORCE_UNSUPPORTED_DISPLAY") == 0)
-          cfg.force_unsupported_display = atoi(v);
-        journal_info(DAEMON_TRANSIT, "Configuration Update: %s -> %s", kv, v);
+        if (strcmp(kv, "FALLBACK_PROFILE") == 0 ||
+            strcmp(kv, "DAEMON_STATE") == 0 ||
+            strcmp(kv, "LOAD_THRESHOLD") == 0 ||
+            strcmp(kv, "DETECTION_LEVEL") == 0) {
+          poll_now = 1;
+        }
+        if (cfg.debug_enable) {
+          journal_debug("Configuration Update: %s = %s", kv, v);
+        }
         send(client_fd, "OK", 2, MSG_NOSIGNAL);
       } else
         send(client_fd, "ERR", 3, MSG_NOSIGNAL);
@@ -529,6 +473,13 @@ void socket_handle(int server_fd) {
 
         if (path[0]) {
           ret = sysctl_write(path, val);
+          if (strcmp(key, "net.ipv4.conf.all.rp_filter") == 0) {
+            sysctl_write("/proc/sys/net/ipv4/conf/default/rp_filter", val);
+          } else if (strcmp(key, "net.ipv4.conf.all.accept_source_route") ==
+                     0) {
+            sysctl_write("/proc/sys/net/ipv4/conf/default/accept_source_route",
+                         val);
+          }
           if (ret == 0) {
             /* Persist change to daemon.conf */
             char ckey[64] = {0};
@@ -568,6 +519,11 @@ void socket_handle(int server_fd) {
     } else if (strncmp(buf, "IRQ_BIND", 8) == 0) {
       extern int cli_irq_bind(int argc, char *argv[]);
       int ret = cli_irq_bind(0, NULL);
+      send(client_fd, (ret == ERR_SUCCESS) ? "OK" : "ERR",
+           (ret == ERR_SUCCESS) ? 2 : 3, MSG_NOSIGNAL);
+    } else if (strncmp(buf, "IRQ_RESET", 9) == 0) {
+      extern int cli_irq_reset(int argc, char *argv[]);
+      int ret = cli_irq_reset(0, NULL);
       send(client_fd, (ret == ERR_SUCCESS) ? "OK" : "ERR",
            (ret == ERR_SUCCESS) ? 2 : 3, MSG_NOSIGNAL);
     } else {

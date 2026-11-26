@@ -24,34 +24,47 @@ User=x3d-toggle
 LimitMEMLOCK=infinity
 LimitCORE=infinity
 
-AmbientCapabilities=CAP_SYS_ADMIN CAP_PERFMON CAP_BPF CAP_SYS_NICE CAP_DAC_READ_SEARCH
-CapabilityBoundingSet=CAP_SYS_ADMIN CAP_PERFMON CAP_BPF CAP_SYS_NICE CAP_DAC_READ_SEARCH
+AmbientCapabilities=CAP_SYS_ADMIN CAP_PERFMON CAP_BPF CAP_SYS_NICE CAP_SYS_RESOURCE CAP_DAC_READ_SEARCH
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_PERFMON CAP_BPF CAP_SYS_NICE CAP_SYS_RESOURCE CAP_DAC_READ_SEARCH
 
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
 NoNewPrivileges=yes
 ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectClock=yes
+ProtectHostname=yes
 ProtectControlGroups=no
 ProtectKernelTunables=no
-RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+IPAddressDeny=any
 RestrictRealtime=no
 
 SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @raw-io @reboot @swap
+# Re-allow perf_event_open (part of @debug) so libbpf can attach sched tracepoints
+SystemCallFilter=perf_event_open
 RestrictSUIDSGID=yes
 
-ReadWritePaths=/sys/devices/system/cpu
-ReadWritePaths=/sys/fs/bpf
-ReadWritePaths=/sys/fs/cgroup
-ReadWritePaths=/sys/devices/platform
-ReadWritePaths=/sys/bus/platform/drivers/amd_x3d_vcache
-ReadWritePaths=/run/x3d-toggle
-ReadWritePaths=/etc/x3d-toggle.d
-ReadWritePaths=/var/log/x3d-toggle
-ReadWritePaths=/proc/sys/kernel
+ReadWritePaths=-/sys/devices/system/cpu
+ReadWritePaths=-/sys/fs/bpf
+ReadWritePaths=-/sys/fs/cgroup
+ReadWritePaths=-/sys/devices/platform
+ReadWritePaths=-/sys/bus/platform/drivers/amd_x3d_vcache
+ReadWritePaths=-/run/x3d-toggle
+ReadWritePaths=-/etc/x3d-toggle.d
+ReadWritePaths=-/var/log/x3d-toggle
+ReadWritePaths=-/proc/sys/kernel
+ReadWritePaths=-/proc/sys/net
+ReadWritePaths=-/proc/irq
 
-ExecStopPost=/usr/bin/x3d-toggle journal-dump
-ExecStopPost=/usr/bin/x3d-toggle journal-archive
+ExecStopPost=-/usr/bin/x3d-toggle journal-dump
+ExecStopPost=-/usr/bin/x3d-toggle journal-archive
 
 [Install]
 WantedBy=multi-user.target

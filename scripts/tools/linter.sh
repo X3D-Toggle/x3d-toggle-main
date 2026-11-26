@@ -35,8 +35,16 @@ LINT_TARGETS_SH="*.sh \
                  dev/*.sh"
 
 ROOT_REPO="$(cd "$(dirname "$0")/../.." && pwd)"
-if [ ! -f "$ROOT_REPO/Makefile" ] && [ -f "$PWD/Makefile" ]; then
-    ROOT_REPO="$PWD"
+if [ ! -f "$ROOT_REPO/Makefile" ]; then
+    if [ -f "$PWD/Makefile" ]; then
+        ROOT_REPO="$PWD"
+    elif [ -f "/etc/x3d-toggle.d/source_root" ]; then
+        # Installed copy (e.g. launched from the GUI): use the recorded checkout
+        _saved_repo="$(head -n 1 /etc/x3d-toggle.d/source_root 2>/dev/null)"
+        if [ -n "$_saved_repo" ] && [ -f "$_saved_repo/Makefile" ]; then
+            ROOT_REPO="$_saved_repo"
+        fi
+    fi
 fi
 . "$ROOT_REPO/scripts/framework/framework.sh"
 
@@ -113,8 +121,10 @@ CPP_EN=""
 CPP_EN="${CPP_EN%,}"
 [ -n "$CPP_EN" ] && CPPCHECK_FLAGS="${CPPCHECK_FLAGS} --enable=${CPP_EN}"
 
-VALGRIND_FLAGS="--show-leak-kinds=${LINT_VALGRIND_KINDS:-all}"
-[ "${LINT_VALGRIND_MODE:-disabled}" != "disabled" ] && VALGRIND_FLAGS="${VALGRIND_FLAGS} --leak-check=${LINT_VALGRIND_MODE}"
+VALGRIND_FLAGS="--show-leak-kinds=${LINT_VALGRIND_KINDS:-all} --track-fds=yes --error-exitcode=99"
+if [ "${LINT_VALGRIND_MODE:-disabled}" != "disabled" ]; then
+    VALGRIND_FLAGS="${VALGRIND_FLAGS} --leak-check=${LINT_VALGRIND_MODE} --errors-for-leak-kinds=definite,indirect"
+fi
 [ "${LINT_VALGRIND_ORIGINS:-disabled}" = "enabled" ] && VALGRIND_FLAGS="${VALGRIND_FLAGS} --track-origins=yes"
 
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
@@ -172,30 +182,117 @@ if [ "$RUN_CPPCHECK" -eq 1 ]; then
 fi
 
 # ── 3. Valgrind ─────────────────────────────────────────────────
+# Valgrind cannot decode the AVX-512 (EVEX) instructions that x86-64-v4 glibc
+# builds (e.g. CachyOS) use inside ld-linux, which kills it with SIGILL before
+# the program starts. We probe natively first and, if that fails, run the exact
+# same smoke tests inside the `arch-valgrind` container (generic x86-64 glibc).
 if [ "$RUN_VALGRIND" -eq 1 ]; then
-    printf_step "${WAND} Running valgrind (Status Check) for memory leaks..."
-    _val_bin="./bin/x3d-toggle"
+    printf_step "${WAND} Running valgrind (CLI smoke tests) for memory and FD leaks..."
+    _val_bin="$ROOT_REPO/bin/x3d-toggle"
     [ ! -x "$_val_bin" ] && [ -x "/usr/bin/x3d-toggle" ] && _val_bin="/usr/bin/x3d-toggle"
+    _val_out="$JOURNAL_AUDIT/valgrind.txt"
+    _val_img="${X3D_VALGRIND_IMAGE:-arch-valgrind}"
+    : > "$_val_out"
+
+    _real_user="${SUDO_USER:-${USER:-$(id -un)}}"
+    _real_home="$(getent passwd "$_real_user" 2>/dev/null | cut -d: -f6)"
+    [ -z "$_real_home" ] && _real_home="${HOME:-/root}"
+
+    # Smoke test driver, shared by the native and containerized runs
+    _smoke="$JOURNAL_AUDIT/valgrind_smoke.sh"
+    cat > "$_smoke" << 'EOF'
+#!/bin/sh
+# Usage: valgrind_smoke.sh <x3d-toggle binary>   (flags come from $VG_FLAGS)
+_bin="$1"
+_rc=0
+for _args in "status" "--help" "--invalid-flag" "invalid-cmd"; do
+    echo "=== valgrind: x3d-toggle $_args ==="
     # shellcheck disable=SC2086
-    valgrind $VALGRIND_FLAGS "$_val_bin" status > "$JOURNAL_AUDIT/valgrind.txt" 2>&1
-    VAL_RES=$?
-    if [ $VAL_RES -ne 0 ]; then
-        _fatal_error=0
-        while IFS= read -r _l_line || [ -n "$_l_line" ]; do
-            case "$_l_line" in
-                *"Fatal error at startup"*|*"cannot be set up"*|*"ld-linux"*)
-                    _fatal_error=1
-                    break
+    valgrind $VG_FLAGS "$_bin" $_args
+    _r=$?
+    echo "=== exit code: $_r ==="
+    [ "$_r" -eq 99 ] && _rc=99
+done
+exit "$_rc"
+EOF
+
+    # Silent native probe: no SIGILL banner, no core dump
+    sh -c 'ulimit -c 0 2>/dev/null; valgrind --leak-check=no --error-exitcode=99 "$1" --help >/dev/null 2>&1; exit $?' _ "$_val_bin" >/dev/null 2>&1
+    _native_probe=$?
+    _val_res=0
+    _val_ran=1
+
+    if [ "$_native_probe" -eq 0 ] || [ "$_native_probe" -eq 99 ]; then
+        VG_FLAGS="$VALGRIND_FLAGS" sh -c 'ulimit -c 0 2>/dev/null; sh "$1" "$2"' _ "$_smoke" "$_val_bin" >> "$_val_out" 2>&1
+        _val_res=$?
+    else
+        # Native Valgrind cannot start here; locate the container runtime
+        _docker_mode=""
+        if command -v docker >/dev/null 2>&1; then
+            if docker image inspect "$_val_img" >/dev/null 2>&1; then
+                _docker_mode="direct"
+            elif command -v sg >/dev/null 2>&1 && sg docker -c "docker image inspect '$_val_img'" >/dev/null 2>&1; then
+                _docker_mode="sg"
+            elif sudo -n docker image inspect "$_val_img" >/dev/null 2>&1; then
+                _docker_mode="sudo"
+            fi
+        fi
+
+        run_docker() {
+            case "$_docker_mode" in
+                direct) docker "$@" ;;
+                sudo) sudo -n docker "$@" ;;
+                sg)
+                    _dcmd="docker"
+                    for _darg in "$@"; do
+                        _dcmd="$_dcmd '$_darg'"
+                    done
+                    sg docker -c "$_dcmd"
                     ;;
             esac
-        done < "$JOURNAL_AUDIT/valgrind.txt"
-        if [ "$_fatal_error" -eq 1 ]; then
-            rm -f vgcore.*
-            printf_step "2,${WARN} Notice: Valgrind startup failed (Missing glibc debuginfo / stripped ld.so)."
-            printf_step "2,        This is a system environment issue, not a project memory leak."
+        }
+
+        if [ -n "$_docker_mode" ]; then
+            printf_step "2,${INFO} Host ld-linux is not Valgrind-compatible; using '$_val_img' container."
+            mkdir -p "$_real_home/.cache/valgrind-debuginfod" 2>/dev/null
+
+            # One-time image prep: x3d-toggle links libbpf and libsystemd
+            if ! run_docker run --rm "$_val_img" sh -c 'ls /usr/lib/libbpf.so* /usr/lib/libsystemd.so* >/dev/null 2>&1' >/dev/null 2>&1; then
+                printf_step "2,${GEAR} Installing libbpf and systemd-libs into '$_val_img' (one-time)..."
+                run_docker rm -f x3d-valgrind-prep >/dev/null 2>&1
+                if run_docker run --name x3d-valgrind-prep "$_val_img" sh -c 'pacman -Sy --needed --noconfirm libbpf systemd-libs' >> "$_val_out" 2>&1; then
+                    run_docker commit x3d-valgrind-prep "$_val_img" >/dev/null 2>&1
+                fi
+                run_docker rm -f x3d-valgrind-prep >/dev/null 2>&1
+            fi
+
+            run_docker run --rm --ulimit core=0 \
+                -v "$ROOT_REPO:/work" -w /work \
+                -v "$_val_bin:/tmp/x3d-toggle-bin:ro" \
+                -v "$_smoke:/tmp/valgrind_smoke.sh:ro" \
+                -v "$_real_home/.cache/valgrind-debuginfod:/root/.cache/debuginfod_client" \
+                -v /sys:/sys:ro \
+                -e "DEBUGINFOD_URLS=https://debuginfod.archlinux.org" \
+                -e "VG_FLAGS=$VALGRIND_FLAGS" \
+                "$_val_img" sh /tmp/valgrind_smoke.sh /tmp/x3d-toggle-bin >> "$_val_out" 2>&1
+            _val_res=$?
         else
-            journal_write -audit "valgrind" "$JOURNAL_AUDIT/valgrind.txt" "$VAL_RES"
+            _val_ran=0
+            {
+                echo "Valgrind could not run on this host (probe exit code: $_native_probe)."
+                echo "The host dynamic linker (ld-linux-x86-64.so.2) uses x86-64-v4 AVX-512"
+                echo "instructions that Valgrind cannot decode, and the '$_val_img' container"
+                echo "is not reachable (docker missing, daemon stopped, or no permission)."
+                echo "Build it once, then rerun: x3d-toggle linter valgrind"
+            } >> "$_val_out"
+            printf_step "2,${WARN} Notice: Valgrind cannot run natively (x86-64-v4 glibc) and '$_val_img' container is unavailable."
+            printf_step "2,        This is a system environment issue, not a project memory leak."
         fi
+    fi
+    rm -f vgcore.* "$_smoke"
+
+    if [ "$_val_ran" -eq 1 ] && [ "$_val_res" -ne 0 ]; then
+        journal_write -audit "valgrind" "$_val_out" "$_val_res"
     fi
 fi
 
@@ -229,7 +326,7 @@ if [ "$MODE" != "all" ]; then
         printf "    Report file not found or check skipped.\n"
     fi
     printf_br
-    if [ -t 0 ]; then
+    if [ "${X3D_GUI_TERM:-0}" = "1" ] && [ -t 0 ]; then
         printf "    Press [ENTER] to close window..."
         read -r _unused
     fi
