@@ -12,6 +12,7 @@ makedepends=(
     'llvm'
     'make'
     'bpf'
+    'libbpf'
     'pkgconf'
     'glib2-devel'
     'gtk4'
@@ -21,7 +22,7 @@ makedepends=(
 options=('!strip' '!lto')
 
 source=("${pkgbase}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('SKIP') # Run `updpkgsums` after publishing the v2.0.0 tag on GitHub
+sha256sums=('ee1163b87e35f91b4d3f1481b6b5ea0bf8b4c32f9c681426bf882a3aed695b55')
 
 build() {
     cd "${srcdir}/x3d-toggle-main-${pkgver}"
@@ -29,6 +30,7 @@ build() {
     # The core CLI/daemon/eBPF targets use -nostdlib and custom syscall wrappers;
     # clear makepkg's fortified/stack-protector flags for the core make build.
     # Run framework generation before parallel build so build/vmlinux.h exists first.
+    mkdir -p bin build
     env -u CFLAGS -u CPPFLAGS -u LDFLAGS make framework
     env -u CFLAGS -u CPPFLAGS -u LDFLAGS make build SKIP_FRAMEWORK=1
 
@@ -64,8 +66,7 @@ package_x3d-toggle() {
     env -u CFLAGS -u CPPFLAGS -u LDFLAGS make DESTDIR="${pkgdir}" USR="/usr" install
 
     # Desktop entry and icons belong to x3d-toggle-gui
-    rm -f "${pkgdir}/usr/share/applications/x3d-toggle.desktop"
-    rm -rf "${pkgdir}/usr/share/pixmaps" "${pkgdir}/usr/share/icons"
+    rm -rf "${pkgdir}/usr/share/applications" "${pkgdir}/usr/share/pixmaps" "${pkgdir}/usr/share/icons"
 
     # Remove build-directory path reference so $srcdir is not embedded in the package
     rm -f "${pkgdir}/etc/x3d-toggle.d/source_root"

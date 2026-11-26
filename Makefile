@@ -137,7 +137,7 @@ SRCS_WRAPPER    = $(SRC)/run.c $(SRC)/status.c $(SRCS_CORE)
 all: build
 
 $(TARGET_FRAMEWORK): framework
-framework:
+framework: | prep
 ifndef SKIP_FRAMEWORK
 	X3D_FRAMEWORK=1 X3D_EXEC=1 sh ./scripts/framework/framework.sh --sync
 endif
