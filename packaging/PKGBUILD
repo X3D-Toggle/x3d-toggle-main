@@ -8,7 +8,6 @@ arch=('x86_64')
 url="https://github.com/X3D-Toggle/x3d-toggle-main"
 license=('GPL-3.0-or-later')
 makedepends=(
-    'git'
     'clang'
     'llvm'
     'make'
@@ -21,13 +20,11 @@ makedepends=(
 # Do not strip bpf.o or the custom -nostdlib binaries
 options=('!strip' '!lto')
 
-# Tracking main for pre-release testing; for the v2.0.0 release tag, switch to:
-# source=("${pkgbase}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
-source=("x3d-toggle-main::git+${url}.git")
-sha256sums=('SKIP')
+source=("${pkgbase}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP') # Run `updpkgsums` after publishing the v2.0.0 tag on GitHub
 
 build() {
-    cd "${srcdir}/x3d-toggle-main"
+    cd "${srcdir}/x3d-toggle-main-${pkgver}"
 
     # The core CLI/daemon/eBPF targets use -nostdlib and custom syscall wrappers;
     # clear makepkg's fortified/stack-protector flags for the core make build.
@@ -62,7 +59,7 @@ package_x3d-toggle() {
     )
     install="x3d-toggle.install"
 
-    cd "${srcdir}/x3d-toggle-main"
+    cd "${srcdir}/x3d-toggle-main-${pkgver}"
 
     env -u CFLAGS -u CPPFLAGS -u LDFLAGS make DESTDIR="${pkgdir}" USR="/usr" install
 
@@ -88,7 +85,7 @@ package_x3d-toggle-gui() {
         'corectrl: Application-specific AMD GPU performance profiles'
     )
 
-    cd "${srcdir}/x3d-toggle-main"
+    cd "${srcdir}/x3d-toggle-main-${pkgver}"
 
     install -Dm755 bin/x3d-gui "${pkgdir}/usr/bin/x3d-gui"
     install -Dm644 packaging/x3d-toggle.desktop "${pkgdir}/usr/share/applications/x3d-toggle.desktop"
