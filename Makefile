@@ -144,7 +144,7 @@ endif
 	touch $(TARGET_FRAMEWORK)
 
 $(DIR_BUILD)/bpf.o: $(SRC_BPF)/bpf.c $(TARGET_FRAMEWORK) | prep
-	$(CC) $(CFLAGS) $(USER_CFLAGS) -target bpf -c $< -o $@
+	$(CC) $(CFLAGS) $(USER_CFLAGS) -g -target bpf -c $< -o $@
 
 $(TARGET_UI) $(TARGET_CCD) $(TARGET_CONFIG): $(TARGET_FRAMEWORK)
 build: $(TARGET_CLI) $(TARGET_DAEMON) $(TARGET_WRAPPER) $(DIR_BUILD)/bpf.o

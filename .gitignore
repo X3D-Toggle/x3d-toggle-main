@@ -29,6 +29,11 @@ dev/auditing/
 
 *.pkg.tar.zst
 *.pkg.tar.xz
+packaging/src/
+packaging/pkg/
+packaging/x3d-toggle-main/
+packaging/*.tar.gz
+src/gtk4/x3d-gui-resources.c
 
 SCRATCHPAD.md
 

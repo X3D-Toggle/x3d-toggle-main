@@ -1,8 +1,17 @@
 # AMD X3D V-Cache Technology Optimizer - v2.0.0
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/pyrotiger/x3d-toggle-main/blob/main/LICENSE)
-[![Architecture: POSIX C](https://img.shields.io/badge/Architecture-POSIX%20C-orange.svg)](https://github.com/pyrotiger/x3d-toggle-main/blob/main/docs/ARCHITECTURE.md)
-[![Engine: eBPF](https://img.shields.io/badge/Engine-eBPF-green.svg)](https://github.com/pyrotiger/x3d-toggle-main/blob/main/README.md)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/X3D-Toggle/x3d-toggle-main/blob/main/LICENSE)
+[![Platform: Linux Only](https://img.shields.io/badge/Platform-Linux%20Only-red.svg)](https://github.com/X3D-Toggle/x3d-toggle-main/blob/main/README.md)
+[![Architecture: POSIX C](https://img.shields.io/badge/Architecture-POSIX%20C-orange.svg)](https://github.com/X3D-Toggle/x3d-toggle-main/blob/main/docs/ARCHITECTURE.md)
+[![Engine: eBPF](https://img.shields.io/badge/Engine-eBPF-green.svg)](https://github.com/X3D-Toggle/x3d-toggle-main/blob/main/README.md)
+
+> [!CAUTION]
+> **Security Notice — Linux Only (Beware of Fake Windows Releases):**
+> **X3D Toggle is strictly a Linux-only application.** There is **no** Windows version, and this project will never distribute Windows executables. AMD develops their own software, **AMD 3D V-Cache Performance Optimizer Driver**, for use on Windows platforms, but is **NOT** the same program as X3D Toggle.
+>
+> Any Windows `.exe` or `.zip` files circulating online or hosted on cloned/unofficial repositories claiming to be X3D Toggle are **unofficial, potentially malicious, and must NOT be trusted or executed**.
+>
+> Only obtain X3D Toggle from this official repository, its official Linux releases (`.pkg.tar.zst` / source), or the official [AUR package](https://aur.archlinux.org/packages/x3d-toggle).
 
 ## X3D Toggle - Community Edition
 
@@ -60,7 +69,35 @@ The project utilizes a centralized UI definition system called **XUI**. This ens
 
 ### 📦  Installation Methods 📦
 
-#### 1. Arch Linux / Garuda (via Pre-compiled Pacman Package)
+#### 1. Arch Linux / CachyOS / Garuda (via AUR — Recommended)
+
+Install directly from the [AUR](https://aur.archlinux.org/packages/x3d-toggle) (`https://aur.archlinux.org/x3d-toggle.git`):
+
+* **Base CLI + Daemon only (headless / minimal):**
+
+  ```bash
+  paru -S x3d-toggle
+  # or
+  yay -S x3d-toggle
+  ```
+
+* **Full Desktop (GTK4/libadwaita GUI + Base CLI/Daemon):**
+
+  ```bash
+  paru -S x3d-toggle-gui
+  # or
+  yay -S x3d-toggle-gui
+  ```
+
+* **Or build manually from the AUR repo:**
+
+  ```bash
+  git clone https://aur.archlinux.org/x3d-toggle.git
+  cd x3d-toggle
+  makepkg -si
+  ```
+
+#### 2. Arch Linux / Garuda (via Pre-compiled Pacman Package)
 
 If you download the compiled Arch package directly from the **Releases** page (`.pkg.tar.zst`), you can install it seamlessly using `pacman` without needing to compile it yourself:
 
@@ -69,23 +106,23 @@ cd ~/Downloads/
 sudo pacman -U x3d-toggle-*.pkg.tar.zst
 ```
 
-#### 2. Arch Linux / Garuda (via Local PKGBUILD / Git Clone)
+#### 3. Arch Linux / Garuda (via Local PKGBUILD / Git Clone)
 
 For developers or those wanting to compile directly from the absolute latest commits dynamically. The `makepkg` command automatically builds the C binary and wraps it into a `pacman` installation for you:
 
 ```bash
-git clone https://github.com/pyrotiger/x3d-toggle-main.git
-cd x3d-toggle
+git clone https://github.com/X3D-Toggle/x3d-toggle-main.git
+cd x3d-toggle-main/packaging
 makepkg -si
 ```
 
-#### 3. Manual Build (Make - Debian/Fedora/Ubuntu/Etc)
+#### 4. Manual Build (Make - Debian/Fedora/Ubuntu/Etc)
 
 If you are running a non-Arch distro without `pacman` or `makepkg`:
 
 ```bash
-git clone https://github.com/pyrotiger/x3d-toggle-main.git
-cd x3d-toggle
+git clone https://github.com/X3D-Toggle/x3d-toggle-main.git
+cd x3d-toggle-main
 make
 sudo make install setup
 ```
@@ -110,8 +147,6 @@ sudo make install setup
 #### Automated Scheduling Service 🎹
 
 Enable the system service to allow the background daemon to dynamically switch your system between Cache and Frequency profiles based on live workloads:
-
-Enable the system service to allow the background daemon to dynamically switch your system between Cache and Frequency profiles based on live workloads.
 
 **Via Systemd:**
 
@@ -152,7 +187,7 @@ More advanced, persistent overrides can be found in the **User Configuration** d
 To uninstall all binaries and assets, run the following:
 
 ```bash
-cd to /path/to/folder/x3d-toggle
+cd /path/to/x3d-toggle-main
 sudo make purge
 ```
 
@@ -162,6 +197,7 @@ sudo make purge
 
 * AMD — For the development of the X3D V-Cache technology.
 * GrandBIRDLizard — For critical technical insights on sysfs node utilization, GPU IRQ management, and architectural guidance. Author of [X3Dctl](https://github.com/GrandBIRDLizard/x3dctl).
+* LACT and CoreCtrl are independent third-party projects; X3D Toggle is not affiliated with them and only provides optional launch shortcuts when they are already installed.
 
 ### ⚖️  Legal Disclaimer & Liability Limitation  ⚖️
 

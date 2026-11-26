@@ -65,8 +65,8 @@ headerbar label {
 }
 
 .x3d-hero {
-  background-image: url('resource:///org/x3d-toggle/gui/x3d-toggle.jpg'), linear-gradient(180deg, #000000 0%, #000000 45%, #0B0D0A 74%, #142410 100%);
-  background-size: contain, cover;
+  background-image: url('resource:///org/x3d-toggle/gui/x3d-toggle-hero.png'), linear-gradient(180deg, #000000 0%, #0B0D0A 35%, #142410 100%);
+  background-size: auto 82%, cover;
   background-position: center, center;
   background-repeat: no-repeat, no-repeat;
   border-top: 3px solid #C0A36A;

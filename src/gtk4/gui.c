@@ -301,6 +301,9 @@ static gboolean update_dashboard_cb(gpointer user_data) {
                sizeof(gov));
   status_sysfs("/sys/devices/system/cpu/smt/control", smt, sizeof(smt));
   status_sysfs("/sys/firmware/acpi/platform_profile", plat, sizeof(plat));
+  if (strcmp(plat, "N/A") == 0) {
+    printf_sn(plat, sizeof(plat), "DESKTOP");
+  }
   status_sysfs("/sys/devices/system/cpu/cpufreq/boost", bst_raw,
                sizeof(bst_raw));
   char boost_str[64];
