@@ -1,0 +1,83 @@
+name: Deploy to AUR
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_message:
+        description: "AUR commit message (leave empty to use PKGBUILD version)"
+        required: false
+        default: ""
+      updpkgsums:
+        description: "Recalculate sha256sums with updpkgsums before pushing"
+        type: boolean
+        required: false
+        default: false
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  deploy-aur:
+    name: Publish x3d-toggle to AUR
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issue_comment' &&
+        (
+          github.event.comment.author_association == 'OWNER' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR'
+        ) &&
+        startsWith(github.event.comment.body, '/aurgit')
+      )
+
+    steps:
+      - name: Acknowledge /aurgit command
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket',
+            });
+
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Stage AUR package files
+        id: stage
+        run: |
+          mkdir -p .aur-stage
+          cp packaging/PKGBUILD .aur-stage/PKGBUILD
+          cp packaging/x3d-toggle.install .aur-stage/x3d-toggle.install
+
+          PKGVER=$(grep -E '^pkgver=' packaging/PKGBUILD | head -n1 | cut -d= -f2)
+          PKGREL=$(grep -E '^pkgrel=' packaging/PKGBUILD | head -n1 | cut -d= -f2)
+          DEFAULT_MSG="Update x3d-toggle to ${PKGVER}-${PKGREL}"
+
+          if [ -n "${{ inputs.commit_message }}" ]; then
+            echo "commit_message=${{ inputs.commit_message }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "commit_message=${DEFAULT_MSG}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v4
+        with:
+          pkgname: x3d-toggle
+          asset_dir: ./.aur-stage
+          updpkgsums: ${{ inputs.updpkgsums == true && 'true' || 'false' }}
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: ${{ steps.stage.outputs.commit_message }}
+          allow_empty_commits: false
