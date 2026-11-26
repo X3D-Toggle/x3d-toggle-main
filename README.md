@@ -1,4 +1,4 @@
-# AMD X3D V-Cache Technology Optimizer - v2.0.0
+# AMD X3D V-Cache Technology Optimizer - v2.0.1
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/X3D-Toggle/x3d-toggle-main/blob/main/LICENSE)
 [![Platform: Linux Only](https://img.shields.io/badge/Platform-Linux%20Only-red.svg)](https://github.com/X3D-Toggle/x3d-toggle-main/blob/main/README.md)

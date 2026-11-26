@@ -1,4 +1,4 @@
-project('x3d-toggle-docs', 'c', version: '2.0.0')
+project('x3d-toggle-docs', 'c', version: '2.0.1')
 
 pandoc = find_program('pandoc', required: false)
 
