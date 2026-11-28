@@ -168,7 +168,7 @@ static GtkWidget *mod_extras_build(const X3dPageCtx *ctx) {
   GtkWidget *about_lbl = gtk_label_new(NULL);
   gtk_label_set_markup(GTK_LABEL(about_lbl),
                        "<span font_family=\"monospace\">"
-                       "  <b>Version:</b>       2.1.0\n"
+                       "  <b>Version:</b>       2.1.1\n"
                        "  <b>Author:</b>        Pyrotiger\n"
                        "  <b>Release Year:</b>  2026  •  License: GPLv3"
                        "</span>");

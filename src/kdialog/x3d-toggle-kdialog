@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# x3d-toggle-kdialog (v2.1.0)
+# x3d-toggle-kdialog (v2.1.1)
 # Lightweight GUI wrapper using kdialog; keeps logic simple and linear.
 
 set -euo pipefail
@@ -20,7 +20,7 @@ mkdir -p "$LOG_DIR"
 
 SERVICE_NAME="x3d-toggle.service"
 
-# Resolve configuration file (v2.1.0 layout with fallbacks)
+# Resolve configuration file (v2.1.1 layout with fallbacks)
 if [ -n "${X3D_CONFIG_FILE:-}" ] && [ -r "$X3D_CONFIG_FILE" ]; then
     CONFIG_PATH="$X3D_CONFIG_FILE"
 elif [ -r "/etc/x3d-toggle.d/settings.conf" ]; then
