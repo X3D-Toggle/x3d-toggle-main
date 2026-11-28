@@ -22,7 +22,7 @@ makedepends=(
 options=('!strip' '!lto')
 
 source=("${pkgbase}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('dc2bbd591b988ac225e861a649b2e84df367016c764a5e3fb398a05fffa9ad82')
+sha256sums=('a7a3424b3a6c2519b1c3dca7e2ada88e25b598f54b2aaccce5d01144e4513e90')
 
 build() {
     cd "${srcdir}/x3d-toggle-main-${pkgver}"
