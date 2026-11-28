@@ -10,6 +10,8 @@
 ## - Compresses the rotated file with a timestamp suffix and truncates the live log.
 ## - Keeps the most recent N archives per log file (default 7).
 
+umask 0002
+
 _l_dir_lib="$(cd "$(dirname "$0")/../framework" && pwd)"
 . "$_l_dir_lib/framework.sh"
 

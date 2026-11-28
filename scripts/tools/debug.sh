@@ -9,6 +9,8 @@
 
 
 
+umask 0002
+
 ROOT_REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT_REPO/scripts/framework/framework.sh"
 

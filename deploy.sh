@@ -16,6 +16,7 @@ set -e
 
 DEPLOY_MODE="${X3D_SETUP_MODE:-full}"
 INTERACTIVE=0
+INSTALL_KDIALOG="auto"
 
 for _arg in "$@"; do
     case "$_arg" in
@@ -23,9 +24,11 @@ for _arg in "$@"; do
         --standard)    DEPLOY_MODE="standard" ;;
         --minimal)     DEPLOY_MODE="minimal" ;;
         --dev)         DEPLOY_MODE="dev" ;;
+        --kdialog)     INSTALL_KDIALOG="yes" ;;
+        --no-kdialog)  INSTALL_KDIALOG="no" ;;
         --interactive) INTERACTIVE=1 ;;
         -h|--help)
-            echo "Usage: sudo ./deploy.sh [--full|--standard|--minimal|--dev|--interactive]"
+            echo "Usage: sudo ./deploy.sh [--full|--standard|--minimal|--dev|--kdialog|--no-kdialog|--interactive]"
             exit 0
             ;;
         *)
@@ -123,6 +126,28 @@ else
     printf_step "⏭️  Phase 4: Skipping GTK4 GUI build for '$DEPLOY_MODE' profile."
 fi
 
+# Phase 4b: Optional KDialog Lightweight Frontend
+X3D_KDIALOG_BUILT=0
+X3D_KDIALOG_PROMPTED=0
+if [ "$INSTALL_KDIALOG" = "no" ]; then
+    printf_step "⏭️  Phase 4b: Skipping KDialog GUI (--no-kdialog)."
+    X3D_KDIALOG_PROMPTED=1
+elif [ "$INSTALL_KDIALOG" = "yes" ]; then
+    run_logged "🖥️  Phase 4b: Installing KDialog Lightweight GUI..." \
+        env X3D_EXEC=1 SUDO_USER="$ACTUAL_USER" sh "$_l_dir_root/scripts/framework/kdialog.sh"
+    X3D_KDIALOG_BUILT=1
+    X3D_KDIALOG_PROMPTED=1
+elif [ "$INTERACTIVE" -eq 0 ] && { [ "$DEPLOY_MODE" = "full" ] || [ "$DEPLOY_MODE" = "standard" ]; }; then
+    if command -v kdialog >/dev/null 2>&1; then
+        run_logged "🖥️  Phase 4b: Installing KDialog Lightweight GUI..." \
+            env X3D_EXEC=1 SUDO_USER="$ACTUAL_USER" sh "$_l_dir_root/scripts/framework/kdialog.sh"
+        X3D_KDIALOG_BUILT=1
+    else
+        printf_step "⚠️  Phase 4b: kdialog not found — skipping optional KDialog GUI."
+    fi
+    X3D_KDIALOG_PROMPTED=1
+fi
+
 # Refresh system desktop and icon caches if utilities exist
 if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database -q /usr/share/applications 2>/dev/null || true
@@ -135,9 +160,9 @@ fi
 printf_step "⚙️  Phase 5: Configuring system settings, permissions, and service..."
 if [ -f "$_l_dir_root/setup.sh" ]; then
     if [ "$INTERACTIVE" -eq 1 ]; then
-        X3D_GUI_BUILT="$X3D_GUI_BUILT" SUDO_USER="$ACTUAL_USER" sh "$_l_dir_root/setup.sh"
+        X3D_GUI_BUILT="$X3D_GUI_BUILT" X3D_KDIALOG_BUILT="$X3D_KDIALOG_BUILT" X3D_KDIALOG_PROMPTED="$X3D_KDIALOG_PROMPTED" SUDO_USER="$ACTUAL_USER" sh "$_l_dir_root/setup.sh"
     else
-        X3D_SETUP_MODE="$DEPLOY_MODE" X3D_GUI_BUILT="$X3D_GUI_BUILT" SUDO_USER="$ACTUAL_USER" \
+        X3D_SETUP_MODE="$DEPLOY_MODE" X3D_GUI_BUILT="$X3D_GUI_BUILT" X3D_KDIALOG_BUILT="$X3D_KDIALOG_BUILT" X3D_KDIALOG_PROMPTED="$X3D_KDIALOG_PROMPTED" SUDO_USER="$ACTUAL_USER" \
             sh "$_l_dir_root/setup.sh" </dev/null
     fi
 else
@@ -158,6 +183,9 @@ printf_divider
 [ -x /usr/bin/x3d-daemon ] && printf_step "2,✔️ Daemon & eBPF:    /usr/bin/x3d-daemon, /usr/lib/x3d-toggle/bpf.o"
 if [ -x /usr/bin/x3d-gui ]; then
     printf_step "2,✔️ Desktop GUI:      /usr/bin/x3d-gui (launch via 'x3d-toggle' or app menu)"
+fi
+if [ -x /usr/bin/x3d-toggle-kdialog ]; then
+    printf_step "2,✔️ KDialog GUI:      /usr/bin/x3d-toggle-kdialog (launch via 'x3d-toggle kdialog' or app menu)"
 fi
 if systemctl is-active --quiet x3d-toggle.service 2>/dev/null; then
     printf_step "2,✔️ Systemd Service:  x3d-toggle.service (ACTIVE & ENABLED)"

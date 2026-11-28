@@ -5,9 +5,12 @@
 [![Architecture: POSIX C](https://img.shields.io/badge/Architecture-POSIX%20C-orange.svg)](https://github.com/X3D-Toggle/x3d-toggle-main/blob/main/docs/ARCHITECTURE.md)
 [![Engine: eBPF](https://img.shields.io/badge/Engine-eBPF-green.svg)](https://github.com/X3D-Toggle/x3d-toggle-main/blob/main/README.md)
 
+> [!NOTE]
+> **X3D Toggle v1.x** is a lightweight CLI/KDialog utility (available in [X3D Toggle v1](https://github.com/pyrotiger/x3d-toggle)), while **v2.x** provides a full GTK4/libadwaita GUI and daemon suite (available in [X3D Toggle v2](https://github.com/pyrotiger/x3d-toggle-main)).
+
 > [!CAUTION]
 > **Security Notice — Linux Only (Beware of Fake Windows Releases):**
-> **X3D Toggle is strictly a Linux-only application.** There is **no** Windows version, and this project will never distribute Windows executables. AMD develops their own software, **AMD 3D V-Cache Performance Optimizer Driver**, for use on Windows platforms, but is **NOT** the same program as X3D Toggle.
+> **X3D Toggle is strictly a Linux-only application.** There is **no** Windows version, and this project will never distribute Windows executables. AMD develops their own software, **AMD 3D V-Cache Performance Optimizer Driver**, for use on Windows platforms, but it is **NOT** the same program as X3D Toggle.
 >
 > Any Windows `.exe` or `.zip` files circulating online or hosted on cloned/unofficial repositories claiming to be X3D Toggle are **unofficial, potentially malicious, and must NOT be trusted or executed**.
 >
@@ -19,7 +22,7 @@ A portable, high-performance utility for managing CCD priority on the AMD Ryzen 
 
 ### 🔭  Overview  🔭
 
-This utility provides a native GTK4 desktop dashboard and automation backend for the `amd_x3d_vcache` and `amd-pstate` kernel drivers. It allows for real-time switching of CPU scheduler bias, SMT-aware L3 cgroup isolation, BORE/EEVDF tuning, and IRQ affinity steering across the AMD Ryzen X3D lineup:
+This utility provides a native GTK4 desktop dashboard and automation backend for the `amd_x3d_vcache`, `amd-pstate`, and upcoming `amd-wmi-aod` kernel drivers. It allows for real-time switching of CPU scheduler bias, SMT-aware L3 cgroup isolation, BORE/EEVDF tuning, IRQ affinity steering, and scaffolded AMD Overclocking (AOD) WMI controls across the AMD Ryzen X3D lineup:
 * **Asymmetric Dual-CCD X3D:** Ryzen 9 9950X3D, 9900X3D, 7950X3D, 7900X3D
 * **Symmetric Dual 3D V-Cache:** Ryzen 9 9950X3D2 (192 MB Dual V-Cache)
 * **Single-CCD X3D:** Ryzen 7 9850X3D, 9800X3D, 7800X3D (unified V-Cache)
@@ -31,14 +34,16 @@ This utility provides a native GTK4 desktop dashboard and automation backend for
   * **C Binary Backend**: The core logic is now a compiled C binary for instant execution and minimal system overhead. Sysfs node detection uses POSIX `glob()` for real-time latency reduction.
   * **Automated Daemon**: Real-time heuristics detect "Gaming" vs "Compute" loads.
   * **Manual Modes**: Instant user-defined priority via GUI or CLI.
+  * **AMD AOD WMI Ready**: Pre-scaffolded for AMD's new WMI-based Overclocking Driver (`amd-wmi-aod`), unlocking firmware power/clock/SMT tuning automatically once deployed in the host kernel.
 
 ### 📜  Prerequisites  📜
 
 * **Linux Kernel**: 6.13 minimum (provides `amd_x3d_vcache` sysfs node); **7.0 – 7.3+** is fully supported and recommended (native EEVDF + modern BORE `sched_burst_penalty_offset` / `sched_burst_inherit_type`, `amd_pstate` active CPPC EPP, and CO-RE eBPF process tracking).
 * UEFI Configuration: CPPC Dynamic Preferred Cores set to `[Driver]` (for asymmetric dual-CCD X3D models).
-* Build Dependencies: `clang`, `make`, `bpftool`.
+* Build Dependencies: `clang`, `make`, `bpftool` (plus `pkgconf`, `glib2-devel`, `gtk4`, and `libadwaita` development headers when compiling the optional `x3d-gui` binary).
 * System Dependencies: `polkit`, `libbpf`.
-* GUI Dependencies (Optional): `gtk4`, `libadwaita`.
+* GUI Dependencies (Optional): `gtk4`, `libadwaita` (for the `x3d-gui` binary, packaged as `x3d-toggle-gui`), or `kdialog` (for lightweight `x3d-toggle kdialog` / `x3d-toggle-kdialog`).
+* Firmware Overclocking Interface (Optional): `amd-wmi-aod` kernel module (currently in upstream review; automatically detected when deployed).
 
 ### 🛡️  Architecture Security  🛡️
 
@@ -54,7 +59,7 @@ X3D Toggle follows a strict **Model-View-Controller (MVC)** philosophy:
 * **XUI (View):** A cross-platform UI logic layer (`x3d-xui`) that synchronizes iconography and formatting between Bash and C components.
 * **Frontends (View):** CLI (`x3d-toggle`), Tray Icons, and optional Web/GTK interfaces.
 
-For a deep dive into the system design, see [ARCHITECTURE.md](../main/docs/ARCHITECTURE.md).
+For a deep dive into the system design, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ### 🖥️  XUI (X3D User Interface)  🖥️
 
@@ -125,6 +130,8 @@ git clone https://github.com/X3D-Toggle/x3d-toggle-main.git
 cd x3d-toggle-main
 make
 sudo make install setup
+# Optional: build/install bin/x3d-gui directly when gtk4 + libadwaita dev headers are present
+sudo make gui
 ```
 
 ### 🎮  Application Usage  🎮
@@ -178,9 +185,17 @@ More advanced, persistent overrides can be found in the **User Configuration** d
    sudo systemctl restart x3d-toggle.service
    ```
 
+### ⚡  AMD Overclocking (AOD) WMI Support  ⚡
+
+X3D Toggle supports AMD's new Linux **AMD Overclocking Driver (`amd-wmi-aod`)**, which bridges Ryzen platform firmware tuning to `sysfs` over ACPI WMI (GUID `95F20B61-3D44-41F8-87E1-03CBF94C4E8F`):
+
+* **Upstream Status & Conditional Scaffolding:** `amd-wmi-aod` is currently in upstream Linux kernel review. X3D Toggle is already scaffolded end-to-end (daemon IPC caching, `tmpfiles.d`/udev group provisioning, and GTK4 UI) and performs a runtime host feature check so AOD controls activate seamlessly as soon as the WMI interface is present in your kernel.
+* **Live Dashboard Telemetry (Active Today):** A dedicated **Power & Current Limits** widget on the dashboard displays real-time **PPT**, **TDC**, **EDC**, and **Mem Clock** telemetry (plus **AOD Status**) regardless of whether `amd-wmi-aod` is loaded yet; clicking it routes to **AOD Controls** when the WMI driver is present (or displays an upstream-review status view until your kernel includes it).
+* **Firmware Tuning Controls (Unlocked with `amd-wmi-aod` + Advanced Options):** Provides paired slider + manual numeric inputs and one-click CPU stock defaults for **PPT Limit (W)**, **TDC Limit (A)**, **EDC Limit (A)**, and **Mem Clock (MHz)**, plus a conditional **IRQ SMT** widget inside **AOD Controls**. *(Because AOD updates UEFI setup variables, a system reboot is required for firmware changes to take effect.)*
+
 ### 📟  CLI Command Lifecycle  📟
 
-* Review [x3d-toggle.1](/docs/x3d-toggle.1) for more information
+* Review [x3d-toggle.1](docs/x3d-toggle.1) for more information
 
 ### 🚮  Uninstallation  🚮
 

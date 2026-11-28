@@ -1,0 +1,380 @@
+/* X3D Toggle — Adaptive Light / Dark / System GTK4 & Libadwaita Theme
+ * Binds X3D custom widget nodes strictly to standard GTK 4.16+ / Libadwaita 1.6+
+ * CSS custom properties (var(--window-fg-color), var(--card-bg-color),
+ * var(--sidebar-bg-color), var(--accent-bg-color), var(--border-color)) and
+ * W3C color-mix(in srgb, ...) without overriding base GTK controls, so Light,
+ * Dark, and System modes render natively with zero CSS linter errors.
+ */
+
+windowcontrols button,
+windowcontrols button:hover,
+headerbar button.flat {
+  box-shadow: none;
+}
+
+.x3d-sidebar-pane {
+  background-color: var(--sidebar-bg-color);
+  color: var(--sidebar-fg-color);
+  border-right: 1px solid var(--border-color, rgba(127, 127, 127, 0.28));
+}
+
+.navigation-sidebar {
+  background-color: transparent;
+}
+
+.navigation-sidebar row {
+  border-radius: 8px;
+  margin: 1px 6px;
+  padding: 7px 12px;
+  min-height: 26px;
+}
+
+.navigation-sidebar row:selected label {
+  font-weight: 700;
+}
+
+.navigation-sidebar row.x3d-subnav-row {
+  padding-left: 26px;
+  font-size: 0.94em;
+}
+
+.navigation-sidebar row.x3d-sidebar-sep-row,
+.navigation-sidebar row.x3d-sidebar-sep-row:hover {
+  background: none;
+  padding: 2px 10px;
+  margin: 4px 6px;
+  min-height: 1px;
+}
+
+.x3d-sidebar-divider {
+  background-color: color-mix(in srgb, var(--border-color, rgba(127, 127, 127, 0.35)) 65%, transparent);
+  min-height: 1px;
+  margin: 0 10px;
+}
+
+/* Keep hero backdrop dark slate so the white embedded logo text stays crisp in Light mode */
+.x3d-hero {
+  background-image: url('resource:///org/x3d-toggle/gui/x3d-toggle-hero.png'), linear-gradient(180deg, #0d1014 0%, #171c24 65%, #232a36 100%);
+  background-size: auto 82%, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  border: 1px solid var(--border-color, rgba(127, 127, 127, 0.28));
+  border-bottom: 3px solid var(--accent-bg-color);
+  border-radius: 12px;
+  padding: 0;
+  margin: 0;
+  min-height: 160px;
+}
+
+.x3d-page-title,
+.x3d-hero-title {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--window-fg-color);
+  padding: 0 0 6px 0;
+}
+
+/* ── Native GObject Widget Subclasses ───────────────────────────── */
+
+.current-widget,
+.staged-widget,
+.immediate-widget,
+.x3d-card {
+  background-color: var(--card-bg-color);
+  color: var(--card-fg-color);
+  border: 1px solid var(--border-color, rgba(127, 127, 127, 0.28));
+  border-radius: 12px;
+  padding: 16px;
+  margin: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.staged-widget.is-dirty {
+  border-color: var(--accent-bg-color);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-bg-color) 35%, transparent);
+}
+
+.current-widget.clickable,
+button.x3d-card-clickable {
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.current-widget.clickable:hover,
+button.x3d-card-clickable:hover {
+  border-color: var(--accent-bg-color);
+  background-color: color-mix(in srgb, var(--card-bg-color) 94%, var(--accent-bg-color) 6%);
+}
+
+.danger-widget {
+  background-color: color-mix(in srgb, var(--card-bg-color) 90%, var(--error-bg-color) 10%);
+  border: 2px solid var(--error-color);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.danger-widget .x3d-widget-title {
+  color: var(--error-color);
+  font-size: 12px;
+  letter-spacing: 1.3px;
+}
+
+.x3d-banner-widget {
+  background-color: color-mix(in srgb, var(--card-bg-color) 93%, var(--accent-bg-color) 7%);
+  border: 1px solid color-mix(in srgb, var(--accent-bg-color) 35%, transparent);
+  border-left: 3px solid var(--accent-bg-color);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.x3d-widget-title,
+.x3d-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--card-fg-color) 62%, transparent);
+  letter-spacing: 1px;
+}
+
+.x3d-subsection-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-color);
+  letter-spacing: 0.8px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.x3d-accent {
+  color: var(--accent-color);
+  font-weight: 700;
+}
+
+.x3d-dim {
+  color: color-mix(in srgb, var(--window-fg-color) 60%, transparent);
+}
+
+.x3d-gpu-subtitle {
+  color: color-mix(in srgb, var(--card-fg-color) 65%, transparent);
+  font-size: 12px;
+}
+
+.x3d-value {
+  color: var(--accent-color);
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.x3d-status-online {
+  color: var(--success-color);
+  font-weight: 700;
+}
+
+.x3d-status-offline {
+  color: var(--error-color);
+  font-weight: 700;
+}
+
+.x3d-status-warning {
+  color: var(--warning-color);
+  font-weight: 700;
+}
+
+/* ── Control Primitives (w/ Hover Gloss Sweep) ─────────────────── */
+
+button.x3d-toggle-pill {
+  background-color: color-mix(in srgb, var(--card-fg-color) 6%, transparent);
+  background-image: linear-gradient(115deg,
+      rgba(255, 255, 255, 0) 32%,
+      color-mix(in srgb, var(--accent-bg-color) 28%, transparent) 50%,
+      rgba(255, 255, 255, 0) 68%);
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  background-position: 145% 0;
+  color: var(--card-fg-color);
+  font-weight: 600;
+  border: 1px solid var(--border-color, rgba(127, 127, 127, 0.28));
+  border-radius: 8px;
+  padding: 9px 14px;
+  min-height: 36px;
+  box-shadow: none;
+  transition:
+    background-position 650ms cubic-bezier(0.19, 1, 0.22, 1),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+button.x3d-toggle-pill:hover {
+  background-position: -45% 0;
+  background-color: color-mix(in srgb, var(--accent-bg-color) 10%, transparent);
+  border-color: var(--accent-bg-color);
+  color: var(--card-fg-color);
+}
+
+button.x3d-toggle-pill:checked,
+button.x3d-toggle-pill.active {
+  background-color: var(--accent-bg-color);
+  background-image:
+    linear-gradient(115deg,
+      rgba(255, 255, 255, 0) 34%,
+      rgba(255, 255, 255, 0.36) 50%,
+      rgba(255, 255, 255, 0) 66%);
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  background-position: 145% 0;
+  color: var(--accent-fg-color);
+  font-weight: 700;
+  border-color: var(--accent-bg-color);
+}
+
+button.x3d-toggle-pill:checked:hover,
+button.x3d-toggle-pill.active:hover {
+  background-position: -45% 0;
+  color: var(--accent-fg-color);
+}
+
+button.x3d-toggle-pill:disabled {
+  opacity: 0.45;
+}
+
+button.x3d-popup-btn {
+  background-color: color-mix(in srgb, var(--accent-bg-color) 10%, transparent);
+  background-image: none;
+  color: var(--accent-color);
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--accent-bg-color) 40%, transparent);
+  border-radius: 8px;
+  padding: 9px 14px;
+  min-height: 36px;
+}
+
+button.x3d-popup-btn:hover {
+  border-color: var(--accent-bg-color);
+  background-color: color-mix(in srgb, var(--accent-bg-color) 18%, transparent);
+}
+
+button.x3d-cta-btn {
+  border-radius: 7px;
+  padding: 6px 14px;
+  min-height: 32px;
+  font-weight: 600;
+}
+
+button.x3d-primary {
+  background-color: var(--accent-bg-color);
+  background-image: none;
+  color: var(--accent-fg-color);
+  font-weight: 700;
+  border: 1px solid var(--accent-bg-color);
+  border-radius: 8px;
+  padding: 6px 16px;
+  min-height: 32px;
+}
+
+button.x3d-primary:hover {
+  background-color: color-mix(in srgb, var(--accent-bg-color) 90%, var(--accent-fg-color) 10%);
+}
+
+button.x3d-primary:disabled {
+  opacity: 0.42;
+}
+
+button.x3d-destructive {
+  background-color: var(--destructive-bg-color);
+  background-image: none;
+  color: var(--destructive-fg-color);
+  font-weight: 800;
+  border: 1px solid var(--error-color);
+  border-radius: 8px;
+  padding: 8px 18px;
+  min-height: 36px;
+}
+
+.x3d-reboot-badge {
+  background-color: color-mix(in srgb, var(--warning-color) 16%, transparent);
+  color: var(--warning-color);
+  border: 1px solid color-mix(in srgb, var(--warning-color) 55%, transparent);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.x3d-form-row {
+  padding: 5px 2px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color, rgba(127, 127, 127, 0.28)) 55%, transparent);
+}
+
+.x3d-form-row:last-child {
+  border-bottom: none;
+}
+
+.x3d-live-row {
+  background-color: var(--card-bg-color);
+  color: var(--card-fg-color);
+  border: 1px solid var(--border-color, rgba(127, 127, 127, 0.28));
+  border-left: 3px solid var(--accent-bg-color);
+  border-radius: 10px;
+  padding: 10px 16px;
+}
+
+.x3d-extras-frame {
+  background-color: var(--view-bg-color);
+  border: 1px solid var(--border-color, rgba(127, 127, 127, 0.28));
+  border-radius: 8px;
+}
+
+.x3d-pinned-desktop {
+  background-color: color-mix(in srgb, var(--card-bg-color) 96%, transparent);
+  color: var(--card-fg-color);
+  border: 1px solid var(--accent-bg-color);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* ── Compact, Quiet Sidebar CallToAction Bars (LACT-style) ─────── */
+
+button.x3d-sidebar-cta-apply,
+button.x3d-sidebar-cta-secondary {
+  min-height: 22px;
+  padding: 3px 10px;
+  border-radius: 7px;
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  font-size: 0.90em;
+  font-weight: 600;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+button.x3d-sidebar-cta-apply {
+  background-color: color-mix(in srgb, var(--accent-bg-color) 88%, transparent);
+  color: var(--accent-fg-color);
+}
+
+button.x3d-sidebar-cta-apply:hover:not(:disabled) {
+  background-color: var(--accent-bg-color);
+  color: var(--accent-fg-color);
+}
+
+button.x3d-sidebar-cta-apply:disabled {
+  background-color: color-mix(in srgb, var(--accent-bg-color) 24%, transparent);
+  color: color-mix(in srgb, var(--sidebar-fg-color) 48%, transparent);
+  opacity: 1;
+}
+
+button.x3d-sidebar-cta-secondary {
+  background-color: color-mix(in srgb, var(--sidebar-fg-color) 8%, transparent);
+  color: color-mix(in srgb, var(--sidebar-fg-color) 82%, transparent);
+}
+
+button.x3d-sidebar-cta-secondary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--sidebar-fg-color) 14%, transparent);
+  color: var(--sidebar-fg-color);
+}
+
+button.x3d-sidebar-cta-secondary:disabled {
+  background-color: color-mix(in srgb, var(--sidebar-fg-color) 4.5%, transparent);
+  color: color-mix(in srgb, var(--sidebar-fg-color) 38%, transparent);
+  opacity: 1;
+}

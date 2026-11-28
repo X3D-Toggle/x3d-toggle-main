@@ -31,9 +31,10 @@ x3d-toggle-main
 │   ├── x3d-toggle.png
 │   └── x3d-toggle.svg
 ├── bin (Compiled Binaries)
-│   ├── x3d-daemon
-│   ├── x3d-run
-│   └── x3d-toggle
+│   ├── x3d-daemon
+│   ├── x3d-gui (Optional GTK4/libadwaita Frontend; packaged in x3d-toggle-gui)
+│   ├── x3d-run
+│   └── x3d-toggle
 ├── build (Build Artifacts)
 │   ├── bpf.h
 │   ├── bpf.o
@@ -147,12 +148,18 @@ x3d-toggle-main
 │   │   └── steam.h
 │   ├── error.c
 │   ├── games.c
-│   ├── gtk4
-│   │   ├── gui.c
-│   │   ├── stubs.c
-│   │   ├── theme.css
-│   │   ├── x3d-toggle-gui.gresource.xml
-│   │   └── x3d-toggle.ui
+│   ├── gtk4
+│   │   ├── gui.c
+│   │   ├── gui_controller.c / gui_controller.h
+│   │   ├── gui_model.c / gui_model.h
+│   │   ├── gui_popups.c / gui_popups.h
+│   │   ├── gui_stubs.c / gui_stubs.h
+│   │   ├── gui_view.c / gui_view.h
+│   │   ├── gui_widgets.c / gui_widgets.h
+│   │   ├── stubs.c
+│   │   ├── theme.css / theme-imperial.css / theme-lact.css / theme-adaptive.css
+│   │   ├── x3d-toggle-gui.gresource.xml
+│   │   └── x3d-toggle.ui
 │   ├── irq.c
 │   ├── libc.c
 │   ├── run.c

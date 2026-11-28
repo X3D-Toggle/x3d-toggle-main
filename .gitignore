@@ -24,8 +24,13 @@ x3d
 *.log
 trace-*.log
 vgcore.*
-dev/logging/
-dev/auditing/
+dev/logging/*
+!dev/logging/logs/
+!dev/logging/audits/
+dev/logging/logs/*
+!dev/logging/logs/.gitkeep
+dev/logging/audits/*
+!dev/logging/audits/.gitkeep
 
 *.pkg.tar.zst
 *.pkg.tar.xz

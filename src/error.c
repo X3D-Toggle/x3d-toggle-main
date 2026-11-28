@@ -105,6 +105,9 @@ static const msg_t registry_msg[] = {
             "Daemon polling loop encountered an unexpected failure"},
     [48] = {"Unsupported kernel feature",
             "Feature '%s' not supported by the current kernel."},
+    [49] = {"IPC protocol version mismatch",
+            "Client (v%d) and daemon (%s) IPC versions differ. Restart "
+            "x3d-toggle.service."},
 };
 
 static const msg_t registry_status[] = {
@@ -182,8 +185,11 @@ void journal_file(const char *level, const char *summary, const char *ctx) {
   int len = printf_sn(buf, sizeof(buf), "[%s] [%s] %s: %s\n", timestamp, level,
                       summary, ctx);
 
+  int is_new = (access(log_path, F_OK) != 0);
   int fd = open(log_path, O_WRONLY | O_CREAT | O_APPEND, 0664);
   if (fd >= 0) {
+    if (is_new)
+      (void)chmod(log_path, 0664);
     write(fd, buf, len);
     close(fd);
   }

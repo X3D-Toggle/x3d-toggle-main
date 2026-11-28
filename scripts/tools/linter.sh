@@ -178,7 +178,7 @@ if [ "$RUN_CPPCHECK" -eq 1 ]; then
     printf_step "${SEARCH} Running cppcheck (C11/POSIX Scan) for bugs..."
     make -s framework >/dev/null 2>&1 || true
     # shellcheck disable=SC2086
-    cppcheck --inline-suppr --suppress=unmatchedSuppression $CPPCHECK_FLAGS -Ibuild -Iinclude -D__asm__\(x\)= -ibuild -isrc/libc.c -isrc/daemon/bpf/bpf.c src > "$JOURNAL_AUDIT/cppcheck.txt" 2>&1 || journal_write -audit "cppcheck" "$JOURNAL_AUDIT/cppcheck.txt" "$?"
+    cppcheck --inline-suppr --suppress=unmatchedSuppression $CPPCHECK_FLAGS --library=gtk -Ibuild -Iinclude -Isrc/gtk4 -Isrc/gtk4/pages -Isrc/gtk4/popups -D__asm__\(x\)= -ibuild -isrc/libc.c -isrc/daemon/bpf/bpf.c src > "$JOURNAL_AUDIT/cppcheck.txt" 2>&1 || journal_write -audit "cppcheck" "$JOURNAL_AUDIT/cppcheck.txt" "$?"
 fi
 
 # ── 3. Valgrind ─────────────────────────────────────────────────

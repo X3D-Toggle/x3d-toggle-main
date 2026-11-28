@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=X3D Toggle (KDialog)
+Comment=Lightweight KDE KDialog Frontend for AMD 3D V-Cache Optimizer
+Exec=x3d-toggle kdialog
+Icon=x3d-toggle
+Terminal=false
+StartupNotify=true
+Type=Application
+Categories=System;Settings;Qt;KDE;
+Keywords=amd;x3d;vcache;cpu;performance;x3d-toggle;kdialog;rabbit;cheetah;elk;
+X-KDE-SubstituteUID=false

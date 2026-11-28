@@ -27,28 +27,28 @@ fi
 
 printf_step "2,${HAMMER} Compiling and Installing GTK4 Frontend"
 
-mkdir -p bin
+mkdir -p bin build
 
 if ! glib-compile-resources --sourcedir=src/gtk4 \
-    --generate-source --target=src/gtk4/x3d-gui-resources.c \
+    --generate-source --target=build/x3d-gui-resources.c \
     src/gtk4/x3d-toggle-gui.gresource.xml; then
     printf_step "2,${XOUT} Error: GResource Compilation Failed"
     exit 1
 fi
 
-# shellcheck disable=SC2046
-if ! clang $(pkg-config --cflags gtk4 libadwaita-1 gio-unix-2.0) -Wall -Wextra -O2 \
-    -Ibuild -Iinclude -DGUI_BUILD -DLIBC_NO_BOOTSTRAP \
-    src/gtk4/gui.c src/gtk4/x3d-gui-resources.c src/gtk4/stubs.c \
-    src/libc.c src/worker.c build/xui.c build/ccd.c src/error.c src/cli/misc.c \
+# shellcheck disable=SC2046,SC2086
+if ! clang $(pkg-config --cflags gtk4 libadwaita-1 gio-unix-2.0) \
+    -Wall -Wextra -Werror=implicit-function-declaration -O2 \
+    -Ibuild -Iinclude -Isrc/gtk4 -Isrc/gtk4/pages -Isrc/gtk4/popups \
+    -DGUI_BUILD -DLIBC_NO_BOOTSTRAP \
+    src/gtk4/*.c src/gtk4/pages/*.c src/gtk4/popups/*.c build/x3d-gui-resources.c \
+    src/libc.c src/worker.c build/xui.c src/error.c src/cli/misc.c \
     -o bin/x3d-gui \
-    $(pkg-config --libs gtk4 libadwaita-1 gio-unix-2.0); then
+    $(pkg-config --libs gtk4 libadwaita-1 gio-unix-2.0) -lm; then
     printf_step "2,${XOUT} Error: Compilation Failed"
-    rm -f src/gtk4/x3d-gui-resources.c
+    rm -f build/x3d-gui-resources.c
     exit 1
 fi
-
-rm -f src/gtk4/x3d-gui-resources.c
 
 if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
     chown "$SUDO_USER:$(id -gn "$SUDO_USER")" bin/x3d-gui 2>/dev/null || true

@@ -5,7 +5,7 @@
 .SHELLFLAGS = -ec
 
 CC             		 = clang
-CFLAGS        		?= -Wall -O2 -Wextra -D_GNU_SOURCE -fno-builtin -nostdlib -fno-stack-protector
+CFLAGS        		?= -Wall -O2 -Wextra -Werror=implicit-function-declaration -D_GNU_SOURCE -fno-builtin -nostdlib -fno-stack-protector
 USER_CFLAGS          = -DBPF_NO_PRESERVE_ACCESS_INDEX
 LDFLAGS              = # intentionally empty; linker flags may be provided externally
 INCLUDES             = -Ibuild -Iinclude -Isrc/daemon -Isrc/cli -Isrc/daemon/polling -Isrc/daemon/bpf -DUSR_LIBS=\"$(USR_LIBS)\" -DVAR_LOGS=\"$(VAR_LOGS)\" -DVAR_AUDITS=\"$(VAR_AUDITS)\" -DVAR_DUMPS=\"$(VAR_DUMPS)\" -DDIR_BIN=\"$(DIR_BIN)\" -DDIR_RUN=\"$(DIR_RUN)\" 
@@ -63,15 +63,32 @@ export SRC_BPF      ?= $(SRC_DAEMON)/bpf
 NAME_CLI         = x3d-toggle
 NAME_DAEMON      = x3d-daemon
 NAME_WRAPPER     = x3d-run
+NAME_GUI         = x3d-gui
 
 DIR_BUILD        = build
 TARGET_CLI       = $(BIN)/$(NAME_CLI)
 TARGET_DAEMON    = $(BIN)/$(NAME_DAEMON)
 TARGET_WRAPPER   = $(BIN)/$(NAME_WRAPPER)
+TARGET_GUI_BIN   = $(BIN)/$(NAME_GUI)
+TARGET_GUI_RES   = $(DIR_BUILD)/x3d-gui-resources.c
 TARGET_CCD       = $(DIR_BUILD)/ccd.c $(DIR_BUILD)/ccd.h
 TARGET_UI        = $(DIR_BUILD)/xui.c $(DIR_BUILD)/xui.h
 TARGET_FRAMEWORK = $(DIR_BUILD)/.framework_synced
 TARGET_CONFIG    = $(DIR_BUILD)/config.h
+
+HAS_GTK4        := $(shell pkg-config --exists gtk4 libadwaita-1 gio-unix-2.0 2>/dev/null && echo 1 || echo 0)
+GTK4_PKG_CFLAGS  = $(shell pkg-config --cflags gtk4 libadwaita-1 gio-unix-2.0 2>/dev/null)
+GTK4_PKG_LIBS    = $(shell pkg-config --libs gtk4 libadwaita-1 gio-unix-2.0 2>/dev/null)
+GTK4_CFLAGS      = -Wall -O2 -Wextra -Werror=implicit-function-declaration -Ibuild -Iinclude -Isrc/gtk4 -Isrc/gtk4/pages -Isrc/gtk4/popups -DGUI_BUILD -DLIBC_NO_BOOTSTRAP
+SRCS_GTK4        = $(wildcard $(SRC)/gtk4/*.c) \
+                   $(wildcard $(SRC)/gtk4/pages/*.c) \
+                   $(wildcard $(SRC)/gtk4/popups/*.c)
+SRCS_GTK4_DEPS   = $(SRC)/libc.c $(SRC)/worker.c $(DIR_BUILD)/xui.c $(SRC)/error.c $(SRC_CLI)/misc.c
+ifeq ($(HAS_GTK4),1)
+OPT_GUI_TARGET   = $(TARGET_GUI_BIN)
+else
+OPT_GUI_TARGET   =
+endif
 
 SRCS_CORE       = $(DIR_BUILD)/xui.c \
                   $(DIR_BUILD)/ccd.c \
@@ -85,6 +102,7 @@ SRCS_CORE       = $(DIR_BUILD)/xui.c \
                   $(SRC_DAEMON)/cppc.c \
                   $(SRC_DAEMON)/diag.c \
                   $(SRC)/affinity.c \
+                  $(SRC)/aod.c \
                   $(SRC)/irq.c \
                   $(SRC)/stress.c \
                   $(SRC)/scheduler.c \
@@ -132,7 +150,7 @@ DEST_PIXMAPS    = $(DESTDIR)$(USR_PIXMAPS)
 
 SRCS_WRAPPER    = $(SRC)/run.c $(SRC)/status.c $(SRCS_CORE)
 
-.PHONY: all clean uninstall purge prep build install framework setup deploy gui
+.PHONY: all clean uninstall purge prep build install framework setup deploy gui kdialog
 
 all: build
 
@@ -147,10 +165,16 @@ $(DIR_BUILD)/bpf.o: $(SRC_BPF)/bpf.c $(TARGET_FRAMEWORK) | prep
 	$(CC) $(CFLAGS) $(USER_CFLAGS) -g -target bpf -c $< -o $@
 
 $(TARGET_UI) $(TARGET_CCD) $(TARGET_CONFIG): $(TARGET_FRAMEWORK)
-build: $(TARGET_CLI) $(TARGET_DAEMON) $(TARGET_WRAPPER) $(DIR_BUILD)/bpf.o
+build: $(TARGET_CLI) $(TARGET_DAEMON) $(TARGET_WRAPPER) $(DIR_BUILD)/bpf.o $(OPT_GUI_TARGET)
 	@if [ -n "$$SUDO_USER" ] && [ "$$SUDO_USER" != "root" ]; then \
 		chown -R "$$SUDO_USER:$$(id -gn "$$SUDO_USER")" $(BIN) $(DIR_BUILD) 2>/dev/null || true; \
 	fi
+
+$(TARGET_GUI_RES): $(SRC)/gtk4/x3d-toggle-gui.gresource.xml $(wildcard $(SRC)/gtk4/*.ui) $(wildcard $(SRC)/gtk4/*.css) | prep
+	glib-compile-resources --sourcedir=$(SRC)/gtk4 --generate-source --target=$(TARGET_GUI_RES) $(SRC)/gtk4/x3d-toggle-gui.gresource.xml
+
+$(TARGET_GUI_BIN): $(SRCS_GTK4) $(SRCS_GTK4_DEPS) $(TARGET_GUI_RES) $(TARGET_UI) $(TARGET_CONFIG) $(TARGET_FRAMEWORK)
+	$(CC) $(GTK4_PKG_CFLAGS) $(GTK4_CFLAGS) $(SRCS_GTK4) $(TARGET_GUI_RES) $(SRCS_GTK4_DEPS) -o $(TARGET_GUI_BIN) $(GTK4_PKG_LIBS) -lm
 
 $(TARGET_CLI): $(SRCS_CLI) $(SRCS_GUI) $(TARGET_UI) $(TARGET_CCD) $(TARGET_FRAMEWORK)
 	$(CC) $(CFLAGS) $(USER_CFLAGS) $(CLI) $(INCLUDES) $(SRCS_CLI) $(SRCS_GUI) -o $(TARGET_CLI) $(LIBS)
@@ -166,6 +190,9 @@ prep:
 
 gui: build
 	X3D_EXEC=1 sh ./scripts/framework/gui.sh
+
+kdialog: build
+	X3D_EXEC=1 sh ./scripts/framework/kdialog.sh
 
 install: build
 	install -dm755 $(DEST_BIN)
@@ -199,9 +226,10 @@ install: build
 	printf "%s\n" "$(CURDIR)" > $(DEST_ETC)/source_root
 	chmod 644 $(DEST_ETC)/source_root
 
-	install -dm775 $(DEST_LOGS)
-	install -dm775 $(DEST_AUDITS)
-	install -dm775 $(DEST_DUMPS)
+	install -dm2775 $(DESTDIR)$(VAR_LOG)
+	install -dm2775 $(DEST_LOGS)
+	install -dm2775 $(DEST_AUDITS)
+	install -dm2775 $(DEST_DUMPS)
 
 	install -dm755 $(DEST_SYSTEMD)
 	install -m644 packaging/x3d-toggle.service $(DEST_SYSTEMD)/x3d-toggle.service
@@ -225,6 +253,9 @@ install: build
 	install -dm755 $(DEST_FRAMEWORK)
 	install -m755 scripts/tools/*.sh $(DEST_TOOLS)/
 	install -m755 scripts/framework/*.sh $(DEST_FRAMEWORK)/
+	install -dm755 $(DEST_LIBS)/kdialog
+	install -m755 src/kdialog/x3d-toggle-kdialog $(DEST_LIBS)/kdialog/x3d-toggle-kdialog
+	install -m644 src/kdialog/x3d-toggle-kdialog.desktop $(DEST_LIBS)/kdialog/x3d-toggle-kdialog.desktop
 	install -dm755 $(DEST_PIXMAPS)
 	install -m644 assets/x3d-toggle.jpg $(DEST_PIXMAPS)/x3d-toggle.jpg
 	install -m644 assets/x3d-toggle.png $(DEST_PIXMAPS)/x3d-toggle.png
@@ -247,8 +278,8 @@ install: build
 		systemd-sysusers || { echo "Error: systemd-sysusers failed." >&2; exit 1; }; \
 		command -v systemd-tmpfiles >/dev/null 2>&1 || { echo "Error: 'systemd-tmpfiles' not found; cannot create tmpfiles entries." >&2; exit 1; }; \
 		systemd-tmpfiles --create $(DEST_TMPFILES)/x3d_toggle-tmpfiles.conf || { echo "Error: systemd-tmpfiles --create failed for $(DEST_TMPFILES)/x3d_toggle-tmpfiles.conf." >&2; exit 1; }; \
-		chown :x3d-toggle $(DEST_LOGS) $(DEST_AUDITS); \
-		chmod 775 $(DEST_LOGS) $(DEST_AUDITS); \
+		chown -R x3d-toggle:x3d-toggle $(DESTDIR)$(VAR_LOG); \
+		chmod 2775 $(DESTDIR)$(VAR_LOG) $(DEST_LOGS) $(DEST_AUDITS) $(DEST_DUMPS); \
 		systemctl daemon-reload; \
 	fi
 	@echo ""
@@ -289,6 +320,7 @@ uninstall:
 	rm -f $(DEST_BIN)/x3d-daemon
 	rm -f $(DEST_BIN)/x3d-run
 	rm -f $(DEST_BIN)/x3d-gui
+	rm -f $(DEST_BIN)/x3d-toggle-kdialog
 	rm -f $(DEST_BIN)/x3d
 	rm -f $(DEST_SYSUSERS)/x3d_toggle-sysusers.conf
 	rm -f $(DEST_TMPFILES)/x3d_toggle-tmpfiles.conf
@@ -307,14 +339,18 @@ uninstall:
 	rm -f $(DESTDIR)$(USR_MAN1)/x3d-toggle.1
 	rm -rf $(DESTDIR)$(USR_ASSETS)
 	rm -f $(DEST_APPS)/x3d-toggle.desktop
+	rm -f $(DEST_APPS)/x3d-toggle-kdialog.desktop
 
 	# Local User Cleanup
 	ACTUAL_USER="$${SUDO_USER:-$$USER}"; \
 	USER_HOME=$$(getent passwd "$$ACTUAL_USER" | cut -d: -f6); \
 	rm -f "$$USER_HOME/.local/bin/x3d-gui"; \
+	rm -f "$$USER_HOME/.local/bin/x3d-toggle-kdialog"; \
 	rm -f "$$USER_HOME/.local/share/applications/x3d-toggle.desktop"; \
+	rm -f "$$USER_HOME/.local/share/applications/x3d-toggle-kdialog.desktop"; \
 	rm -f "$$USER_HOME/.local/share/pixmaps/x3d-toggle.jpg"; \
-	rm -f "$$USER_HOME/Desktop/x3d-toggle.desktop"
+	rm -f "$$USER_HOME/Desktop/x3d-toggle.desktop"; \
+	rm -f "$$USER_HOME/Desktop/x3d-toggle-kdialog.desktop"
 
 	rm -rf $(DEST_LOGS)
 	rm -rf $(DEST_AUDITS)

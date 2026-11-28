@@ -77,6 +77,7 @@ typedef int error_code;
 #define ERR_IRQ_COALESCE (-46)
 #define ERR_IRQ_WATCH    (-47)
 #define ERR_UNSUPPORTED  (-48)
+#define ERR_IPC_VERSION  (-49)
 void journal_error(error_code code, ...);
 void journal_warn(error_code code, ...);
 void journal_info(error_code code, ...);

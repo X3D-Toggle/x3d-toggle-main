@@ -10,6 +10,8 @@
 
 
 
+umask 0002
+
 _l_dir_lib="$(cd "$(dirname "$0")/../framework" && pwd)"
 . "$_l_dir_lib/framework.sh"
 
@@ -25,13 +27,18 @@ archive_files() {
     
     for _file in "$_dir"/*"$_ext"; do
         [ -f "$_file" ] || continue
+        [ -s "$_file" ] || continue
         
         _ts=$(date +%Y%m%d%H%M%S)
         _arc="$_file.$_ts.gz"
         
         printf_step "    - Compressing: $(basename "$_file")"
         if gzip -c -- "$_file" > "$_arc" 2>/dev/null; then
-            : > "$_file"
+            if [ -w "$_file" ]; then
+                : > "$_file"
+            else
+                rm -f -- "$_file" 2>/dev/null || true
+            fi
         fi
     done
 }

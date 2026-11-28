@@ -49,6 +49,20 @@ printf_step "${PACKAGE} Deploying files to FHS standard directories..."
 make install DESTDIR=""
 printf_step "2,${ALRIGHT} Files successfully placed in /usr/bin, /usr/lib, and /etc."
 
+if [ -t 0 ] && [ "${X3D_SETUP:-0}" != "1" ] && [ -f "./scripts/framework/kdialog.sh" ]; then
+    printf_br
+    if confirm "Install optional KDialog lightweight GUI frontend?"; then
+        if X3D_EXEC=1 SUDO_USER="${SUDO_USER:-$USER}" sh ./scripts/framework/kdialog.sh; then
+            export X3D_KDIALOG_BUILT=1
+        else
+            printf_step "2,${WARN} KDialog GUI installation skipped."
+        fi
+    else
+        printf_step "2,${NOTICE} Skipping KDialog GUI installation."
+    fi
+    export X3D_KDIALOG_PROMPTED=1
+fi
+
 if [ -x "./setup.sh" ] && [ "$X3D_SETUP" != "1" ]; then
     printf_br
     printf_step_no_nl "${QUERY} Would you like to run the configuration wizard now? [Y/n] "

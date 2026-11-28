@@ -1,12 +1,39 @@
 # Scratchpad for brainstorming, debugging notes, etc
 
-* Ensure Configuration option changes are persistent after exiting any UI.
 
-## X3D Toggle CLI Paradigm
+### ISSUE: CPU OVERHEAD is noisy
+
+  * FIX: Filter by UID and comm before touching environ or maps: Use fstat() on /proc/<pid> (or check st_uid) and immediately skip UID < 1000 (root and system daemons). That eliminates 80%+ of those 768 processes in a single syscall. Only open /proc/<pid>/maps if comm or environ already matches a candidate (e.g., wine*, *.exe, SteamAppId=, PROTON_).
+    * Verification: Re-run the strace path breakdown; /proc/<N>/maps count should drop from 748 to single digits.
+
+  * FIX: Cache inspected PIDs so each process is scanned once: A process's environ is fixed at execve and doesn't need to be re-read every 3 seconds. Keep a small table of (pid, start_time) pairs (or a fixed-size hash map) for already-classified PIDs and skip them on subsequent polls until they exit.
+    * Verification: Over a 6-second strace -c window, total open() and read() calls should drop from ~88,000 to a few hundred.
+
+  * FIX: GATE BEHIND BPF_ACTIVE: The gate flag state: Verify bpf_active (or your equivalent flag) is actually set to true after handle_exec/handle_exit attach, and isn't getting reset or shadowed in a separate translation unit.
+
+### ISSUE CHECK: Secondary /proc callers: Check if another routine in the 3-second tick—like a Wine/Proton detector, active-game verifier, or an IPC status handler—is calling the full /proc sweep independently of the main eBPF gate.
+
+### ISSUE CHECK: Startup-only vs. loop placement: Make sure the initial /proc scan (to catch games already running before the daemon started) runs once before the main loop rather than inside it.
+
+### ISSUE: Global button override in Imperial & LACT: Both theme-imperial.css and theme-lact.css define a bare button { ... } rule (#142410 and #2f3439), which overrides Libadwaita's built-in AdwAlertDialog button classes (suggested / destructive). Because your primary/destructive styles are scoped to button.x3d-primary and button.x3d-destructive, standard GTK/Adwaita dialogs fall back to the bare button rule unless you also target button.suggested-action and button.destructive-action (or button.suggested / button.destructive for AdwAlertDialog).
+  * FIX: Standardize styles across buttons
+
+ ### ISSUE: Obsidian (theme.css) widget parity: theme.css omits dropdown>button, popover>contents, textview, and scrollbar rules that you already styled in theme-imperial.css (and mostly in theme-lact.css), so dropdown popovers and log views will fall back to default Adwaita dark surfaces in Obsidian.
+  * FIX: standardize style for popdown in Obsidian
+
+ ### ISSUE: Font fallback in Imperial: theme-imperial.css relies on "Inter", "Cinzel", and "Share Tech Mono"—if a Chaotic-AUR user doesn't have those fonts installed, GTK will silently fall back to system sans/serif/monospace, which is totally fine, though adding ttf-cinzel or inter-font to optdepends (or bundling/noting them) is a nice touch if you want the exact look out of the box. 
+  * FIX: Point to new folder as fallback option: '../assets/Cinzel_Inter_Share_Tech_Mono'
+
+### ISSUE: PPT live telemetry on main dashboard shows null value
+  * FIX: Plug same telemetry value from AOD widget which shows live value
+
+## Ensure Configuration option changes are persistent after exiting any UI.
+
+### X3D Toggle CLI Paradigm
 
 ### This document outlines the complete command-line interface paradigm for the X3D Toggle project, integrating daemon lifecycle management, topology control, amd_pstate scaling heuristics, eBPF scheduler overrides, and diagnostic telemetry
 
-## CLI Paradigm
+### CLI Paradigm
 
 * Daemon Control - Lifecycle and State Control Management
   * `enable`/`start`/`elk` - Hard Wake: Initializes the daemon, actively managing topology and hardware P-states in the current session but does not set autostart.

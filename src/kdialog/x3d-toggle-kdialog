@@ -1,0 +1,419 @@
+#!/usr/bin/env bash
+# x3d-toggle-kdialog (v2.1.0)
+# Lightweight GUI wrapper using kdialog; keeps logic simple and linear.
+
+set -euo pipefail
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$THIS_DIR/../../Makefile" ] && [ -d "$THIS_DIR/../../src" ]; then
+    REPO_ROOT="$(cd "$THIS_DIR/../.." && pwd)"
+elif [ -f "$THIS_DIR/../../../Makefile" ] && [ -d "$THIS_DIR/../../../src" ]; then
+    REPO_ROOT="$(cd "$THIS_DIR/../../.." && pwd)"
+elif [ -f "$THIS_DIR/Makefile" ] && [ -d "$THIS_DIR/src" ]; then
+    REPO_ROOT="$THIS_DIR"
+else
+    REPO_ROOT="$THIS_DIR"
+fi
+
+LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/x3d-toggle/logs"
+mkdir -p "$LOG_DIR"
+
+SERVICE_NAME="x3d-toggle.service"
+
+# Resolve configuration file (v2.1.0 layout with fallbacks)
+if [ -n "${X3D_CONFIG_FILE:-}" ] && [ -r "$X3D_CONFIG_FILE" ]; then
+    CONFIG_PATH="$X3D_CONFIG_FILE"
+elif [ -r "/etc/x3d-toggle.d/settings.conf" ]; then
+    CONFIG_PATH="/etc/x3d-toggle.d/settings.conf"
+elif [ -r "/etc/x3d-settings.conf" ]; then
+    CONFIG_PATH="/etc/x3d-settings.conf"
+elif [ -r "$REPO_ROOT/config/settings.conf" ]; then
+    CONFIG_PATH="$REPO_ROOT/config/settings.conf"
+else
+    CONFIG_PATH="/etc/x3d-toggle.d/settings.conf"
+fi
+
+find_config() {
+    local key="$1"
+    if [ -r "$CONFIG_PATH" ]; then
+        grep -E "^${key}=" "$CONFIG_PATH" 2>/dev/null | tail -n1 | cut -d'=' -f2- | tr -d '[:space:]' || true
+    fi
+}
+
+# Locate the x3d-toggle CLI binary
+if [ -x "/usr/bin/x3d-toggle" ]; then
+    TARGET_BIN="/usr/bin/x3d-toggle"
+elif [ -x "$THIS_DIR/x3d-toggle" ]; then
+    TARGET_BIN="$THIS_DIR/x3d-toggle"
+elif [ -x "$REPO_ROOT/bin/x3d-toggle" ]; then
+    TARGET_BIN="$REPO_ROOT/bin/x3d-toggle"
+elif command -v x3d-toggle >/dev/null 2>&1; then
+    TARGET_BIN="$(command -v x3d-toggle)"
+else
+    TARGET_BIN=""
+fi
+
+if ! command -v kdialog >/dev/null 2>&1; then
+    printf 'Error: kdialog is required for this GUI. Please install kdialog.\n' >&2
+    exit 1
+fi
+
+if [ -z "$TARGET_BIN" ]; then
+    kdialog --error "x3d-toggle binary not found. Please install x3d-toggle first." || true
+    exit 1
+fi
+
+# Developer mode visibility (env override or config)
+SHOW_DEV=false
+if [ -n "${X3D_DEV_MODE:-}" ]; then
+    case "${X3D_DEV_MODE,,}" in
+        1|yes|true) SHOW_DEV=true ;;
+    esac
+else
+    DEV_VAL="$(find_config DEV_ENABLE)"
+    case "${DEV_VAL,,}" in
+        1|yes|true) SHOW_DEV=true ;;
+    esac
+fi
+
+# Read active hardware mode from AMD 3D V-Cache sysfs node
+SYSFS_NODE=""
+for candidate in /sys/devices/platform/AMDI*/amd_x3d_mode /sys/bus/platform/drivers/amd_x3d_vcache/*/amd_x3d_mode; do
+    if [ -r "$candidate" ]; then
+        SYSFS_NODE="$candidate"
+        break
+    fi
+done
+
+if [ -z "$SYSFS_NODE" ] && [ "$SHOW_DEV" != true ]; then
+    kdialog --error "AMD X3D V-Cache interface not found. Check kernel (6.13+), UEFI CPPC Dynamic Preferred Cores = Driver, or compatible CPU." || true
+    exit 1
+fi
+
+if [ -n "$SYSFS_NODE" ]; then
+    CURRENT_MODE="$(tr -d '[:space:]' < "$SYSFS_NODE" 2>/dev/null || echo "unknown")"
+else
+    CURRENT_MODE="unknown"
+fi
+CURRENT_MODE="${CURRENT_MODE:-unknown}"
+
+case "$CURRENT_MODE" in
+    cache)         FRIENDLY_MODE="Rabbit" ;;
+    frequency)     FRIENDLY_MODE="Cheetah" ;;
+    dual)          FRIENDLY_MODE="Bear" ;;
+    auto|default)  FRIENDLY_MODE="Elk" ;;
+    *)             FRIENDLY_MODE="$CURRENT_MODE" ;;
+esac
+
+# Gather daemon status
+DAEMON_STATUS="STOPPED"
+if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+    CFG_DAEMON_STATE="$(find_config DAEMON_STATE)"
+    if [ "$CFG_DAEMON_STATE" = "manual" ]; then
+        DAEMON_STATUS="SUSPENDED"
+    else
+        DAEMON_STATUS="RUNNING"
+    fi
+fi
+
+# Gather logging / debug status
+if [ -n "${X3D_TOGGLE_LOG:-}" ]; then
+    LOG_STATUS_RAW="$X3D_TOGGLE_LOG"
+else
+    DBG_VAL="$(find_config DEBUG_ENABLE)"
+    if [ "$DBG_VAL" = "1" ]; then
+        LOG_STATUS_RAW="debug"
+    elif [ -d "/var/log/x3d-toggle/logs" ]; then
+        LOG_STATUS_RAW="file"
+    else
+        LOG_STATUS_RAW="none"
+    fi
+fi
+
+case "${LOG_STATUS_RAW,,}" in
+    none|0|off)   FRIENDLY_LOG="Off" ;;
+    file)         FRIENDLY_LOG="File" ;;
+    debug|stdout) FRIENDLY_LOG="Debug" ;;
+    *)            FRIENDLY_LOG="Unknown" ;;
+esac
+
+# Invoke x3d-toggle directly (communicates via the daemon's IPC socket and C backend)
+run_x3d() {
+    "$TARGET_BIN" "$@"
+}
+
+notify_user() {
+    local title="$1"
+    local body="${2:-}"
+    local icon="cpu"
+    if [ -f "/usr/share/pixmaps/x3d-toggle.png" ]; then
+        icon="/usr/share/pixmaps/x3d-toggle.png"
+    elif [ -f "/usr/share/icons/hicolor/scalable/apps/x3d-toggle.svg" ]; then
+        icon="/usr/share/icons/hicolor/scalable/apps/x3d-toggle.svg"
+    fi
+
+    if command -v notify-send >/dev/null 2>&1; then
+        if [ -n "$body" ]; then
+            notify-send -a "X3D Toggle" -i "$icon" "$title" "$body"
+        else
+            notify-send -a "X3D Toggle" -i "$icon" "$title"
+        fi
+    else
+        if [ -n "$body" ]; then
+            kdialog --title "$title" --msgbox "$body"
+        else
+            kdialog --title "X3D Toggle" --msgbox "$title"
+        fi
+    fi
+}
+
+# Build kdialog arguments
+ARGS=(
+    --title "AMD 3D V-Cache Performance Optimizer Control"
+    --radiolist "Hardware: <font color='#3daee9'><b>${FRIENDLY_MODE}</b></font> | Daemon: <font color='#1cdc9a'><b>${DAEMON_STATUS}</b></font> | Logging: <font color='#ffcc66'><b>${FRIENDLY_LOG}</b></font><br><br>Select Mode:"
+)
+
+selected_cache="off"
+selected_freq="off"
+selected_dual="off"
+selected_auto="off"
+case "$CURRENT_MODE" in
+    cache)        selected_cache="on" ;;
+    frequency)    selected_freq="on" ;;
+    dual)         selected_dual="on" ;;
+    auto|default) selected_auto="on" ;;
+esac
+
+ARGS+=("cache"            "Rabbit Mode (Gaming/Low Latency - CCD0)"        "$selected_cache")
+ARGS+=("frequency"        "Cheetah Mode (LLM/Raw Compute - CCD1)"          "$selected_freq")
+ARGS+=("dual"             "Bear Mode (Dual CCD / Unpark All)"              "$selected_dual")
+ARGS+=("auto"             "Elk Mode (Default Scheduler/Disable Automation)" "$selected_auto")
+ARGS+=("restart_daemon"   "Restart/Enable Automation Daemon"               "off")
+ARGS+=("monitor_daemon"   "Launch Live Status & eBPF Monitor"              "off")
+ARGS+=("configure_daemon" "Configure Daemon"                               "off")
+if [ "$SHOW_DEV" = true ]; then
+    ARGS+=("developer_tools" "Dev Mode - Use at own risk" "off")
+fi
+
+# Log invocation
+printf '[GUI] %s invoked\n' "$(date --iso-8601=seconds)" >> "$LOG_DIR/x3d-toggle-kdialog.log" 2>/dev/null || true
+
+RAW_CHOICE="$(kdialog "${ARGS[@]}")" || true
+[ -z "$RAW_CHOICE" ] && exit 0
+
+MODE=""
+case "$RAW_CHOICE" in
+    cache|frequency|dual|auto)
+        MODE="$RAW_CHOICE"
+        ;;
+    restart_daemon)
+        if run_x3d start >/dev/null 2>&1; then
+            notify_user "X3D Toggle" "Automation Daemon restarted and enabled."
+        else
+            kdialog --error "Failed to start ${SERVICE_NAME}. Check permissions or systemd status." || true
+            exit 1
+        fi
+        exit 0
+        ;;
+    monitor_daemon)
+        "$TARGET_BIN" monitor &
+        exit 0
+        ;;
+    developer_tools)
+        if [ ! -d "$REPO_ROOT/dev" ] && [ ! -x "/usr/lib/x3d-toggle/scripts/tools/linter.sh" ]; then
+            DEV_LOCAL_SHARE="${XDG_DATA_HOME:-$HOME/.local/share}/x3d-toggle-dev"
+            if [ ! -d "$DEV_LOCAL_SHARE/dev" ]; then
+                if kdialog --yesno "Developer suite is not installed locally.\n\nWould you like to clone the latest main branch via git now?\n(Destination: $DEV_LOCAL_SHARE)"; then
+                    if ! command -v git >/dev/null 2>&1; then
+                        kdialog --error "Git is required to download the developer suite. Please install git."
+                        exit 1
+                    fi
+                    kdialog --msgbox "Downloading Developer Suite... Click OK to begin."
+                    rm -rf "$DEV_LOCAL_SHARE"
+                    if git clone "https://github.com/X3D-Toggle/x3d-toggle-main.git" "$DEV_LOCAL_SHARE"; then
+                        kdialog --msgbox "Developer Suite downloaded successfully."
+                    else
+                        kdialog --error "Failed to clone https://github.com/X3D-Toggle/x3d-toggle-main.git."
+                        exec "$0"
+                    fi
+                else
+                    exec "$0"
+                fi
+            fi
+            REPO_ROOT="$DEV_LOCAL_SHARE"
+        fi
+
+        if ! kdialog --yesno "Developer Mode exposes diagnostic, audit, and stress helpers. Proceed?"; then
+            exec "$0"
+        fi
+
+        while true; do
+            DEV_CHOICE="$(kdialog --title "X3D Toggle — Dev Mode" --radiolist "Select developer action:" \
+                "linter-all"      "Run Full Audit Suite (clang-tidy, cppcheck, shellcheck, valgrind)" "on" \
+                "linter-valgrind" "Run Valgrind Memory & FD Smoke Test"                               "off" \
+                "sep1"            " ---------------------------------------- "                        "off" \
+                "stress-test"     "Run CPU Spike Stress Test"                                         "off" \
+                "debug-monitor"   "Launch Live MVC / eBPF Debug Observer"                             "off" \
+                "sep2"            " ---------------------------------------- "                        "off" \
+                "open-dev-readme" "Show Developer README"                                             "off" \
+                "exit-dev"        "Exit Developer Mode"                                               "off")" || true
+
+            if [ -z "$DEV_CHOICE" ] || [ "$DEV_CHOICE" = "exit-dev" ]; then
+                break
+            fi
+
+            if [[ "$DEV_CHOICE" == sep* ]]; then
+                continue
+            fi
+
+            if [ "$DEV_CHOICE" = "stress-test" ]; then
+                STRESS_TIME="$(kdialog --inputbox "Enter length of stress test in seconds (1-300):" "10")" || true
+                if [ -n "$STRESS_TIME" ]; then
+                    if [[ "$STRESS_TIME" =~ ^[0-9]+$ ]] && [ "$STRESS_TIME" -ge 1 ] && [ "$STRESS_TIME" -le 300 ]; then
+                        kdialog --msgbox "Starting ${STRESS_TIME}s CPU stress test. System load will spike."
+                        if ! "$TARGET_BIN" stress-cpu "$STRESS_TIME" >/dev/null 2>&1; then
+                            SPIN_PIDS=()
+                            for _ in $(seq 1 "$(nproc)"); do
+                                (while true; do :; done) &
+                                SPIN_PIDS+=("$!")
+                            done
+                            sleep "$STRESS_TIME"
+                            for pid in "${SPIN_PIDS[@]}"; do
+                                kill -9 "$pid" 2>/dev/null || true
+                            done
+                        fi
+                        kdialog --msgbox "CPU stress test complete."
+                    else
+                        kdialog --error "Invalid duration. Must be an integer between 1 and 300."
+                    fi
+                fi
+                continue
+            fi
+
+            if [ "$DEV_CHOICE" = "debug-monitor" ]; then
+                "$TARGET_BIN" debug &
+                continue
+            fi
+
+            if [ "$DEV_CHOICE" = "open-dev-readme" ]; then
+                if [ -f "$REPO_ROOT/dev/dev-README.md" ]; then
+                    kdialog --textbox "$REPO_ROOT/dev/dev-README.md" 720 480 || true
+                elif [ -f "$REPO_ROOT/README.md" ]; then
+                    kdialog --textbox "$REPO_ROOT/README.md" 720 480 || true
+                else
+                    kdialog --msgbox "Developer README not found locally."
+                fi
+                continue
+            fi
+
+            OUT_LOG="$LOG_DIR/dev-gui-$(date +%s).log"
+            case "$DEV_CHOICE" in
+                linter-all)      run_x3d linter all >"$OUT_LOG" 2>&1 || true ;;
+                linter-valgrind) run_x3d linter valgrind >"$OUT_LOG" 2>&1 || true ;;
+            esac
+
+            if [ -s "$OUT_LOG" ]; then
+                kdialog --msgbox "Action completed. Output saved to: $OUT_LOG"
+                kdialog --textbox "$OUT_LOG" 780 520 || true
+            else
+                kdialog --msgbox "Action completed (no output)."
+            fi
+        done
+        exec "$0"
+        ;;
+    configure_daemon)
+        POLL="$(find_config POLLING_INTERVAL)"
+        LOAD="$(find_config LOAD_THRESHOLD)"
+        FALLBACK="$(find_config FALLBACK_PROFILE)"
+        POLL="${POLL:-3}"
+        LOAD="${LOAD:-50}"
+        FALLBACK="${FALLBACK:-default}"
+
+        validate_numeric() {
+            case "$1" in
+                ''|*[!0-9]*) return 1 ;;
+            esac
+            return 0
+        }
+
+        NEW_POLL="$(kdialog --inputbox "Poll interval (seconds) - 1..10" "$POLL")" || exec "$0"
+        if ! validate_numeric "$NEW_POLL" || [ "$NEW_POLL" -lt 1 ] || [ "$NEW_POLL" -gt 10 ]; then
+            kdialog --error "Invalid polling interval (must be 1..10)."
+            exec "$0"
+        fi
+
+        NEW_LOAD="$(kdialog --inputbox "Compute load threshold (percent) - 10..90" "$LOAD")" || exec "$0"
+        if ! validate_numeric "$NEW_LOAD" || [ "$NEW_LOAD" -lt 10 ] || [ "$NEW_LOAD" -gt 90 ]; then
+            kdialog --error "Invalid compute threshold (must be 10..90)."
+            exec "$0"
+        fi
+
+        ENGINE_SEL="$(kdialog --combobox "Workload detection engine" \
+            "eBPF Zero-Latency (Recommended)" \
+            "Polling Heuristics - Loose (2)" \
+            "Polling Heuristics - Strict (1)" \
+            --default "eBPF Zero-Latency (Recommended)")" || exec "$0"
+
+        FALLBACK_SEL="$(kdialog --combobox "Fallback baseline profile (idle)" \
+            "default" "cache" "frequency" \
+            --default "$FALLBACK")" || exec "$0"
+        FALLBACK_SEL="${FALLBACK_SEL:-default}"
+
+        SUMMARY="Poll interval: ${NEW_POLL}s
+Compute threshold: ${NEW_LOAD}%
+Detection engine: ${ENGINE_SEL}
+Fallback profile: ${FALLBACK_SEL}
+
+Apply changes?"
+        if ! kdialog --yesno "$SUMMARY"; then
+            exec "$0"
+        fi
+
+        APPLY_OK=true
+        run_x3d interval "$NEW_POLL" >/dev/null 2>&1 || APPLY_OK=false
+        run_x3d threshold "$NEW_LOAD" >/dev/null 2>&1 || APPLY_OK=false
+        run_x3d fallback "$FALLBACK_SEL" >/dev/null 2>&1 || APPLY_OK=false
+
+        case "$ENGINE_SEL" in
+            *eBPF*)
+                run_x3d ebpf >/dev/null 2>&1 || APPLY_OK=false
+                ;;
+            *Strict*)
+                run_x3d polling >/dev/null 2>&1 || APPLY_OK=false
+                run_x3d detection 1 >/dev/null 2>&1 || APPLY_OK=false
+                ;;
+            *)
+                run_x3d polling >/dev/null 2>&1 || APPLY_OK=false
+                run_x3d detection 2 >/dev/null 2>&1 || APPLY_OK=false
+                ;;
+        esac
+
+        run_x3d sync >/dev/null 2>&1 || true
+
+        if [ "$APPLY_OK" != true ]; then
+            kdialog --error "One or more configuration changes failed to apply."
+            exec "$0"
+        fi
+
+        kdialog --msgbox "Configuration saved and synced with daemon."
+        exec "$0"
+        ;;
+    *)
+        kdialog --error "Unknown command: $RAW_CHOICE" || true
+        exit 1
+        ;;
+esac
+
+# Apply manual mode selection via x3d-toggle (daemon IPC / C backend)
+if [ -n "$MODE" ]; then
+    if run_x3d "$MODE" >/dev/null 2>&1; then
+        if [ "$MODE" != "auto" ] && [ "$DAEMON_STATUS" = "RUNNING" ]; then
+            notify_user "AMD 3D V-Cache Optimizer: ${MODE^^}" "Hardware mode engaged. Automation daemon suspended."
+        else
+            notify_user "AMD 3D V-Cache Optimizer: ${MODE^^}" "Hardware mode engaged."
+        fi
+    else
+        kdialog --error "<font color='#ff6d00'>Daemon IPC / hardware transition failed. Ensure x3d-toggle.service is active and your user belongs to the x3d-toggle group.</font>" || true
+        exit 1
+    fi
+fi

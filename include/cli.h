@@ -58,6 +58,7 @@ int cli_diag_archive(int argc, char *argv[]);
 int cli_diag_rotate(int argc, char *argv[]); // placeholder if not used
 int cli_diag_audit(int argc, char *argv[]);  // placeholder if not used
 int cli_gui_launch(int argc, char *argv[]);
+int cli_kdialog_launch(int argc, char *argv[]);
 int cli_gui_log(int argc, char *argv[]);
 int cli_diag_log(int argc, char *argv[]); // placeholder if not used
 int cli_diag_dump(int argc, char *argv[]);

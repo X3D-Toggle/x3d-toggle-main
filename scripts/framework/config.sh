@@ -340,6 +340,14 @@ printf_step "2,${GEAR} Writing synchronized Configuration ruleset: build/config.
 #define CAP_NMI_WATCHDOG  (1ULL << 3)
 #define CAP_FASTOPEN      (1ULL << 4)
 #define CAP_QDISC         (1ULL << 5)
+#define CAP_AOD           (1ULL << 6)
+#define CAP_AOD_SMT       (1ULL << 7)
+#define CAP_DYNAMIC_EPP   (1ULL << 8)
+#define CAP_FLOOR_FREQ    (1ULL << 9)
+#define CAP_PREFCORE_RANK (1ULL << 10)
+#define CAP_TCP_CONG      (1ULL << 11)
+#define CAP_PCIE_ASPM     (1ULL << 12)
+#define CAP_CPU_DMA_LAT   (1ULL << 13)
 
 #ifndef GUI_BUILD
 #include \"xui.h\"

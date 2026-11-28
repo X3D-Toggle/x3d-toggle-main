@@ -71,7 +71,7 @@ jobs:
           fi
 
       - name: Deploy to AUR
-        uses: KSXGitHub/github-actions-deploy-aur@v4.2.0
+        uses: KSXGitHub/github-actions-deploy-aur@084b0d9b15415bf9cdb65d44dad1efe37a354050  # v4.2.0
         with:
           pkgname: x3d-toggle
           asset_dir: ./.aur-stage

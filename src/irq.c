@@ -63,10 +63,11 @@ static int read_file_line(const char *path, char *buf, size_t len) {
 static int write_file(const char *path, const char *val) {
   int fd = open(path, O_WRONLY);
   if (fd < 0)
-    return -1;
+    return (errno > 0) ? -errno : -EACCES;
   ssize_t n = write(fd, val, strlen(val));
+  int wr_err = (n > 0) ? 0 : ((errno > 0) ? errno : EIO);
   close(fd);
-  return (n > 0) ? 0 : -1;
+  return (wr_err == 0) ? 0 : -wr_err;
 }
 
 static int file_exists(const char *path) { return access(path, F_OK) == 0; }
@@ -82,6 +83,8 @@ static int parse_conf_int(const char *haystack, const char *key) {
 
 static void parse_conf_str(const char *haystack, const char *key, char *out,
                            size_t len) {
+  if (!out || len == 0)
+    return;
   char search[128];
   printf_sn(search, sizeof(search), "%s=", key);
   const char *p = strstr(haystack, search);
@@ -91,7 +94,7 @@ static void parse_conf_str(const char *haystack, const char *key, char *out,
   }
   p += strlen(search);
   size_t i = 0;
-  while (p[i] && p[i] != '\n' && p[i] != '\r' && i < len - 1) {
+  while (i + 1 < len && p[i] && p[i] != '\n' && p[i] != '\r') {
     out[i] = p[i];
     i++;
   }
@@ -342,8 +345,15 @@ static int apply_affinity(int irq, int core) {
   printf_sn(path, sizeof(path), "/proc/irq/%d/smp_affinity_list", irq);
   printf_sn(val, sizeof(val), "%d", core);
 
-  if (write_file(path, val) < 0) {
-    journal_warn(ERR_IRQ_BIND, irq, "write failed");
+  int wr = write_file(path, val);
+  if (wr < 0) {
+    int err = -wr;
+    if (err == EIO || err == EINVAL) {
+      journal_debug("IRQ %d affinity is kernel-managed (%s); skipping", irq,
+                    journal_strerror(err));
+      return ERR_SUCCESS;
+    }
+    journal_warn(ERR_IRQ_BIND, irq, journal_strerror(err));
     return ERR_IRQ_BIND;
   }
   return ERR_SUCCESS;
@@ -355,7 +365,8 @@ static int restore_affinity(int irq) {
   printf_sn(path, sizeof(path), "/proc/irq/%d/smp_affinity_list", irq);
 
   if (read_file_line(orig_path, mask, sizeof(mask)) == 0) {
-    if (write_file(path, mask) < 0) {
+    int wr = write_file(path, mask);
+    if (wr < 0 && -wr != EIO && -wr != EINVAL) {
       journal_warn(ERR_IRQ_TEARDOWN, irq);
     }
     unlink(orig_path);
@@ -386,8 +397,8 @@ static void discover_nic_names(void) {
       if (found) {
         char candidate[32];
         int j = 0;
-        while (found[j] && found[j] != ' ' && found[j] != '\n' &&
-               found[j] != '-' && found[j] != ':' && j < 31) {
+        while (j < 31 && found[j] && found[j] != ' ' && found[j] != '\n' &&
+               found[j] != '-' && found[j] != ':') {
           candidate[j] = found[j];
           j++;
         }
@@ -668,6 +679,59 @@ int irq_status(void) {
   return ERR_SUCCESS;
 }
 
+static void format_first_irq_binding(const irq_list_t *list, int ccd1_start,
+                                     char *out, size_t out_sz) {
+  printf_sn(out, out_sz, "Unbound");
+  if (!list || list->count <= 0)
+    return;
+  for (int i = 0; i < list->count; i++) {
+    char path[128], mask[64] = {0};
+    printf_sn(path, sizeof(path), "/proc/irq/%d/smp_affinity_list",
+              list->irqs[i]);
+    if (read_file_line(path, mask, sizeof(mask)) == 0 && mask[0]) {
+      int first_cpu = atoi(mask);
+      const char *ccd_lbl =
+          (ccd1_start > 0 && first_cpu >= ccd1_start) ? "CCD1" : "CCD0";
+      printf_sn(out, out_sz, "Core %s (%s)", mask, ccd_lbl);
+      return;
+    }
+  }
+}
+
+int irq_format_summary(char *buf, size_t buf_sz) {
+  if (!buf || buf_sz == 0)
+    return ERR_INVALID_ARGS;
+
+  load_config();
+  irq_list_t gpu = {0}, nvme = {0}, usb = {0}, nic = {0}, audio = {0};
+  discover_irqs("amdgpu", &gpu);
+  if (gpu.count == 0)
+    discover_irqs("nouveau", &gpu);
+  discover_irqs("nvme", &nvme);
+  discover_irqs("xhci_hcd", &usb);
+  discover_irqs("enp", &nic);
+  if (nic.count == 0)
+    discover_irqs("eth", &nic);
+  discover_irqs("snd_hda", &audio);
+  if (audio.count == 0)
+    discover_irqs("snd-hda", &audio);
+
+  char ccd_mask[64] = {0};
+  int ccd1_start = 0, total_cores = 0;
+  ccd(ccd_mask, &ccd1_start, &total_cores);
+
+  char s_gpu[48], s_nvme[48], s_usb[48], s_nic[48], s_aud[48];
+  format_first_irq_binding(&gpu, ccd1_start, s_gpu, sizeof(s_gpu));
+  format_first_irq_binding(&nvme, ccd1_start, s_nvme, sizeof(s_nvme));
+  format_first_irq_binding(&usb, ccd1_start, s_usb, sizeof(s_usb));
+  format_first_irq_binding(&nic, ccd1_start, s_nic, sizeof(s_nic));
+  format_first_irq_binding(&audio, ccd1_start, s_aud, sizeof(s_aud));
+
+  printf_sn(buf, buf_sz, "EN=%d|GPU=%s|NVME=%s|USB=%s|NIC=%s|AUDIO=%s",
+            g_cfg.irq_enable ? 1 : 0, s_gpu, s_nvme, s_usb, s_nic, s_aud);
+  return ERR_SUCCESS;
+}
+
 int irq_watch(void) {
   if (!g_cfg.irq_enable || g_cfg.irq_pinning == 3)
     return ERR_SUCCESS;
@@ -712,7 +776,7 @@ int irq_watch(void) {
 
       while (ex && *ex) {
         int j = 0;
-        while (*ex && *ex != ',' && *ex != ' ' && j < 63) {
+        while (j < 63 && *ex && *ex != ',' && *ex != ' ') {
           token[j++] = *ex++;
         }
         token[j] = '\0';

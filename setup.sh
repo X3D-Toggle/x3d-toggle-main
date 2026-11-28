@@ -9,6 +9,7 @@ set -e
 export X3D_EXEC=1
 export X3D_SETUP=1
 GUI_INSTALLED=0
+KDIALOG_INSTALLED="${X3D_KDIALOG_BUILT:-0}"
 : "${UP:=↑}"
 : "${RIGHT:=→}"
 : "${DOWN:=↓}"
@@ -202,6 +203,30 @@ quick_setup() {
             printf_step "${WARN} GUI installer script not found in expected locations."
         fi
 
+        # KDialog Lightweight GUI (when kdialog is present on system)
+        if [ "${X3D_KDIALOG_BUILT:-0}" = "1" ] && [ -x "/usr/bin/x3d-toggle-kdialog" ]; then
+            KDIALOG_INSTALLED=1
+            printf_step "2,${ALRIGHT} KDialog GUI already installed."
+        elif [ "${X3D_KDIALOG_PROMPTED:-0}" = "1" ]; then
+            : # User already chose during install.sh
+        elif command -v kdialog >/dev/null 2>&1; then
+            if [ -f "./scripts/framework/kdialog.sh" ]; then
+                if X3D_EXEC=1 sh ./scripts/framework/kdialog.sh; then
+                    KDIALOG_INSTALLED=1
+                else
+                    printf_step "${WARN} KDialog installer failed at ./scripts/framework/kdialog.sh"
+                fi
+            elif [ -f "/usr/lib/x3d-toggle/scripts/framework/kdialog.sh" ]; then
+                if X3D_EXEC=1 sh /usr/lib/x3d-toggle/scripts/framework/kdialog.sh; then
+                    KDIALOG_INSTALLED=1
+                else
+                    printf_step "${WARN} KDialog installer failed at /usr/lib/x3d-toggle/scripts/framework/kdialog.sh"
+                fi
+            fi
+        else
+            printf_step "2,${NOTICE} KDialog not detected on system — skipping optional KDialog GUI."
+        fi
+
         # Group Configuration
         if [ -n "$ACTUAL_USER" ] && [ "$ACTUAL_USER" != "root" ]; then
             usermod -aG x3d-toggle "$ACTUAL_USER"
@@ -228,6 +253,11 @@ quick_setup() {
     if [ "$GUI_INSTALLED" -eq 1 ]; then
         printf_br
         printf_center "${GEAR} You can now launch the GUI by running 'x3d-gui' or"
+        printf_center "from your application menu."
+    fi
+    if [ "$KDIALOG_INSTALLED" -eq 1 ]; then
+        printf_br
+        printf_center "${GEAR} You can launch the KDialog GUI via 'x3d-toggle kdialog' or"
         printf_center "from your application menu."
     fi
     printf_signature
@@ -414,7 +444,30 @@ if [ -n "$ACTUAL_USER" ] && [ "$ACTUAL_USER" != "root" ]; then
     esac
 
     printf_br
-    printf_step "[9] User Group Configuration"
+    printf_step "[9] KDialog Lightweight GUI Frontend (Optional)"
+    if [ "${X3D_KDIALOG_BUILT:-0}" = "1" ] && [ -x "/usr/bin/x3d-toggle-kdialog" ]; then
+        KDIALOG_INSTALLED=1
+        printf_step "2,${ALRIGHT} KDialog GUI already installed."
+    elif [ "${X3D_KDIALOG_PROMPTED:-0}" = "1" ]; then
+        printf_step "2,${NOTICE} KDialog GUI selection already handled during install."
+    else
+        printf_step_no_nl "${QUERY} Install the KDialog GUI? [y/N] "
+        read -r opt_kdialog
+        case "$opt_kdialog" in
+            [Yy]*)
+                if [ -f "./scripts/framework/kdialog.sh" ]; then
+                    X3D_EXEC=1 sh ./scripts/framework/kdialog.sh && KDIALOG_INSTALLED=1
+                elif [ -f "/usr/lib/x3d-toggle/scripts/framework/kdialog.sh" ]; then
+                    X3D_EXEC=1 sh /usr/lib/x3d-toggle/scripts/framework/kdialog.sh && KDIALOG_INSTALLED=1
+                else
+                    printf_step "2,${WARN} Cannot locate kdialog.sh framework script. Skipping."
+                fi
+                ;;
+        esac
+    fi
+
+    printf_br
+    printf_step "[10] User Group Configuration"
     _l_groups="$(id -nG "$ACTUAL_USER")"
     case " $_l_groups " in
         *" x3d-toggle "*) 
@@ -464,6 +517,11 @@ printf_center "or by editing $CONF_FILE."
 if [ "$GUI_INSTALLED" -eq 1 ]; then
     printf_br
     printf_center "${GEAR} You can now launch the GUI by running 'x3d-gui' or"
+    printf_center "from your application menu."
+fi
+if [ "$KDIALOG_INSTALLED" -eq 1 ]; then
+    printf_br
+    printf_center "${GEAR} You can launch the KDialog GUI via 'x3d-toggle kdialog' or"
     printf_center "from your application menu."
 fi
 printf_signature

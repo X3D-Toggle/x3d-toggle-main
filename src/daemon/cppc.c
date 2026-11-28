@@ -7,6 +7,7 @@
 #include "cppc.h"
 #include "../build/ccd.h"
 #include "../build/xui.h"
+#include "aod.h"
 #include "ipc.h"
 #include "libc.h"
 #include "status.h" // IWYU pragma: keep
@@ -41,22 +42,8 @@ int cppc_boost(int enable) {
 }
 
 int cppc_tdp(int watts) {
-  journal_debug("Core: Requesting TDP limit adjustment to %d Watts", watts);
-  int pid = fork();
-  if (pid < 0)
-    return ERR_IO;
-  if (pid == 0) {
-    char wbuf[16];
-    printf_sn(wbuf, sizeof(wbuf), "%d", watts);
-    char *args[] = {(char *)"/usr/bin/x3d-toggle", (char *)"framework",
-                    (char *)"--set-tdp", wbuf, NULL};
-    execve(args[0], args, environ);
-    _exit(1);
-  }
-
-  int status;
-  waitpid(pid, &status, 0);
-  return (WIFEXITED(status) && WEXITSTATUS(status) == 0) ? ERR_SUCCESS : ERR_IO;
+  journal_debug("Core: Requesting AOD PPT limit adjustment to %d Watts", watts);
+  return aod_apply_ppt_watts(watts);
 }
 
 int cppc_perf(int val) {

@@ -1,4 +1,4 @@
-/* X3D Toggle Brand Theme — Derived from x3d-toggle.jpg */
+/* X3D Toggle Brand Theme — Derived from x3d-toggle.jpg (Obsidian) */
 
 window.background,
 .main-content {
@@ -12,14 +12,23 @@ headerbar {
   color: #f0f0f0;
 }
 
-/* Headerbar window controls (close / maximize / minimize): borderless */
+/* Headerbar window controls & flat sidebar toggle */
 windowcontrols button,
-windowcontrols button:hover {
+windowcontrols button:hover,
+headerbar button.flat {
   background: none;
   border: none;
   box-shadow: none;
+  color: #cccccc;
 }
 
+headerbar button.flat:hover,
+headerbar button.flat:checked {
+  background-color: rgba(232, 97, 26, 0.16);
+  color: #e8611a;
+}
+
+.x3d-sidebar-pane,
 .navigation-sidebar {
   background-color: #0e0e0e;
   border-right: 1px solid #2a2a2a;
@@ -28,18 +37,42 @@ windowcontrols button:hover {
 .navigation-sidebar row {
   color: #cccccc;
   border-radius: 8px;
-  margin: 2px 6px;
-  padding: 10px 14px;
-  min-height: 32px;
+  margin: 1px 6px;
+  padding: 7px 12px;
+  min-height: 26px;
 }
 
 .navigation-sidebar row:selected {
-  background-color: rgba(232, 97, 26, 0.15);
+  background-color: rgba(232, 97, 26, 0.16);
   color: #e8611a;
+}
+
+.navigation-sidebar row:selected label {
+  color: #e8611a;
+  font-weight: 700;
 }
 
 .navigation-sidebar row:hover:not(:selected) {
   background-color: rgba(255, 255, 255, 0.04);
+}
+
+.navigation-sidebar row.x3d-subnav-row {
+  padding-left: 26px;
+  font-size: 0.94em;
+}
+
+.navigation-sidebar row.x3d-sidebar-sep-row,
+.navigation-sidebar row.x3d-sidebar-sep-row:hover {
+  background: none;
+  padding: 2px 10px;
+  margin: 4px 6px;
+  min-height: 1px;
+}
+
+.x3d-sidebar-divider {
+  background-color: rgba(255, 255, 255, 0.08);
+  min-height: 1px;
+  margin: 0 10px;
 }
 
 .x3d-hero {
@@ -54,35 +87,207 @@ windowcontrols button:hover {
   min-height: 160px;
 }
 
+.x3d-page-title,
 .x3d-hero-title {
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 800;
   color: #f0f0f0;
-  padding: 0 24px 24px 24px;
+  padding: 0 0 6px 0;
 }
 
+/* ── Native GObject Widget Subclasses ───────────────────────────── */
+
+.current-widget,
+.staged-widget,
+.immediate-widget,
 .x3d-card {
-  background-color: #1a1a1a;
+  background-color: #161616;
   border: 1px solid #2a2a2a;
   border-radius: 12px;
   padding: 16px;
   margin: 0;
 }
 
+.staged-widget.is-dirty {
+  border-color: rgba(232, 97, 26, 0.65);
+}
+
+.current-widget.clickable,
+button.x3d-card-clickable {
+  background-color: #161616;
+  background-image: none;
+  box-shadow: none;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.current-widget.clickable:hover,
+button.x3d-card-clickable:hover {
+  border-color: #e8611a;
+  background-color: #1e1510;
+}
+
+/* Steady high-contrast danger border for EMERGENCY OVERRIDE Widget */
+.danger-widget {
+  background: linear-gradient(145deg, #1f0c0c 0%, #140808 100%);
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.22);
+}
+
+.danger-widget .x3d-widget-title {
+  color: #f87171;
+  font-size: 12px;
+  letter-spacing: 1.4px;
+}
+
+.x3d-banner-widget {
+  background-color: #13181b;
+  border: 1px solid #24363d;
+  border-left: 3px solid #4dd0e1;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.x3d-widget-title,
 .x3d-card-title {
   font-size: 11px;
   font-weight: 700;
-  color: #888888;
+  color: #9a9a9a;
   letter-spacing: 1px;
 }
 
-.x3d-accent { color: #e8611a; font-weight: 700; }
-.x3d-dim { color: #888888; margin-left: 8px; }
-.x3d-gpu-subtitle { color: #888888; font-size: 12px; }
-.x3d-value { color: #4dd0e1; font-weight: 600; font-family: monospace; }
-.x3d-status-online { color: #4ade80; font-weight: 700; }
-.x3d-status-offline { color: #f87171; font-weight: 700; }
-.x3d-status-warning { color: #fbbf24; font-weight: 700; }
+.x3d-subsection-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e8611a;
+  letter-spacing: 0.8px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.x3d-accent {
+  color: #e8611a;
+  font-weight: 700;
+}
+
+.x3d-dim {
+  color: #888888;
+}
+
+.x3d-gpu-subtitle {
+  color: #888888;
+  font-size: 12px;
+}
+
+.x3d-value {
+  color: #4dd0e1;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.x3d-status-online {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.x3d-status-offline {
+  color: #f87171;
+  font-weight: 700;
+}
+
+.x3d-status-warning {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+/* ── Control Primitives (-Toggle, -LiveToggle, -PopUp, CTA) ────── */
+
+button.x3d-toggle-pill {
+  background-color: #1f1f1f;
+  background-image: linear-gradient(115deg,
+      rgba(255, 255, 255, 0) 32%,
+      rgba(245, 166, 35, 0.30) 50%,
+      rgba(255, 255, 255, 0) 68%);
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  background-position: 145% 0;
+  color: #d4d4d4;
+  font-weight: 600;
+  border: 1px solid #333333;
+  border-radius: 8px;
+  padding: 9px 14px;
+  min-height: 36px;
+  box-shadow: none;
+  transition:
+    background-position 650ms cubic-bezier(0.19, 1, 0.22, 1),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+button.x3d-toggle-pill:hover {
+  background-position: -45% 0;
+  background-color: #251b14;
+  border-color: #e8611a;
+  color: #ffffff;
+  box-shadow: inset 0 0 14px rgba(232, 97, 26, 0.18);
+}
+
+button.x3d-toggle-pill:checked,
+button.x3d-toggle-pill.active {
+  background-image:
+    linear-gradient(115deg,
+      rgba(255, 255, 255, 0) 34%,
+      rgba(255, 255, 255, 0.38) 50%,
+      rgba(255, 255, 255, 0) 66%),
+    linear-gradient(135deg, #e8611a, #f59e0b);
+  background-size: 260% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+  background-position: 145% 0, 0 0;
+  color: #0a0a0a;
+  font-weight: 700;
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(232, 97, 26, 0.30);
+}
+
+button.x3d-toggle-pill:checked:hover,
+button.x3d-toggle-pill.active:hover {
+  background-position: -45% 0, 0 0;
+  border-color: #fbbf24;
+  color: #0a0a0a;
+  box-shadow: 0 0 14px rgba(232, 97, 26, 0.45);
+}
+
+button.x3d-toggle-pill:disabled {
+  opacity: 0.45;
+}
+
+button.x3d-popup-btn {
+  background-color: #1b2226;
+  background-image: none;
+  color: #4dd0e1;
+  font-weight: 600;
+  border: 1px solid #2b424a;
+  border-radius: 8px;
+  padding: 9px 14px;
+  min-height: 36px;
+  box-shadow: none;
+  transition: all 150ms ease;
+}
+
+button.x3d-popup-btn:hover {
+  border-color: #4dd0e1;
+  background-color: #213038;
+}
+
+button.x3d-cta-btn {
+  border-radius: 7px;
+  padding: 6px 14px;
+  min-height: 32px;
+  font-weight: 600;
+}
 
 button.x3d-primary {
   background: linear-gradient(135deg, #e8611a, #f5a623);
@@ -90,58 +295,150 @@ button.x3d-primary {
   font-weight: 700;
   border: none;
   border-radius: 8px;
-  padding: 8px 20px;
-  min-height: 36px;
+  padding: 6px 16px;
+  min-height: 32px;
 }
-button.x3d-primary:hover { background: linear-gradient(135deg, #f5a623, #e8611a); }
+
+button.x3d-primary:hover {
+  background: linear-gradient(135deg, #f5a623, #e8611a);
+}
+
+button.x3d-primary:disabled {
+  opacity: 0.42;
+}
 
 button.x3d-destructive {
-  background: linear-gradient(135deg, #8b1a1a, #b91c1c);
-  color: #f0f0f0;
-  font-weight: 700;
-  border: none;
+  background: linear-gradient(135deg, #991b1b, #dc2626);
+  color: #ffffff;
+  font-weight: 800;
+  border: 1px solid #f87171;
   border-radius: 8px;
+  padding: 8px 18px;
+  min-height: 36px;
 }
-button.x3d-destructive:hover { background: linear-gradient(135deg, #b91c1c, #8b1a1a); }
 
-.x3d-mode-card {
-  background-color: #1a1a1a;
-  border: 2px solid #2a2a2a;
-  border-radius: 12px;
-  padding: 16px;
-  margin: 4px;
-  transition: all 200ms ease;
-  box-shadow: none;
-  background-image: none;
+button.x3d-destructive:hover {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
 }
-.x3d-mode-card:hover { border-color: #e8611a; background-color: #1e1510; }
-.x3d-mode-card.selected {
+
+.x3d-reboot-badge {
+  background-color: rgba(251, 191, 36, 0.16);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.x3d-form-row {
+  padding: 5px 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.x3d-form-row:last-child {
+  border-bottom: none;
+}
+
+.x3d-live-row {
+  background-color: #161616;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 10px 16px;
+}
+
+scale trough {
+  background-color: #2a2a2a;
+  border-radius: 4px;
+  min-height: 8px;
+}
+
+scale trough highlight {
+  background: linear-gradient(90deg, #e8611a, #f5a623);
+  border-radius: 4px;
+}
+
+scale slider {
+  background-color: #f5a623;
+  border-radius: 50%;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+switch:checked {
+  background-color: #e8611a;
+}
+
+entry,
+spinbutton {
+  background-color: #121212;
+  color: #f0f0f0;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+entry:focus,
+spinbutton:focus {
   border-color: #e8611a;
-  background-color: rgba(232, 97, 26, 0.2);
-  box-shadow: 0 0 10px rgba(232, 97, 26, 0.3);
-}
-
-levelbar trough { background-color: #2a2a2a; border-radius: 4px; min-height: 12px; }
-levelbar trough block.filled { background: linear-gradient(90deg, #e8611a, #f5a623); border-radius: 4px; }
-
-.x3d-dev-title { color: #4dd0e1; }
-
-scale trough { background-color: #2a2a2a; border-radius: 4px; min-height: 8px; }
-scale trough highlight { background: linear-gradient(90deg, #e8611a, #f5a623); border-radius: 4px; }
-scale slider { background-color: #f5a623; border-radius: 50%; min-width: 16px; min-height: 16px; }
-
-switch:checked { background-color: #e8611a; }
-
-entry { background-color: #1a1a1a; color: #f0f0f0; border: 1px solid #2a2a2a; border-radius: 6px; padding: 4px 8px; }
-entry:focus { border-color: #e8611a; }
-
-/* Indent subtitles in action rows */
-row .subtitle {
-  margin-left: 8px;
 }
 
 .x3d-extras-frame {
-  background-color: #141414;
+  background-color: #121212;
   border: 1px solid #2a2a2a;
   border-radius: 8px;
+}
+
+.x3d-pinned-desktop {
+  background-color: rgba(16, 16, 16, 0.95);
+  border: 1px solid #e8611a;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* ── Compact, Quiet Sidebar CallToAction Bars (LACT-style) ─────── */
+
+button.x3d-sidebar-cta-apply,
+button.x3d-sidebar-cta-secondary {
+  min-height: 22px;
+  padding: 3px 10px;
+  border-radius: 7px;
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  font-size: 0.90em;
+  font-weight: 600;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+button.x3d-sidebar-cta-apply {
+  background-color: rgba(232, 97, 26, 0.85);
+  color: #ffffff;
+}
+
+button.x3d-sidebar-cta-apply:hover:not(:disabled) {
+  background-color: #e8611a;
+  color: #ffffff;
+}
+
+button.x3d-sidebar-cta-apply:disabled {
+  background-color: rgba(232, 97, 26, 0.22);
+  color: rgba(240, 240, 240, 0.48);
+  opacity: 1;
+}
+
+button.x3d-sidebar-cta-secondary {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #c8c8c8;
+}
+
+button.x3d-sidebar-cta-secondary:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #f0f0f0;
+}
+
+button.x3d-sidebar-cta-secondary:disabled {
+  background-color: rgba(255, 255, 255, 0.04);
+  color: rgba(240, 240, 240, 0.36);
+  opacity: 1;
 }

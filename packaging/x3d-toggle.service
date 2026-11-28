@@ -19,13 +19,16 @@ Delegate=yes
 
 RuntimeDirectory=x3d-toggle
 RuntimeDirectoryMode=2770
+LogsDirectory=x3d-toggle x3d-toggle/logs x3d-toggle/audits x3d-toggle/coredumps
+LogsDirectoryMode=2775
+UMask=0002
 Group=x3d-toggle
 User=x3d-toggle
 LimitMEMLOCK=infinity
 LimitCORE=infinity
 
-AmbientCapabilities=CAP_SYS_ADMIN CAP_PERFMON CAP_BPF CAP_SYS_NICE CAP_SYS_RESOURCE CAP_DAC_READ_SEARCH
-CapabilityBoundingSet=CAP_SYS_ADMIN CAP_PERFMON CAP_BPF CAP_SYS_NICE CAP_SYS_RESOURCE CAP_DAC_READ_SEARCH
+AmbientCapabilities=CAP_SYS_ADMIN CAP_PERFMON CAP_BPF CAP_SYS_NICE CAP_SYS_RESOURCE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_PERFMON CAP_BPF CAP_SYS_NICE CAP_SYS_RESOURCE CAP_DAC_READ_SEARCH CAP_DAC_OVERRIDE
 
 ProtectSystem=strict
 ProtectHome=yes
@@ -56,6 +59,7 @@ ReadWritePaths=-/sys/fs/bpf
 ReadWritePaths=-/sys/fs/cgroup
 ReadWritePaths=-/sys/devices/platform
 ReadWritePaths=-/sys/bus/platform/drivers/amd_x3d_vcache
+ReadWritePaths=-/sys/bus/wmi/devices
 ReadWritePaths=-/run/x3d-toggle
 ReadWritePaths=-/etc/x3d-toggle.d
 ReadWritePaths=-/var/log/x3d-toggle

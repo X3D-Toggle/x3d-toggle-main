@@ -1,13 +1,4 @@
-/* X3D Toggle — Imperial Theme (Rihannsu Shiar Dark & Gold)
- * Adapted from Measures of Accountability (moa-preview.css):
- *   --deep-bg:          #0B0D0A
- *   --imperial-green:   #142410
- *   --antique-gold:     #C0A36A
- *   --parchment:        #D8D5CA
- *   --antique-metallic: #5F5541
- *   --imperial-bronze:  #906824
- *   --terminal-emerald: #4ADE80
- */
+/* X3D Toggle — Imperial Theme (Rihannsu Shiar Dark & Gold) */
 
 window.background,
 .main-content,
@@ -35,6 +26,22 @@ headerbar label {
   letter-spacing: 1px;
 }
 
+windowcontrols button,
+windowcontrols button:hover,
+headerbar button.flat {
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: #C0A36A;
+}
+
+headerbar button.flat:hover,
+headerbar button.flat:checked {
+  background-color: rgba(144, 104, 36, 0.22);
+  color: #C0A36A;
+}
+
+.x3d-sidebar-pane,
 .navigation-sidebar {
   background-color: #0B0D0A;
   border-right: 1px solid rgba(144, 104, 36, 0.45);
@@ -44,9 +51,9 @@ headerbar label {
   color: #D8D5CA;
   border-radius: 4px;
   border-left: 3px solid transparent;
-  margin: 2px 6px;
-  padding: 10px 14px;
-  min-height: 32px;
+  margin: 1px 6px;
+  padding: 7px 12px;
+  min-height: 26px;
 }
 
 .navigation-sidebar row:selected {
@@ -64,6 +71,25 @@ headerbar label {
   background-color: rgba(20, 36, 16, 0.55);
 }
 
+.navigation-sidebar row.x3d-subnav-row {
+  padding-left: 26px;
+  font-size: 0.94em;
+}
+
+.navigation-sidebar row.x3d-sidebar-sep-row,
+.navigation-sidebar row.x3d-sidebar-sep-row:hover {
+  background: none;
+  padding: 2px 10px;
+  margin: 4px 6px;
+  min-height: 1px;
+}
+
+.x3d-sidebar-divider {
+  background-color: rgba(144, 104, 36, 0.28);
+  min-height: 1px;
+  margin: 0 10px;
+}
+
 .x3d-hero {
   background-image: url('resource:///org/x3d-toggle/gui/x3d-toggle-hero.png'), linear-gradient(180deg, #000000 0%, #0B0D0A 35%, #142410 100%);
   background-size: auto 82%, cover;
@@ -79,15 +105,21 @@ headerbar label {
   min-height: 160px;
 }
 
+.x3d-page-title,
 .x3d-hero-title {
   font-family: "Cinzel", serif;
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 700;
   letter-spacing: 1.5px;
   color: #C0A36A;
-  padding: 0 24px 16px 0;
+  padding: 0 0 6px 0;
 }
 
+/* ── Native GObject Widget Subclasses ───────────────────────────── */
+
+.current-widget,
+.staged-widget,
+.immediate-widget,
 .x3d-card {
   background-color: #0E130D;
   background-image: linear-gradient(145deg, rgba(20, 36, 16, 0.78) 0%, rgba(11, 13, 10, 0.95) 68%, rgba(20, 36, 16, 0.62) 100%);
@@ -100,12 +132,61 @@ headerbar label {
   margin: 0;
 }
 
+.staged-widget.is-dirty {
+  border-color: #4ADE80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.18);
+}
+
+.current-widget.clickable,
+button.x3d-card-clickable {
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.current-widget.clickable:hover,
+button.x3d-card-clickable:hover {
+  border-color: #C0A36A;
+  box-shadow: 0 0 10px rgba(192, 163, 106, 0.24);
+}
+
+.danger-widget {
+  background: linear-gradient(145deg, #240c0c 0%, #120707 100%);
+  border: 2px solid #EF4444;
+  border-radius: 6px;
+  padding: 18px;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+}
+
+.danger-widget .x3d-widget-title {
+  color: #F87171;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+}
+
+.x3d-banner-widget {
+  background-color: #0E1610;
+  border: 1px solid rgba(74, 222, 128, 0.40);
+  border-left: 3px solid #4ADE80;
+  border-radius: 5px;
+  padding: 10px 14px;
+}
+
+.x3d-widget-title,
 .x3d-card-title {
   font-family: "Cinzel", serif;
   font-size: 11px;
   font-weight: 700;
   color: #C0A36A;
   letter-spacing: 1.5px;
+}
+
+.x3d-subsection-title {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #C0A36A;
+  letter-spacing: 1px;
+  margin-top: 6px;
+  margin-bottom: 2px;
 }
 
 .x3d-accent {
@@ -115,7 +196,6 @@ headerbar label {
 
 .x3d-dim {
   color: #9E9580;
-  margin-left: 8px;
 }
 
 .x3d-gpu-subtitle {
@@ -129,53 +209,23 @@ headerbar label {
   font-family: "Share Tech Mono", monospace;
 }
 
-.x3d-status-online { color: #4ADE80; font-weight: 700; }
-.x3d-status-offline { color: #F87171; font-weight: 700; }
-.x3d-status-warning { color: #C0A36A; font-weight: 700; }
-
-.x3d-dev-title {
+.x3d-status-online {
   color: #4ADE80;
+  font-weight: 700;
 }
 
-/* Adwaita Preferences Groups & Action Rows */
-preferencesgroup > box > label.heading {
-  font-family: "Cinzel", serif;
+.x3d-status-offline {
+  color: #F87171;
+  font-weight: 700;
+}
+
+.x3d-status-warning {
   color: #C0A36A;
-  letter-spacing: 1px;
+  font-weight: 700;
 }
 
-list.boxed-list {
-  background-color: #0E130D;
-  background-image: linear-gradient(145deg, rgba(20, 36, 16, 0.65) 0%, #0B0D0A 100%);
-  border: 1px solid rgba(144, 104, 36, 0.50);
-  border-top: 2px solid #C0A36A;
-  border-radius: 6px;
-}
+/* ── Buttons & Control Primitives ───────────────────────────────── */
 
-list.boxed-list > row {
-  background-color: transparent;
-  color: #D8D5CA;
-  border-bottom: 1px solid rgba(95, 85, 65, 0.35);
-}
-
-list.boxed-list > row:last-child {
-  border-bottom: none;
-}
-
-list.boxed-list > row:hover {
-  background-color: rgba(20, 36, 16, 0.45);
-}
-
-row .title {
-  color: #D8D5CA;
-}
-
-row .subtitle {
-  color: #9E9580;
-  margin-left: 8px;
-}
-
-/* Buttons */
 button {
   background-color: #142410;
   background-image: none;
@@ -189,12 +239,88 @@ button:hover {
   color: #C0A36A;
 }
 
-/* Headerbar window controls (close / maximize / minimize): borderless */
-windowcontrols button,
-windowcontrols button:hover {
-  background: none;
-  border: none;
+button.x3d-toggle-pill {
+  background-color: #11190F;
+  background-image: linear-gradient(115deg,
+      rgba(255, 255, 255, 0) 32%,
+      rgba(192, 163, 106, 0.32) 50%,
+      rgba(255, 255, 255, 0) 68%);
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  background-position: 145% 0;
+  color: #D8D5CA;
+  font-weight: 600;
+  border: 1px solid rgba(144, 104, 36, 0.55);
+  border-radius: 4px;
+  padding: 9px 14px;
+  min-height: 36px;
   box-shadow: none;
+  transition:
+    background-position 650ms cubic-bezier(0.19, 1, 0.22, 1),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+button.x3d-toggle-pill:hover {
+  background-position: -45% 0;
+  border-color: #C0A36A;
+  background-color: #142410;
+  color: #C0A36A;
+  box-shadow: inset 0 0 14px rgba(144, 104, 36, 0.25);
+}
+
+button.x3d-toggle-pill:checked,
+button.x3d-toggle-pill.active {
+  background-image:
+    linear-gradient(115deg,
+      rgba(255, 255, 255, 0) 34%,
+      rgba(251, 243, 217, 0.44) 50%,
+      rgba(255, 255, 255, 0) 66%),
+    linear-gradient(135deg, #906824, #C0A36A);
+  background-size: 260% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+  background-position: 145% 0, 0 0;
+  color: #0B0D0A;
+  font-weight: 700;
+  border-color: #4ADE80;
+  box-shadow: 0 0 10px rgba(192, 163, 106, 0.28);
+}
+
+button.x3d-toggle-pill:checked:hover,
+button.x3d-toggle-pill.active:hover {
+  background-position: -45% 0, 0 0;
+  border-color: #4ADE80;
+  color: #0B0D0A;
+  box-shadow: 0 0 14px rgba(192, 163, 106, 0.42);
+}
+
+button.x3d-toggle-pill:disabled {
+  opacity: 0.45;
+}
+
+button.x3d-popup-btn {
+  background-color: #142410;
+  background-image: none;
+  color: #4ADE80;
+  font-weight: 600;
+  border: 1px solid rgba(74, 222, 128, 0.45);
+  border-radius: 4px;
+  padding: 9px 14px;
+  min-height: 36px;
+}
+
+button.x3d-popup-btn:hover {
+  border-color: #4ADE80;
+  background-color: #1B3316;
+}
+
+button.x3d-cta-btn {
+  border-radius: 4px;
+  padding: 6px 14px;
+  min-height: 32px;
+  font-weight: 600;
 }
 
 button.x3d-primary {
@@ -203,13 +329,17 @@ button.x3d-primary {
   font-weight: 700;
   border: 1px solid #C0A36A;
   border-radius: 4px;
-  padding: 8px 20px;
-  min-height: 36px;
+  padding: 6px 16px;
+  min-height: 32px;
 }
 
 button.x3d-primary:hover {
   background: linear-gradient(135deg, #C0A36A, #906824);
   color: #0B0D0A;
+}
+
+button.x3d-primary:disabled {
+  opacity: 0.42;
 }
 
 button.x3d-destructive {
@@ -218,40 +348,42 @@ button.x3d-destructive {
   font-weight: 700;
   border: 1px solid #EF4444;
   border-radius: 4px;
+  padding: 8px 18px;
+  min-height: 36px;
 }
 
 button.x3d-destructive:hover {
-  background: linear-gradient(135deg, #991b1b, #5c1616);
+  background: linear-gradient(135deg, #991b1b, #b91c1c);
 }
 
-/* Hardware Mode Cards */
-.x3d-mode-card {
-  background-color: #0E130D;
-  background-image: linear-gradient(145deg, rgba(20, 36, 16, 0.72) 0%, #0B0D0A 100%);
-  border: 1px solid rgba(95, 85, 65, 0.65);
-  border-left: 4px solid #906824;
+.x3d-reboot-badge {
+  background-color: rgba(192, 163, 106, 0.18);
+  color: #C0A36A;
+  border: 1px solid #C0A36A;
   border-radius: 4px;
-  padding: 16px;
-  margin: 4px;
-  transition: all 200ms ease;
-  box-shadow: none;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.x3d-mode-card:hover {
-  border-color: #C0A36A;
-  border-left-color: #C0A36A;
-  background-color: #142410;
+.x3d-form-row {
+  padding: 5px 2px;
+  border-bottom: 1px solid rgba(144, 104, 36, 0.22);
 }
 
-.x3d-mode-card.selected {
-  border-color: #C0A36A;
-  border-left: 4px solid #4ADE80;
-  background-color: rgba(20, 36, 16, 0.90);
-  box-shadow: 0 0 10px rgba(192, 163, 106, 0.25);
+.x3d-form-row:last-child {
+  border-bottom: none;
 }
 
-/* Controls: Dropdowns, Popovers, Entries, Switches, Scales */
-dropdown > button,
+.x3d-live-row {
+  background-color: #0E130D;
+  border: 1px solid rgba(144, 104, 36, 0.45);
+  border-left: 3px solid #C0A36A;
+  border-radius: 5px;
+  padding: 10px 16px;
+}
+
+dropdown>button,
 spinbutton {
   background-color: #142410;
   color: #C0A36A;
@@ -259,23 +391,12 @@ spinbutton {
   border-radius: 4px;
 }
 
-dropdown > button:hover {
-  border-color: #C0A36A;
-}
-
-popover > contents {
+popover>contents {
   background-color: #0E130D;
   color: #D8D5CA;
   border: 1px solid #906824;
   border-top: 2px solid #C0A36A;
   border-radius: 4px;
-}
-
-popover modelbutton:hover,
-popover listview > row:hover,
-popover listview > row:selected {
-  background-color: #142410;
-  color: #C0A36A;
 }
 
 entry {
@@ -300,17 +421,6 @@ switch:checked {
   border-color: #C0A36A;
 }
 
-levelbar trough {
-  background-color: #142410;
-  border-radius: 4px;
-  min-height: 12px;
-}
-
-levelbar trough block.filled {
-  background: linear-gradient(90deg, #5F5541, #906824, #C0A36A);
-  border-radius: 4px;
-}
-
 scale trough {
   background-color: #142410;
   border-radius: 4px;
@@ -330,7 +440,6 @@ scale slider {
   min-height: 16px;
 }
 
-/* Extras Document Viewer (parchment prose inside terminal dispatch frame) */
 textview,
 textview text {
   background-color: #0B0D0A;
@@ -345,7 +454,13 @@ textview text {
   border-radius: 4px;
 }
 
-/* Scrollbars (matching moa-preview.css) */
+.x3d-pinned-desktop {
+  background-color: rgba(11, 13, 10, 0.96);
+  border: 2px solid #C0A36A;
+  border-radius: 6px;
+  padding: 12px;
+}
+
 scrollbar trough {
   background-color: #0B0D0A;
   border-left: 1px solid rgba(144, 104, 36, 0.25);
@@ -360,4 +475,51 @@ scrollbar slider {
 
 scrollbar slider:hover {
   background: #C0A36A;
+}
+
+/* ── Compact, Quiet Sidebar CallToAction Bars (LACT-style) ─────── */
+
+button.x3d-sidebar-cta-apply,
+button.x3d-sidebar-cta-secondary {
+  min-height: 22px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  font-size: 0.90em;
+  font-weight: 600;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+button.x3d-sidebar-cta-apply {
+  background-color: rgba(144, 104, 36, 0.78);
+  color: #F2EFE9;
+}
+
+button.x3d-sidebar-cta-apply:hover:not(:disabled) {
+  background-color: #C0A36A;
+  color: #0B0D0A;
+}
+
+button.x3d-sidebar-cta-apply:disabled {
+  background-color: rgba(144, 104, 36, 0.22);
+  color: rgba(216, 213, 202, 0.46);
+  opacity: 1;
+}
+
+button.x3d-sidebar-cta-secondary {
+  background-color: rgba(216, 213, 202, 0.08);
+  color: #B8B2A2;
+}
+
+button.x3d-sidebar-cta-secondary:hover:not(:disabled) {
+  background-color: rgba(192, 163, 106, 0.16);
+  color: #D8D5CA;
+}
+
+button.x3d-sidebar-cta-secondary:disabled {
+  background-color: rgba(216, 213, 202, 0.04);
+  color: rgba(216, 213, 202, 0.35);
+  opacity: 1;
 }

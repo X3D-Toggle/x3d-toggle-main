@@ -142,6 +142,8 @@ const Command cmd_table[] = {
     {"gui", cli_gui_launch,
      "Desktop App: Launch the GTK4 X3D Toggle Dashboard"},
     {"desktop", cli_gui_launch, "Alias for gui"},
+    {"kdialog", cli_kdialog_launch,
+     "Lightweight GUI: Launch the KDE KDialog Control Panel"},
     {"gui-log", cli_gui_log, "Internal: Log GUI errors"},
     {"stress-cpu", cli_stress_cpu,
      "Compute Load: Generate mock throughput load for validation"},

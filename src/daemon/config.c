@@ -13,6 +13,7 @@
 #endif
 
 #include "../build/config.h"
+#include "aod.h"
 #include "cli.h"
 #include "error.h"
 #include "games.h"
@@ -775,6 +776,25 @@ void config_probe_capabilities(DaemonConfig *cfg) {
     cfg->capabilities |= CAP_FASTOPEN;
   if (access("/proc/sys/net/core/default_qdisc", F_OK) == 0)
     cfg->capabilities |= CAP_QDISC;
+  if (aod_is_supported())
+    cfg->capabilities |= CAP_AOD;
+  if (aod_has_smt())
+    cfg->capabilities |= CAP_AOD_SMT;
+  if (access("/sys/devices/system/cpu/amd_pstate/dynamic_epp", F_OK) == 0 ||
+      access("/sys/devices/system/cpu/cpu0/cpufreq/dynamic_epp", F_OK) == 0)
+    cfg->capabilities |= CAP_DYNAMIC_EPP;
+  if (access("/sys/devices/system/cpu/cpu0/cpufreq/amd_pstate_floor_freq",
+             F_OK) == 0)
+    cfg->capabilities |= CAP_FLOOR_FREQ;
+  if (access("/sys/devices/system/cpu/cpu0/cpufreq/amd_pstate_prefcore_ranking",
+             R_OK) == 0)
+    cfg->capabilities |= CAP_PREFCORE_RANK;
+  if (access("/proc/sys/net/ipv4/tcp_available_congestion_control", R_OK) == 0)
+    cfg->capabilities |= CAP_TCP_CONG;
+  if (access("/sys/module/pcie_aspm/parameters/policy", F_OK) == 0)
+    cfg->capabilities |= CAP_PCIE_ASPM;
+  if (access("/dev/cpu_dma_latency", F_OK) == 0)
+    cfg->capabilities |= CAP_CPU_DMA_LAT;
 }
 
 int cli_advanced_config(int argc, char *argv[]) {

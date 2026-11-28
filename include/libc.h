@@ -72,9 +72,13 @@ typedef unsigned long sigset_t;
 extern int errno;
 #endif
 
+#define EPERM 1
 #define ENOENT 2
+#define EIO 5
 #define EAGAIN 11
 #define EACCES 13
+#define ENODEV 19
+#define EINVAL 22
 #define ERANGE 34
 
 #ifndef INT_MAX
@@ -246,7 +250,12 @@ int getdents64(unsigned int fd, struct linux_dirent64 *dirp,
                unsigned int count);
 pid_t getpid(void);
 uid_t geteuid(void);
+#ifndef CLOCK_REALTIME
 #define CLOCK_REALTIME 0
+#endif
+#ifndef CLOCK_MONOTONIC
+#define CLOCK_MONOTONIC 1
+#endif
 int clock_gettime(int clk_id, struct timespec *tp);
 int sigaction(int signum, const struct sigaction *act,
               struct sigaction *oldact);
