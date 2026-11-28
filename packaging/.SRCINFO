@@ -1,5 +1,5 @@
 pkgbase = x3d-toggle
-	pkgver = 2.0.1
+	pkgver = 2.1.0
 	pkgrel = 2
 	url = https://github.com/X3D-Toggle/x3d-toggle-main
 	arch = x86_64
@@ -15,7 +15,7 @@ pkgbase = x3d-toggle
 	makedepends = libadwaita
 	options = !strip
 	options = !lto
-	source = x3d-toggle-2.0.1.tar.gz::https://github.com/X3D-Toggle/x3d-toggle-main/archive/refs/tags/v2.0.1.tar.gz
+	source = x3d-toggle-2.1.0.tar.gz::https://github.com/X3D-Toggle/x3d-toggle-main/archive/refs/tags/v2.1.0.tar.gz
 	sha256sums = 89b3223d5091d7d981960247872a7931bad860825bf29559e55c99117d6498fe
 
 pkgname = x3d-toggle
@@ -37,7 +37,7 @@ pkgname = x3d-toggle
 
 pkgname = x3d-toggle-gui
 	pkgdesc = GTK4/libadwaita desktop dashboard for X3D Toggle
-	depends = x3d-toggle=2.0.1-2
+	depends = x3d-toggle=2.1.0
 	depends = gtk4
 	depends = libadwaita
 	optdepends = lact: AMD GPU clocks, voltages, power limits, and fan curves

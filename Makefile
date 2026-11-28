@@ -44,6 +44,7 @@ export USR_PIXMAPS  ?= $(USR_SHARE)/pixmaps
 export USR_APPS     ?= $(USR_SHARE)/applications
 export USR_MAN		?= $(USR_SHARE)/man
 export USR_ASSETS   ?= $(USR_SHARE)/x3d-toggle
+export USR_FONTS    ?= $(USR_SHARE)/fonts/x3d-toggle
 
 export VAR_LIBS     ?= $(VAR_LIB)/x3d-toggle
 export VAR_LOGS     ?= $(VAR_LOG)/logs
@@ -147,6 +148,7 @@ DEST_SYSUSERS   = $(DESTDIR)$(SYS_SYSUSERS)
 DEST_TMPFILES   = $(DESTDIR)$(SYS_TMPFILES)
 DEST_APPS       = $(DESTDIR)$(USR_APPS)
 DEST_PIXMAPS    = $(DESTDIR)$(USR_PIXMAPS)
+DEST_FONTS          = $(DESTDIR)$(USR_FONTS)
 
 SRCS_WRAPPER    = $(SRC)/run.c $(SRC)/status.c $(SRCS_CORE)
 
@@ -263,7 +265,10 @@ install: build
 	install -m644 assets/x3d-toggle.svg $(DESTDIR)$(USR_SHARE)/icons/hicolor/scalable/apps/x3d-toggle.svg
 
 	install -dm755 $(DESTDIR)$(USR_ASSETS)
-	install -m644 assets/* $(DESTDIR)$(USR_ASSETS)/
+	install -m644 assets/*.png assets/*.jpg assets/*.jpeg assets/*.svg $(DESTDIR)$(USR_ASSETS)/
+
+	install -dm755 $(DEST_FONTS)
+	install -m644 assets/fonts/*.ttf $(DEST_FONTS)/
 
 	install -dm755 $(DESTDIR)$(USR_MAN1)
 	install -m644 docs/x3d-toggle.1 $(DESTDIR)$(USR_MAN1)/x3d-toggle.1
@@ -281,6 +286,7 @@ install: build
 		chown -R x3d-toggle:x3d-toggle $(DESTDIR)$(VAR_LOG); \
 		chmod 2775 $(DESTDIR)$(VAR_LOG) $(DEST_LOGS) $(DEST_AUDITS) $(DEST_DUMPS); \
 		systemctl daemon-reload; \
+		command -v fc-cache >/dev/null 2>&1 && fc-cache -f $(DEST_FONTS) || true; \
 	fi
 	@echo ""
 	@echo "============================================================================"
@@ -338,6 +344,7 @@ uninstall:
 	rm -f $(DESTDIR)$(USR_SHARE)/icons/hicolor/scalable/apps/x3d-toggle.svg
 	rm -f $(DESTDIR)$(USR_MAN1)/x3d-toggle.1
 	rm -rf $(DESTDIR)$(USR_ASSETS)
+	rm -rf $(DEST_FONTS)
 	rm -f $(DEST_APPS)/x3d-toggle.desktop
 	rm -f $(DEST_APPS)/x3d-toggle-kdialog.desktop
 
@@ -362,6 +369,7 @@ uninstall:
 	$(MAKE) clean
 	rm -rf etc/x3d-toggle.d
 
+	-fc-cache -f 2>/dev/null || true
 	-udevadm control --reload-rules && udevadm trigger
 	-systemctl daemon-reload
 	-pkill -u x3d-toggle

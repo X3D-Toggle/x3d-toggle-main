@@ -112,3 +112,203 @@
   * [log-rotate] - Truncates Log: Enabling logging rotation feature ensures that logging will not bloat the package over time.
   * [cpu-stress llm] - CPU Stress Test: Executes `cpu-stress.c` to spike load the CPU mimicking a heavy/full compute load
   * [cpu-stress game] - CPU Stress Test: Executes `cpu-stress.c` to spike load the CPU mimicking a gaming session.
+
+
+
+
+
+---
+# Step-by-Step Release & AUR Push Guide
+
+> **Shell Note:** All commands below are Fish-compatible. Your main repo (`x3d-toggle-main`) is treated as the single source of truth for `PKGBUILD`, which is then copied over to your AUR repo.
+
+---
+
+## Phase 1: Bump Version, Tag, and Push to GitHub
+
+### Step 1: Check your main repo status
+
+Move into your main source repo and make sure you know what is modified or untracked:
+
+```fish
+cd ~/path/to/x3d-toggle-main
+git status
+```
+
+### Step 2: Update version strings and `PKGBUILD` in the main repo
+
+1. Search for any remaining hardcoded `2.x.x` references in your source tree (skip if you already wired up dynamic `-DX3D_VERSION`):
+   ```fish
+   grep -rn "2\.x\.x" src/ Makefile packaging/ PKGBUILD
+   ```
+2. Open your main repo's `PKGBUILD` (adjust path if it's in `packaging/PKGBUILD`) and update these two lines:
+   ```bash
+   pkgver=2.x.x
+   pkgrel=x
+   ```
+   *(Always reset `pkgrel` to `1` whenever `pkgver` increases. Leave `sha256sums` alone until Step 6—the GitHub tarball doesn't exist until you push the tag.)*
+
+### Step 3: Stage and commit your v2.x.x changes
+
+```fish
+git add -A
+git commit -m "xxxtitlexxx"
+```
+
+### Step 4: Create the `v2.x.x` Git tag
+
+Use an annotated tag so GitHub generates the release tarball cleanly:
+
+```fish
+git tag -a v2.x.x -m "X3D Toggle v2.x.x"
+```
+
+### Step 5: Push both the commit and the tag to GitHub
+
+```fish
+git push origin main
+git push origin v2.x.x
+```
+
+* **Verification:** Confirm the tag tarball URL resolves before running `updpkgsums` (you should see `HTTP/2 200` or `302`):
+  ```fish
+  curl -sI https://github.com/X3D-Toggle/x3d-toggle-main/archive/refs/tags/v2.x.x.tar.gz | head -n 5
+  ```
+
+---
+
+## Phase 2: Regenerate `sha256sums` in the Main Repo & Copy to AUR
+
+### Step 6: Run `updpkgsums` on the main repo's `PKGBUILD`
+
+Still inside `~/path/to/x3d-toggle-main` (or `cd packaging/` if `PKGBUILD` lives there), run:
+
+```fish
+updpkgsums
+```
+
+* *(If Fish says `Unknown command: updpkgsums`, install it with `sudo pacman -S pacman-contrib`, then re-run.)*
+* **Verification:** Run `git diff PKGBUILD` and confirm `sha256sums` has been updated to the new hash.
+
+### Step 7: Commit and push the updated `PKGBUILD` to GitHub
+
+> **Important:** Commit this on `main` and **do not** move or re-create the `v2.x.x` tag. Moving the tag would make GitHub regenerate `v2.x.x.tar.gz` with a different hash.
+
+```fish
+git add PKGBUILD
+git commit -m "chore: update PKGBUILD sha256sums for v2.x.x"
+git push origin main
+```
+
+### Step 8: Build / publish the Release tarball on GitHub
+
+1. Open `https://github.com/X3D-Toggle/x3d-toggle-main/releases/new` (or go to **Tags → `v2.x.x` → Create release**).
+2. Select the `v2.x.x` tag, add your release title (`X3D Toggle v2.x.x`) and changelog notes, and click **Publish release** so GitHub builds and publishes the release tarballs.
+
+### Step 9: Copy the updated `PKGBUILD` into your AUR repo
+
+```fish
+cp PKGBUILD ~/path/to/aur-x3d-toggle/PKGBUILD
+```
+
+*(If you also edited `x3d-toggle.install`, copy it over too: `cp x3d-toggle.install ~/path/to/aur-x3d-toggle/`.)*
+
+---
+
+## Phase 3: Build and Test with `makepkg` in the AUR Repo
+
+### Step 10: Switch to your AUR repo and pull latest
+
+```fish
+cd ~/path/to/aur-x3d-toggle
+git pull
+```
+
+### Step 11: Clean-build (and install) the packages
+
+To build both `x3d-toggle` and `x3d-toggle-gui` from scratch and immediately install them to test on your machine:
+
+```fish
+makepkg -sricf
+```
+
+* **Flags explained:**
+  * `-s` — install any missing `makedepends`
+  * `-r` — remove build-only deps afterward
+  * `-i` — install the built `.pkg.tar.zst` packages
+  * `-c` — clean up `src/` and `pkg/` build folders after building
+  * `-f` — overwrite if a package file already exists
+* *(If you only want to build without installing, use `makepkg -srcf` instead.)*
+
+### Step 12: Run quick sanity checks (Optional, recommended for Chaotic-AUR)
+
+Lint the `PKGBUILD` and both built `.pkg.tar.zst` files:
+
+```fish
+namcap PKGBUILD x3d-toggle-2.x.x-x-x86_64.pkg.tar.zst x3d-toggle-gui-x.x.x-x-x86_64.pkg.tar.zst
+```
+
+* **Verification:** Confirm there are no `E:` (Error) lines.
+
+### Step 12: Remove leftover tarballs and package archives from the AUR folder
+
+**Never push `.tar.gz` or `.pkg.tar.zst` files to the AUR.** Delete them before committing:
+
+```fish
+rm -f *.tar.gz *.pkg.tar.zst
+rm -rf src/ pkg/
+```
+
+---
+
+## Phase 4: Regenerate `.SRCINFO` and Push to the AUR
+
+### Step 13: Regenerate `.SRCINFO`
+
+The AUR web interface and helpers (`paru`, `yay`, Octopi) read `.SRCINFO`, **not** `PKGBUILD`. Always regenerate it after any `PKGBUILD` change:
+
+```fish
+makepkg --printsrcinfo > .SRCINFO
+```
+
+### Step 14: Verify your AUR repo is clean
+
+```fish
+git status
+```
+
+* **Verification:** You should **only** see `PKGBUILD` and `.SRCINFO` (plus `x3d-toggle.install` if edited) under modified files—no tarballs, no `src/`, no `pkg/`.
+
+### Step 15: Commit and push to the AUR
+
+```fish
+git add PKGBUILD .SRCINFO
+git commit -m "Update to v2.x.x"
+git push origin master
+```
+
+*(Note: AUR repos traditionally use `master` as the default branch.)*
+
+### Step 16: Verify it's live on the AUR
+
+Wait ~10–15 seconds, then check with `paru`:
+
+```fish
+paru -Si x3d-toggle x3d-toggle-gui
+```
+
+* **Verification:** Both packages should report `Version : 2.x.x-x`.
+
+---
+
+## Emergency Undo (If You Typo a Tag Before Pushing to AUR)
+
+If you realize you forgot a commit right after tagging `v2.x.x` on GitHub:
+
+```fish
+cd ~/path/to/x3d-toggle-main
+git tag -d v2.x.x
+git push origin :refs/tags/v2.x.x
+```
+
+Fix your commit, then re-run **Steps 4–8** to re-tag, regenerate `sha256sums` in the main repo, and copy the fresh `PKGBUILD` over to the AUR folder.
